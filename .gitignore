@@ -31,3 +31,5 @@ build/
 .vscode/
 
 *.pem
+
+shoeshop-key-v2*
