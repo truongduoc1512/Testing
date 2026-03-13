@@ -10,7 +10,10 @@
    <body>
       
       <th:block th:include="_menu"></th:block>
-       
+       <div th:if="${not #strings.isEmpty(keyword)}" style="text-align: center; padding: 20px; background-color: #f8d7da; border: 2px dashed red;">
+          <h2 style="color: red;">Kết quả tìm kiếm của bạn:</h2>
+          <h1 th:utext="${keyword}"></h1> 
+      </div>
       <section id="spring1">
 <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
   <ol class="carousel-indicators">

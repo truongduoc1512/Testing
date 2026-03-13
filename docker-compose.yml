@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  shoeshop-backend:
+    build: .
+    container_name: shoeshop-api
+    restart: always
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://shoeshop-db:3306/shoeshop_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=0949096416!
+    depends_on:
+      - shoeshop-db
+    networks:
+      - shoeshop-net
+
+  shoeshop-db:
+    image: mysql:8.0
+    container_name: shoeshop-mysql
+    restart: always
+    environment:
+      - MYSQL_DATABASE=shoeshop_db
+      - MYSQL_ROOT_PASSWORD=0949096416!
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./shoe_shopdb.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - shoeshop-net
+
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: shoeshop-nginx
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - shoeshop-backend
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - shoeshop-net
+
+networks:
+  shoeshop-net:
+    driver: bridge
+
+volumes:
+  db_data:

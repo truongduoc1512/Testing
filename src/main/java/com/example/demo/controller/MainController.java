@@ -1,6 +1,11 @@
 package com.example.demo.controller;
 
 import java.io.IOException;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+// ... các import cũ giữ nguyên
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.demo.dao.OrderDAO;
 import com.example.demo.dao.ProductDAO;
@@ -71,7 +77,11 @@ public class MainController {
    }
  
    @RequestMapping("/")
-   public String home() {
+   public String home(Model model, @RequestParam(value = "keyword", defaultValue = "") String keyword) {
+      // LỖ HỔNG: Nhận tham số keyword từ URL và đẩy thẳng ra view
+      if (keyword != null && !keyword.isEmpty()) {
+          model.addAttribute("keyword", keyword);
+      }
       return "index";
    }
  
@@ -266,5 +276,33 @@ public class MainController {
       }
       response.getOutputStream().close();
    }
- 
+   
+   // --- DEMO PATH TRAVERSAL ---
+   // Giả lập tính năng xem file log hoặc file ảnh
+   @RequestMapping(value = "/viewFile", method = RequestMethod.GET)
+   @ResponseBody
+   public String viewFile(@RequestParam("filename") String filename) {
+      try {
+         // LỖ HỔNG: Hacker có thể nhập filename là "../../../etc/passwd"
+         // Giả sử ứng dụng quy định chỉ được đọc trong thư mục "static"
+         String basePath = "src/main/resources/static/";
+         
+         File file = new File(basePath + filename);
+         
+         // Đọc nội dung file và trả về màn hình
+         if (file.exists()) {
+             return new String(Files.readAllBytes(file.toPath()));
+         } else {
+             // Thử đọc file hệ thống nếu file trong static không có (Mô phỏng Hacker thoát ra ngoài)
+             // Lưu ý: Trong Docker container, đường dẫn gốc là /app
+             File systemFile = new File(filename); // Nguy hiểm nhất là dòng này
+             if (systemFile.exists()) {
+                 return new String(Files.readAllBytes(systemFile.toPath()));
+             }
+         }
+         return "File not found: " + filename;
+      } catch (Exception e) {
+         return "Error: " + e.getMessage();
+      }
+   }
 }
