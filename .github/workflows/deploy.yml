@@ -19,6 +19,7 @@ jobs:
           script: |
             cd shoeshop
             git pull origin main
+            docker compose down --remove-orphans
             docker compose up -d --build
 
 ##
