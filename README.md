@@ -35,44 +35,44 @@ graph LR
     classDef step fill:#fff,stroke:#333,stroke-width:1px,rx:5,ry:5;
 
     %% --- Khối 1: Local ---
-    subgraph P1 [1. Giai đoạn Code]
+    subgraph P1 ["1. Giai đoạn Code"]
         direction LR
-        Dev[💻 Developer Laptop]:::dev
+        Dev["💻 Developer Laptop"]:::dev
     end
 
     %% --- Khối 2: CI/CD Tự động ---
-    subgraph P2 [2. Pipeline CI/CD Tự động]
+    subgraph P2 ["2. Pipeline CI/CD Tự động"]
         direction TB
-        Git[🐙 GitHub Repository]:::github
-        GHA[⚙️ GitHub Actions]:::actions
+        Git["🐙 GitHub Repository"]:::github
+        GHA["⚙️ GitHub Actions"]:::actions
         
-        subgraph Steps [Các bước Deploy]
+        subgraph Steps ["Các bước Deploy"]
             direction TB
-            S1[🔑 1. SSH vào EC2]:::step
-            S2[⬇️ 2. Git Pull Code mới]:::step
-            S3[🐳 3. Chạy Docker Compose]:::step
+            S1["🔑 1. SSH vào EC2"]:::step
+            S2["⬇️ 2. Git Pull Code mới"]:::step
+            S3["🐳 3. Chạy Docker Compose"]:::step
             S1 --> S2 --> S3
         end
     end
 
     %% --- Khối 3: Cloud Production ---
-    subgraph P3 [3. Môi trường Vận hành]
+    subgraph P3 ["3. Môi trường Vận hành"]
         direction TB
-        subgraph Cloud [☁️ AWS Cloud]
+        subgraph Cloud ["☁️ AWS Cloud"]
             class Cloud aws;
             
-            subgraph Server [🖥️ EC2 Instance (Ubuntu)]
+            subgraph Server ["🖥️ EC2 Instance - Ubuntu"]
                 class Server ec2;
                 
-                subgraph ContainerEnv [🐳 Docker Engine]
+                subgraph ContainerEnv ["🐳 Docker Engine"]
                     class ContainerEnv docker;
                     direction LR
                     
-                    App[🍃 Spring Boot Backend]:::spring
-                    DB[🐬 MySQL Database]:::mysql
+                    App["🍃 Spring Boot Backend"]:::spring
+                    DB["🐬 MySQL Database"]:::mysql
                     
                     %% Giao tiếp nội bộ
-                    App <-->|Kết nối DB| DB
+                    App <-->|"Kết nối DB"| DB
                 end
             end
         end
