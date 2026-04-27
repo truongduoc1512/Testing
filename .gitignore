@@ -33,3 +33,5 @@ build/
 *.pem
 
 shoeshop-key-v2*
+
+.env

@@ -12,13 +12,23 @@ jobs:
     steps:
       - name: SSH vào AWS và chạy lệnh Deploy
         uses: appleboy/ssh-action@master
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD
           script: |
             cd shoeshop
             git pull origin main
+
+            echo "DB_URL=$DB_URL" > .env
+            echo "DB_USERNAME=$DB_USERNAME" >> .env
+            echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+
             docker compose down --remove-orphans
             docker compose up -d --build
 

@@ -8,9 +8,9 @@ services:
     restart: always
     environment:
       # TRỎ THẲNG LÊN MÁY CHỦ AWS RDS
-      - SPRING_DATASOURCE_URL=jdbc:mysql://shoeshop-rds.c7eiik2uandc.ap-southeast-2.rds.amazonaws.com:3306/shoeshop_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=0949096416!
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
     networks:
       - shoeshop-net
 
