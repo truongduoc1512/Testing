@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "0949096416!" # Nhập mật khẩu khớp với file application.properties của bạn
+            - name: MYSQL_DATABASE
+              value: "shoeshop_db" # Nhập tên database khớp với dự án của bạn
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-init-script
+              mountPath: /docker-entrypoint-initdb.d/shoe_shopdb.sql
+      volumes:
+        - name: mysql-init-script
+          hostPath:
+            path: /home/truongduoc/workspace/shoeshop/shoe_shopdb.sql
+            type: File
