@@ -38,7 +38,7 @@ export async function GET(
     }
 
     const ft = adminAccount.familyType || "ultra";
-    if (ft === "gpt") {
+    if (!["ultra", "pro", "youtube"].includes(ft)) {
       return NextResponse.json(
         { error: "This feature is only for Google accounts." },
         { status: 400 },

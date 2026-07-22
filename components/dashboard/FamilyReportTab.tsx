@@ -3,7 +3,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
-  Bot,
   CalendarClock,
   CheckCircle2,
   ChevronDown,
@@ -49,7 +48,7 @@ const MEMBER_CATEGORIES: ReportCategoryId[] = [
   "noExpiry",
 ];
 
-const FAMILY_ORDER = ["ultra", "pro", "youtube", "gpt"] as const;
+const FAMILY_ORDER = ["ultra", "pro", "youtube"] as const;
 
 const CATEGORY_DEFS = [
   {
@@ -139,12 +138,6 @@ const FAMILY_META: Record<
     icon: Youtube,
     iconClass: "text-red-300",
     badgeClass: "border-red-500/25 bg-red-500/10 text-red-300",
-  },
-  gpt: {
-    label: "GPT",
-    icon: Bot,
-    iconClass: "text-emerald-300",
-    badgeClass: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
   },
 };
 

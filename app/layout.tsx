@@ -18,7 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "VieShop",
-  description: "VieShop quản lý tài khoản Google Family và ChatGPT Workspace.",
+  description: "VieShop quản lý tài khoản Google Family.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

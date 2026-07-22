@@ -1,4 +1,4 @@
-import { Crown, Youtube, Bot } from "lucide-react";
+import { Crown, Youtube } from "lucide-react";
 
 export const FAMILY_TYPES = [
   {
@@ -24,14 +24,6 @@ export const FAMILY_TYPES = [
     color: "text-red-400",
     bg: "bg-red-500/15 border-red-500/30",
     activeClass: "border-red-500 bg-red-500/15 text-red-300",
-  },
-  {
-    id: "gpt",
-    label: "Fam GPT",
-    icon: Bot,
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/15 border-emerald-500/30",
-    activeClass: "border-emerald-500 bg-emerald-500/15 text-emerald-300",
   },
 ] as const;
 

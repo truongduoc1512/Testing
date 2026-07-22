@@ -21,10 +21,7 @@ export function useCheckProfileSelection(
   admins: AdminRow[],
   storageKey = DEFAULT_STORAGE_KEY,
 ): UseCheckProfileSelectionResult {
-  const googleAdmins = useMemo(
-    () => admins.filter((a) => (a.familyType || "ultra") !== "gpt"),
-    [admins],
-  );
+  const googleAdmins = useMemo(() => admins, [admins]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectAdmin = useCallback(

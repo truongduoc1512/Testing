@@ -18,7 +18,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               Quản Lý
             </h1>
             <p className="mb-8 text-xl leading-relaxed text-slate-400">
-              Quản lý tài khoản Google Family và ChatGPT Workspace
+              Quản lý tài khoản Google Family
             </p>
           </div>
 
@@ -49,18 +49,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               className="h-6 w-6 object-contain"
             />
             Drive
-          </div>
-          <div className="float-card float-card-5 bg-slate-500/10 text-slate-200">
-            <img
-              src="/chatgptlogo.png"
-              alt="ChatGPT"
-              className="h-6 w-6 object-contain"
-            />
-            ChatGPT
-          </div>
-          <div className="float-card float-card-6 bg-violet-500/10 text-violet-300">
-            <img src="/capcutlogo.png" alt="CapCut" className="h-6 w-6 object-contain" />
-            CapCut
           </div>
         </section>
 

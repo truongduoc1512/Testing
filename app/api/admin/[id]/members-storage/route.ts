@@ -33,7 +33,7 @@ export async function GET(
       return NextResponse.json({ error: "Admin account not found" }, { status: 404 });
     }
 
-    if ((adminAccount.familyType || "ultra") === "gpt") {
+    if (!["ultra", "pro", "youtube"].includes(adminAccount.familyType || "ultra")) {
       return NextResponse.json(
         { error: "This endpoint is only for Google family types." },
         { status: 400 },
