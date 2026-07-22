@@ -1,0 +1,24 @@
+/* ─── Theme CSS Custom Properties ─── */
+
+:root {
+  /* Surface */
+  --surface-base: radial-gradient(circle at 0% 0%, #1a0533 0%, #0a0e1a 50%, #0d1b3e 100%);
+  --surface-glass: rgba(255, 255, 255, 0.08);
+  --surface-glass-border: rgba(255, 255, 255, 0.12);
+  --surface-glass-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
+
+  /* Brand */
+  --color-violet: #7c3aed;
+  --color-cyan: #06b6d4;
+  --color-pink: #ec4899;
+  --color-emerald: #10b981;
+  --color-blue: #3b82f6;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Focus */
+  --ring-color: rgba(6, 182, 212, 0.5);
+}

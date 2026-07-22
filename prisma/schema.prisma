@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  email         String   @unique
+  password      String
+  fullName      String
+  emailVerified Boolean  @default(false)
+  tokenVersion  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  adminAccounts AdminAccount[]
+
+  @@map("users")
+}
+
+model AdminAccount {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  email          String
+  displayName    String
+  googlePassword String  
+  totpSecret     String   @default("")
+  monthlyCredit  Int      @default(0)
+  storageTB      Int      @default(0)
+  familyType     String   @default("ultra")
+  note           String   @default("")
+  accountStatus  String   @default("")  
+  profileData    String   @default("")  
+  remainingCredit Int      @default(0)  
+  memberCount    Int      @default(0)
+  usedStorageMB  Int      @default(0)
+  has2FA         Boolean  @default(false)
+  planName       String   @default("")  
+  planExpiresAt  DateTime?               
+  lastSyncAt     DateTime?
+  lastSyncStatus String   @default("")
+  lastSyncError  String   @default("")
+
+  createdBy      String   @db.ObjectId
+  user           User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  members        FamilyMember[]
+  session        GoogleSession?
+  creditLogs     CreditLog[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("admin_accounts")
+}
+
+model FamilyMember {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  email       String
+  name        String   @default("")
+
+  role        String   @default("member")
+  status      String   @default("active")
+  inviteId    String? 
+  googleUserId String? 
+  creditLimit Int      @default(0)
+  lastCreditUsed Int   @default(0)
+  joinedAt    DateTime?
+  removedAt   DateTime?
+  startDate   DateTime?
+  endDate     DateTime?
+  renewed     Boolean  @default(false)
+
+  adminId     String   @db.ObjectId
+  admin       AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([adminId, email])
+  @@map("family_members")
+}
+
+model GoogleSession {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  adminId     String   @unique @db.ObjectId
+  admin       AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  cookies     String   @default("[]")  
+  bearerToken String   @default("")    
+  accountId   String   @default("")    
+  orgId       String   @default("")    
+  tokenSavedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("google_sessions")
+}
+
+model CacheStorage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String
+  key       String  
+  value     String   @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@map("cache_storage")
+}
+
+model CreditLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  adminId     String   @db.ObjectId
+  admin       AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  memberName  String   @default("")
+  creditBefore Int     
+  creditAfter  Int     
+  diff         Int     
+  createdAt   DateTime @default(now())
+
+  @@index([adminId, createdAt])
+  @@map("credit_logs")
+}
+
+model DatabaseBackup {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  filename  String
+  data      String   
+  createdAt DateTime @default(now())
+
+  @@map("database_backups")
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  actorEmail String   @default("")
+  action     String
+  targetType String
+  targetId   String   @default("")
+  status     String
+  message    String   @default("")
+  metadata   String   @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}
+
+model OtpRecord {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  hash      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("otp_records")
+}
+
+model OtpLockout {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  email       String   @unique
+  lockedUntil DateTime
+
+  @@map("otp_lockouts")
+}
+
+model OtpResendTracker {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  email       String   @unique
+  count       Int      @default(1)
+  firstSentAt DateTime @default(now())
+
+  @@map("otp_resend_trackers")
+}
+
