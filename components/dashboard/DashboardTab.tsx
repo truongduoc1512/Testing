@@ -6,7 +6,6 @@ import {
   History,
   Crown,
   Youtube,
-  Bot,
   ChevronDown,
   ChevronRight,
   Shield,
@@ -76,15 +75,6 @@ const FAMILY_GROUPS = [
     accent: "red",
     gradient: "from-red-500/20 to-rose-500/20",
     badge: "bg-red-500/15 text-red-400",
-  },
-  {
-    id: "gpt",
-    label: "Fam GPT",
-    icon: Bot,
-    color: "text-emerald-400",
-    accent: "emerald",
-    gradient: "from-emerald-500/20 to-teal-500/20",
-    badge: "bg-emerald-500/15 text-emerald-400",
   },
 ] as const;
 
@@ -193,17 +183,6 @@ function AdminMiniCard({
             </span>
           )}
 
-          {admin.familyType === "gpt" &&
-            admin.accountStatus &&
-            (admin.accountStatus === "dead" ? (
-              <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
-                DEAD
-              </span>
-            ) : admin.accountStatus === "live" ? (
-              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400">
-                LIVE
-              </span>
-            ) : null)}
         </div>
       </div>
 

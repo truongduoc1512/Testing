@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { googleHttpReq } from "@/lib/scanner/google-http";
 import type { Cookie } from "@/lib/scanner/google-http";
-import { gptRevokeInvite } from "@/lib/scanner/chatgpt";
 import { getGoogleAuthOrRefresh } from "@/lib/scanner/google-one";
 import { apiError } from "@/lib/logger";
 import { safeErrorMessage } from "@/lib/safe-error";
@@ -107,23 +106,10 @@ export async function POST(
 
     const familyType = admin.familyType || "ultra";
 
-    if (familyType === "gpt") {
-      const result = await gptRevokeInvite(
-        admin.id,
-        member.inviteId || "",
-        member.email,
-        admin.email,
-        admin.googlePassword,
-        admin.totpSecret,
-      );
-      if (!result.success) {
-        apiError(
-          "/api/admin/[id]/revoke-invite",
-          new Error(result.error || "gpt revoke-invite failed"),
-        );
-        return NextResponse.json({ error: "Failed to revoke invite" }, { status: 500 });
-      }
-    } else {
+    if (!["ultra", "pro", "youtube"].includes(familyType)) {
+      return NextResponse.json({ error: "Unsupported account type" }, { status: 400 });
+    }
+
       if (!member.inviteId) {
         return NextResponse.json(
           {
@@ -161,8 +147,6 @@ export async function POST(
         );
         return NextResponse.json({ error: "Failed to revoke invite" }, { status: 500 });
       }
-    }
-
     await prisma.familyMember.delete({ where: { id: member.id } });
 
     const memberCount = await prisma.familyMember.count({

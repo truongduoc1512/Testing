@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { googleHttpReq } from "@/lib/scanner/google-http";
 import type { Cookie } from "@/lib/scanner/google-http";
-import { gptInviteMembers } from "@/lib/scanner/chatgpt";
 import {
   getGoogleAuthOrRefresh,
 } from "@/lib/scanner/google-one";
@@ -181,114 +180,6 @@ export async function POST(
     }
 
     const familyType = admin.familyType || "ultra";
-
-    if (familyType === "gpt") {
-      const validEmails: string[] = [];
-      const invalidResults: { email: string; success: boolean; error: string }[] = [];
-      for (const email of emails) {
-        const trimmed = email.trim().toLowerCase();
-        if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-          invalidResults.push({
-            email: trimmed,
-            success: false,
-            error: "Invalid email",
-          });
-        } else {
-          validEmails.push(trimmed);
-        }
-      }
-      if (validEmails.length === 0) {
-        await writeAuditLog({
-          userId: session.sub,
-          actorEmail: session.email,
-          action: "member.invite",
-          targetType: "admin",
-          targetId: id,
-          status: "failure",
-          message: `Admin ${formatAuditAdminLabel(admin)} mời member thất bại do không có email hợp lệ`,
-          metadata: {
-            adminEmail: admin.email,
-            adminName: admin.displayName,
-            familyType,
-            requested: emails.length,
-            memberEmails: emails,
-          },
-        });
-        return NextResponse.json({ results: invalidResults });
-      }
-
-      const { results } = await gptInviteMembers(
-        admin.id,
-        validEmails,
-        admin.email,
-        admin.googlePassword,
-        admin.totpSecret,
-      );
-      const safeResults = [...results, ...invalidResults].map((r) => {
-        if (r.success) return r;
-        if (r.error) {
-          apiError("/api/admin/[id]/invite", new Error(String(r.error)), { context: "gpt-invite" });
-        }
-        return { ...r, error: "Invite failed" };
-      });
-
-      for (const r of safeResults) {
-        if (r.success) {
-          await prisma.familyMember.upsert({
-            where: { adminId_email: { adminId: id, email: r.email } },
-            create: {
-              adminId: id,
-              email: r.email,
-              name: "",
-              role: "Member",
-              status: "invited",
-            },
-            update: { status: "invited", role: "Member", removedAt: null },
-          });
-        }
-      }
-
-      const memberCount = await prisma.familyMember.count({
-        where: { adminId: id, status: "active" },
-      });
-      await prisma.adminAccount.update({ where: { id }, data: { memberCount } });
-      const successCount = safeResults.filter((result) => result.success).length;
-      const successEmails = safeResults
-        .filter((result) => result.success)
-        .map((result) => result.email);
-      const failedEmails = safeResults
-        .filter((result) => !result.success)
-        .map((result) => result.email);
-      await writeAuditLog({
-        userId: session.sub,
-        actorEmail: session.email,
-        action: "member.invite",
-        targetType: "admin",
-        targetId: id,
-        status:
-          successCount === safeResults.length
-            ? "success"
-            : successCount > 0
-              ? "partial"
-              : "failure",
-        message:
-          successCount > 0
-            ? `Admin ${formatAuditAdminLabel(admin)} đã mời member ${formatAuditEmailList(successEmails)}`
-            : `Admin ${formatAuditAdminLabel(admin)} mời member thất bại`,
-        metadata: {
-          adminEmail: admin.email,
-          adminName: admin.displayName,
-          familyType,
-          requested: emails.length,
-          successCount,
-          failedCount: safeResults.length - successCount,
-          memberEmails: safeResults.map((result) => result.email),
-          successEmails,
-          failedEmails,
-        },
-      });
-      return NextResponse.json({ results: safeResults });
-    }
 
     const authData = await getGoogleAuthOrRefresh(
       admin.id,

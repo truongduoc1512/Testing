@@ -128,9 +128,9 @@ export async function POST(
       );
     }
 
-    if (admin.familyType === "gpt") {
+    if (!["ultra", "pro", "youtube"].includes(admin.familyType || "ultra")) {
       return NextResponse.json(
-        { error: "GPT member removal not supported yet" },
+        { error: "Unsupported account type" },
         { status: 400 },
       );
     }

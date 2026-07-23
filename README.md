@@ -5,7 +5,7 @@
 <h1 align="center">🛒 VieShop - Tài liệu SRS & Hướng dẫn Vận hành</h1>
 
 <p align="center">
-  <strong>Hệ thống quản trị trung tâm và đồng bộ hóa tài khoản Google Family & ChatGPT Workspace</strong>
+  <strong>Hệ thống quản trị trung tâm và đồng bộ hóa tài khoản Google Family</strong>
 </p>
 
 <p align="center">
@@ -19,20 +19,20 @@
 
 ## 🎯 1. Mục tiêu hệ thống (System Goals)
 
-**VieShop** là một hệ thống dashboard quản trị nội bộ cao cấp, được thiết kế chuyên biệt để giải quyết các vấn đề vận hành phức tạp liên quan đến việc quản lý, phân phối và đồng bộ hóa tài khoản dịch vụ dùng chung, cụ thể là **Google Family** (Google One, YouTube Premium) và **ChatGPT Workspace**.
+**VieShop** là một hệ thống dashboard quản trị nội bộ cao cấp, được thiết kế chuyên biệt để giải quyết các vấn đề vận hành phức tạp liên quan đến việc quản lý, phân phối và đồng bộ hóa tài khoản dịch vụ dùng chung, cụ thể là **Google Family** (Google One, YouTube Premium).
 
 ### 1.1. Vấn đề thực tiễn
-Việc quản lý thủ công hàng chục hoặc hàng trăm nhóm gia đình Google Family hoặc tài khoản ChatGPT Workspace gây ra nhiều khó khăn:
+Việc quản lý thủ công hàng chục hoặc hàng trăm nhóm gia đình Google Family gây ra nhiều khó khăn:
 - **Tốn thời gian:** Gửi lời mời, kiểm tra dung lượng lưu trữ của từng thành viên, thu hồi lời mời quá hạn.
 - **Rủi ro bảo mật:** Chia sẻ mật khẩu trực tiếp, quản lý mã xác thực 2FA (TOTP) thủ công.
-- **Thiếu kiểm soát tín dụng:** Khó theo dõi hạn mức sử dụng tín dụng (Credit) của từng thành viên ChatGPT hoặc Google AI API.
+- **Thiếu kiểm soát tín dụng:** Khó theo dõi hạn mức sử dụng tín dụng (Credit) của từng thành viên Google AI API.
 - **Khó đồng bộ:** Trạng thái kích hoạt và thời gian hết hạn của thành viên dễ bị lệch so với thực tế thanh toán.
 
 ### 1.2. Giải pháp của VieShop
 VieShop giải quyết triệt để các vấn đề trên thông qua việc cung cấp:
 - **Giao diện quản trị tập trung:** Dashboard hiển thị trực quan toàn bộ các tài khoản Admin (đại diện cho các Family hoặc Workspace) và danh sách thành viên thuộc mỗi nhóm.
-- **Tự động hóa trình duyệt (Browser Automation):** Tích hợp Puppeteer để tự động đăng nhập, gửi lời mời (invite), thu hồi lời mời (revoke), loại bỏ thành viên (remove), và kiểm tra trạng thái chia sẻ (sharing status) trên trang cấu hình Google/ChatGPT thực tế.
-- **Hàng đợi đồng bộ thông minh (Sync Queue):** Tự động sắp xếp, lập lịch và kiểm soát số lượng luồng tự động hóa chạy song song để tránh bị Google/OpenAI chặn IP hoặc tài khoản.
+- **Tự động hóa trình duyệt (Browser Automation):** Tích hợp Puppeteer để tự động đăng nhập, gửi lời mời (invite), thu hồi lời mời (revoke), loại bỏ thành viên (remove), và kiểm tra trạng thái chia sẻ (sharing status) trên trang cấu hình Google thực tế.
+- **Hàng đợi đồng bộ thông minh (Sync Queue):** Tự động sắp xếp, lập lịch và kiểm soát số lượng luồng tự động hóa chạy song song để tránh bị Google chặn IP hoặc tài khoản.
 - **Quản lý tín dụng (Credit Management):** Giới hạn và ghi vết chi tiết lịch sử sử dụng tín dụng của các thành viên.
 
 ---
@@ -78,15 +78,15 @@ mindmap
 - **Đổi mật khẩu:** Cho phép thay đổi mật khẩu quản trị viên hiện tại, yêu cầu mật khẩu mới đáp ứng tiêu chuẩn an toàn cao.
 
 ### 2.2. Phân hệ Quản lý tài khoản Admin (Admin Accounts Management)
-Tài khoản Admin đại diện cho các tài khoản Google hoặc OpenAI giữ vai trò chủ sở hữu (Owner/Family Creator).
+Tài khoản Admin đại diện cho các tài khoản Google giữ vai trò chủ sở hữu (Owner/Family Creator).
 - **Thao tác nghiệp vụ (CRUD):** Thêm mới, chỉnh sửa thông tin, xem chi tiết và xóa các tài khoản Admin.
-- **Cấu hình chi tiết:** Thiết lập loại gia đình (`ultra`, `pro`, `youtube`, `gpt`), cấu hình dung lượng lưu trữ (`storageTB`), hạn mức tín dụng hàng tháng (`monthlyCredit`), mật khẩu Google, và mã bí mật 2FA (`totpSecret`).
+- **Cấu hình chi tiết:** Thiết lập loại gia đình (`ultra`, `pro`, `youtube`), cấu hình dung lượng lưu trữ (`storageTB`), hạn mức tín dụng hàng tháng (`monthlyCredit`), mật khẩu Google, và mã bí mật 2FA (`totpSecret`).
 - **Lấy mã TOTP nhanh:** Tích hợp bộ giải mã TOTP trực tiếp trên Dashboard, cho phép Admin lấy mã xác thực 6 số tức thời mà không cần thiết bị ngoài.
-- **Truy xuất thông tin thực tế (Check Profile):** Gửi yêu cầu Puppeteer đăng nhập live vào Google/ChatGPT để đọc dung lượng thực tế đã dùng, trạng thái kích hoạt chia sẻ gia đình và các lỗi thanh toán (nếu có).
+- **Truy xuất thông tin thực tế (Check Profile):** Gửi yêu cầu Puppeteer đăng nhập live vào Google để đọc dung lượng thực tế đã dùng, trạng thái kích hoạt chia sẻ gia đình và các lỗi thanh toán (nếu có).
 
 ### 2.3. Phân hệ Quản lý thành viên (Family Members Management)
-Quản lý các tài khoản người dùng cuối được thêm vào trong các nhóm Google Family hoặc ChatGPT Workspace của Admin.
-- **Gửi lời mời (Invite Member):** Tự động hóa quá trình điều khiển trình duyệt để nhập email thành viên và nhấn gửi lời mời gia đình Google One / ChatGPT Workspace.
+Quản lý các tài khoản người dùng cuối được thêm vào trong các nhóm Google Family của Admin.
+- **Gửi lời mời (Invite Member):** Tự động hóa quá trình điều khiển trình duyệt để nhập email thành viên và nhấn gửi lời mời gia đình Google One.
 - **Thu hồi lời mời (Revoke Invite):** Hủy bỏ lời mời đã gửi nếu thành viên không chấp nhận trong thời gian yêu cầu hoặc có thay đổi kế hoạch.
 - **Xóa thành viên (Remove Member):** Tự động hóa quá trình kích thành viên ra khỏi nhóm gia đình/workspace.
 - **Quản lý thời hạn:** Đặt ngày bắt đầu (`startDate`), ngày kết thúc (`endDate`), đánh dấu gia hạn (`renewed`), giúp tự động hóa việc rà soát thời hạn sử dụng.
@@ -96,7 +96,6 @@ Quản lý các tài khoản người dùng cuối được thêm vào trong cá
 - **Hàng đợi đồng bộ hóa (`sync-queue`):**
   - Do các tác vụ Puppeteer tiêu tốn nhiều tài nguyên hệ thống (RAM, CPU), hệ thống duy trì hai hàng đợi riêng biệt:
     - **Google Sync Queue:** Giới hạn tối đa **3** job chạy đồng thời.
-    - **ChatGPT Sync Queue:** Giới hạn tối đa **2** job chạy đồng thời.
   - Cơ chế tự động thử lại (Retry) khi gặp lỗi kết nối mạng và bộ giám sát thời gian chờ (Timeout Watchdog) để giải phóng hàng đợi khi luồng bị treo.
 - **Đồng bộ tự động định kỳ (Auto-Sync):**
   - Tự động lên lịch đồng bộ hóa định kỳ tại phút thứ `:00` và `:30` hàng giờ khi dashboard đang hoạt động trên trình duyệt của quản trị viên.
@@ -331,7 +330,7 @@ Hệ thống cung cấp hệ thống Route Handlers chuẩn RESTful:
 | | `GET` | `/api/admin/[id]` | Lấy chi tiết thông tin Admin |
 | | `PUT`/`PATCH` | `/api/admin/[id]` | Cập nhật thông tin cấu hình Admin |
 | | `DELETE` | `/api/admin/[id]` | Xóa tài khoản Admin khỏi hệ thống |
-| | `POST`/`GET` | `/api/admin/[id]/sync` | Đồng bộ hóa dữ liệu từ Google/OpenAI ngầm |
+| | `POST`/`GET` | `/api/admin/[id]/sync` | Đồng bộ hóa dữ liệu từ Google ngầm |
 | | `GET` | `/api/admin/[id]/totp` | Lấy mã OTP 6 số hiện tại của tài khoản |
 | | `GET` | `/api/admin/[id]/totp/secret` | Lấy mã bí mật TOTP gốc (sau giải mã) |
 | **Quản trị Member**| `GET` | `/api/admin/[id]/members` | Danh sách thành viên trong nhóm |
@@ -361,7 +360,7 @@ components/
 hooks/                 # React Custom hooks (useAutoSync, useGoogleProfile, v.v.)
 lib/
   auth/                # Logic xử lý JWT, mã hóa mật khẩu, kho chứa OTP
-  scanner/             # Trình duyệt tự động hóa Puppeteer quét Google/OpenAI
+  scanner/             # Trình duyệt tự động hóa Puppeteer quét Google
   utils/               # Các hàm tiện ích hỗ trợ format dữ liệu, xử lý ngày tháng
   db/                  # Kết nối client Prisma với MongoDB
 prisma/                # File định nghĩa Schema Database Prisma

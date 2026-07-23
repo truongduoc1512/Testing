@@ -56,12 +56,7 @@ export default function AddAdminModal({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const platformName =
-    form.familyType === "gpt"
-      ? "ChatGPT"
-      : form.familyType === "youtube"
-        ? "YouTube"
-        : "Google";
+  const platformName = form.familyType === "youtube" ? "YouTube" : "Google";
 
   const handleSubmit = () => {
     if (!form.email || !form.displayName) return;

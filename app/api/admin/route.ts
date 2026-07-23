@@ -9,7 +9,7 @@ import { buildRateLimitKey, memberMutationLimiter, rateLimitResponse } from "@/l
 import { safeErrorMessage } from "@/lib/safe-error";
 import { adminPublicIdFromInternal } from "@/lib/admin-access";
 
-const FAMILY_TYPES = ["ultra", "pro", "youtube", "gpt"] as const;
+const FAMILY_TYPES = ["ultra", "pro", "youtube"] as const;
 
 const addAdminSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -74,7 +74,6 @@ export async function POST(request: Request) {
     }
 
     const isUltra = data.familyType === "ultra";
-    const isGoogle = data.familyType !== "gpt";
 
     const admin = await prisma.adminAccount.create({
       data: {
@@ -84,7 +83,7 @@ export async function POST(request: Request) {
         totpSecret: data.totpSecret ? encryptValue(data.totpSecret) : "",
         has2FA: !!data.totpSecret,
         monthlyCredit: isUltra ? data.monthlyCredit : 0,
-        storageTB: isGoogle ? data.storageTB : 0,
+        storageTB: data.storageTB,
         remainingCredit: 0,
         planName: "",
         familyType: data.familyType,

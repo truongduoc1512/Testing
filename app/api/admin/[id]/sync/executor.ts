@@ -3,8 +3,6 @@ import { isDeadGoogleErrorMessage, syncFamilyGroup } from "@/lib/scanner/google-
 import { syncResult } from "@/lib/scanner/sync";
 import { safeDecrypt } from "@/lib/crypto";
 import { fetchCreditActivity } from "@/lib/scanner/credit-activity";
-import { isDeadGptErrorMessage } from "@/lib/scanner/gpt-auth";
-import { syncGptWorkspace } from "@/lib/scanner/chatgpt";
 import { apiError } from "@/lib/logger";
 import type { AdminAccount } from "@prisma/client";
 
@@ -128,95 +126,6 @@ async function syncGoogle(admin: AdminAccount, skipCredit: boolean) {
   };
 }
 
-async function syncGpt(admin: AdminAccount) {
-  const result = await syncGptWorkspace(
-    admin.id,
-    admin.email,
-    safeDecrypt(admin.googlePassword),
-    safeDecrypt(admin.totpSecret),
-    () => {},
-  );
-
-  if (result.status === "failed") {
-    const isDead = isDeadGptErrorMessage(result.error || "");
-    if (result.error) {
-      apiError("syncGpt", new Error(result.error));
-    }
-    if (isDead) {
-      await prisma.adminAccount.update({
-        where: { id: admin.id },
-        data: {
-          accountStatus: "dead",
-          lastSyncAt: new Date(),
-          lastSyncStatus: "failed",
-          lastSyncError: "Sync failed",
-        },
-      });
-    }
-    return {
-      status: 500,
-      body: {
-        error: "Sync failed",
-        accountStatus: isDead ? "dead" : undefined,
-      },
-    };
-  }
-
-  const allMembers = [
-    ...result.members.map((m) => ({
-      name: m.name,
-      email: m.email,
-      role: m.role === "account-owner" ? "FAMILY MANAGER" : "Member",
-      status: "active" as const,
-      inviteId: m.id,
-    })),
-    ...result.invites.map((inv) => ({
-      name: inv.email,
-      email: inv.email,
-      role: "Member",
-      status: "invited" as const,
-      inviteId: inv.id,
-    })),
-  ];
-
-  await syncResult(admin.id, {
-    status: result.status,
-    members: allMembers,
-    manager: result.members.find((m) => m.role === "account-owner")?.email || null,
-    planName: result.plan,
-    planExpiresAt: result.planExpiresAt ? new Date(result.planExpiresAt) : null,
-    credits: null,
-    error: result.error ? "Sync failed." : "",
-    duration: result.duration,
-  });
-
-  await prisma.adminAccount.update({
-    where: { id: admin.id },
-    data: { accountStatus: "live", lastSyncStatus: result.status, lastSyncError: "" },
-  });
-
-  const members = await getDbMembers(admin.id);
-
-  return {
-    status: 200,
-    body: {
-      sync: {
-        status: result.status,
-        membersFound: result.members.length,
-        invitesFound: result.invites.length,
-        duration: result.duration,
-      },
-      members,
-      stats: {
-        memberCount: result.members.length,
-        plan: result.plan,
-        seatsUsed: result.seatsUsed,
-      },
-      credit: null,
-    },
-  };
-}
-
 export async function executeSyncForAdmin(
   adminId: string,
   familyType: string,
@@ -226,7 +135,9 @@ export async function executeSyncForAdmin(
   );
   if (!admin) return { status: 404, body: { error: "Not found" } };
 
-  if (familyType === "gpt") return syncGpt(admin);
+  if (!["ultra", "pro", "youtube"].includes(familyType)) {
+    return { status: 400, body: { error: "Unsupported account type" } };
+  }
   if (familyType === "youtube" || familyType === "pro") return syncGoogle(admin, true);
   return syncGoogle(admin, false);
 }

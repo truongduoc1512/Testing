@@ -106,7 +106,7 @@ export default function MemberDetailModal({
 
   const isManager = member.role.includes("MANAGER");
   const isInvited = member.status === "invited";
-  const canRemove = !isManager && !isInvited && familyType !== "gpt";
+  const canRemove = !isManager && !isInvited;
   const joinedAtDisplay = member.joinedAt ?? member.startDate;
 
   const daysLeft = endDate ? daysUntil(endDate) : null;

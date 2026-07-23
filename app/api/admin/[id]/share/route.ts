@@ -28,7 +28,7 @@ export async function GET(
       where: { id: adminId, createdBy: session.sub },
     });
     if (!admin) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if ((admin.familyType || "ultra") === "gpt") {
+    if (!["ultra", "pro", "youtube"].includes(admin.familyType || "ultra")) {
       return NextResponse.json(
         { error: "This endpoint is only for Google family types." },
         { status: 400 },
@@ -86,7 +86,7 @@ export async function POST(
       where: { id: adminId, createdBy: session.sub },
     });
     if (!admin) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if ((admin.familyType || "ultra") === "gpt") {
+    if (!["ultra", "pro", "youtube"].includes(admin.familyType || "ultra")) {
       return NextResponse.json(
         { error: "This endpoint is only for Google family types." },
         { status: 400 },
