@@ -407,7 +407,28 @@ Tham khảo chi tiết tại file [`.env.example`](./.env.example):
    ```
    *Mở trình duyệt truy cập `http://localhost:3000`. Hệ thống sẽ tự động chuyển hướng bạn đến màn hình đăng nhập `/login`.*
 
+#### Hướng dẫn khởi chạy nhanh bằng Docker Compose
+
+Nếu bạn muốn chạy toàn bộ ứng dụng và cơ sở dữ liệu MongoDB một cách khép kín mà không cần cài đặt MongoDB hay Chromium cục bộ:
+
+1. **Chuẩn bị file cấu hình:**
+   Đảm bảo các giá trị biến môi trường trong file `docker-compose.yml` (như `JWT_SECRET`, `CACHE_SECRET`, `ACCOUNT_EMAIL`, `ACCOUNT_PASSWORD`) đã được cấu hình theo ý bạn.
+
+2. **Khởi chạy Docker Compose:**
+   Chạy lệnh sau tại thư mục gốc của dự án:
+   ```bash
+   docker compose up --build
+   ```
+
+3. **Luồng khởi chạy tự động:**
+   - Container `vieshop-mongodb` sẽ khởi động và bật chế độ Replica Set.
+   - Container `vieshop-mongodb-rs-init` sẽ khởi tạo cấu hình Replica Set và thoát sau khi hoàn thành.
+   - Container `vieshop-web` cài đặt Chromium tương thích, chạy Prisma generator, build ứng dụng và kết nối đến database.
+   - Mở trình duyệt và truy cập: **`http://localhost:3000`**.
+   - Tài khoản đăng nhập mặc định: `admin@vieshop.com` / `your-secure-password`.
+
 #### Các lệnh NPM hữu ích
+
 
 | Lệnh | Ý nghĩa |
 | :--- | :--- |

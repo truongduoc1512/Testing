@@ -7,6 +7,7 @@ import { parseZodErrors } from "@/lib/validation/parseErrors";
 import { apiError } from "@/lib/logger";
 import { buildRateLimitKey, memberMutationLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { adminPublicIdFromInternal } from "@/lib/admin-access";
 
 const FAMILY_TYPES = ["ultra", "pro", "youtube", "gpt"] as const;
 
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
       {
         message: "Admin account added",
         admin: {
+          id: adminPublicIdFromInternal(admin.id),
           email: admin.email,
           displayName: admin.displayName,
           monthlyCredit: admin.monthlyCredit,

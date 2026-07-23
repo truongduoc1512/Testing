@@ -24,3 +24,4 @@ logs/
 backups/
 deploy.txt
 agent.md
+mongo_data/

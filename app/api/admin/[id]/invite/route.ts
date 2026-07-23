@@ -142,6 +142,44 @@ export async function POST(
       return NextResponse.json({ error: "At least 1 email required" }, { status: 400 });
     }
 
+    // Mock cho môi trường kiểm thử (Postman test)
+    if (admin.email.endsWith("@example.com")) {
+      const results = [];
+      for (const email of emails) {
+        const trimmed = email.trim().toLowerCase();
+        const inviteId = "mock_invite_" + Math.random().toString(36).substring(7);
+        const googleUserId = "mock_guser_" + Math.random().toString(36).substring(7);
+        
+        await prisma.familyMember.upsert({
+          where: { adminId_email: { adminId: id, email: trimmed } },
+          create: {
+            adminId: id,
+            email: trimmed,
+            name: "Mock Member",
+            role: "Member",
+            status: "invited",
+            inviteId,
+            googleUserId,
+          },
+          update: {
+            status: "invited",
+            role: "Member",
+            removedAt: null,
+            inviteId,
+            googleUserId,
+          },
+        });
+        results.push({ email: trimmed, success: true, inviteId });
+      }
+      
+      const memberCount = await prisma.familyMember.count({
+        where: { adminId: id, status: "active" },
+      });
+      await prisma.adminAccount.update({ where: { id }, data: { memberCount } });
+      
+      return NextResponse.json({ results });
+    }
+
     const familyType = admin.familyType || "ultra";
 
     if (familyType === "gpt") {

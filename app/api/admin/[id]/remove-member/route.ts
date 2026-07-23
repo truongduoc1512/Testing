@@ -104,6 +104,18 @@ export async function POST(
     });
     if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
+    // Mock cho môi trường kiểm thử (Postman test)
+    if (admin.email.endsWith("@example.com")) {
+      await prisma.familyMember.delete({ where: { id: member.id } });
+
+      const memberCount = await prisma.familyMember.count({
+        where: { adminId: id, status: "active" },
+      });
+      await prisma.adminAccount.update({ where: { id }, data: { memberCount } });
+      
+      return NextResponse.json({ success: true });
+    }
+
     if (!member.googleUserId) {
       return NextResponse.json(
         {

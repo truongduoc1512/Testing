@@ -1,0 +1,64 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: vieshop-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongodb-rs-init:
+    image: mongo:6.0
+    container_name: vieshop-mongodb-rs-init
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    entrypoint:
+      - mongosh
+      - --host
+      - mongodb:27017
+      - --eval
+      - |
+        try {
+          if (rs.status().ok) {
+            console.log("Replica Set already initialized");
+          }
+        } catch (e) {
+          rs.initiate({
+            _id: "rs0",
+            members: [{ _id: 0, host: "mongodb:27017" }]
+          });
+          console.log("Replica Set initialized successfully");
+        }
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vieshop-app:latest
+    container_name: vieshop-web
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mongodb-rs-init:
+        condition: service_completed_successfully
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CACHE_SECRET=${CACHE_SECRET}
+      - ACCOUNT_EMAIL=${ACCOUNT_EMAIL}
+      - ACCOUNT_PASSWORD=${ACCOUNT_PASSWORD}
+      - CHROME_EXECUTABLE_PATH=${CHROME_EXECUTABLE_PATH}
+      - PORT=${PORT}
+    restart: always
+
+volumes:
+  mongo_data:
