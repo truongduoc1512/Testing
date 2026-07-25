@@ -57,19 +57,21 @@ public class AdminController {
    // GET: Show Login Page
    @RequestMapping(value = { "/admin/login" }, method = RequestMethod.GET)
    public String login(Model model) {
- 
       return "login";
    }
  
    @RequestMapping(value = { "/admin/accountInfo" }, method = RequestMethod.GET)
    public String accountInfo(Model model) {
- 
       UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-      System.out.println(userDetails.getPassword());
-      System.out.println(userDetails.getUsername());
-      System.out.println(userDetails.isEnabled());
+      String username = userDetails.getUsername();
+      String role = userDetails.getAuthorities().stream()
+              .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+              .filter(r -> r.equals("ROLE_ADMIN") || r.equals("ROLE_USER"))
+              .findFirst().orElse("");
  
       model.addAttribute("userDetails", userDetails);
+      model.addAttribute("totalOrders", orderDAO.getTotalOrdersCount(username, role));
+      model.addAttribute("totalRevenue", orderDAO.getTotalRevenue(username, role));
       return "accountInfo";
    }
  
@@ -84,8 +86,15 @@ public class AdminController {
       final int MAX_RESULT = 5;
       final int MAX_NAVIGATION_PAGE = 10;
  
+      org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+      String username = auth.getName();
+      String role = auth.getAuthorities().stream()
+              .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+              .filter(r -> r.equals("ROLE_ADMIN") || r.equals("ROLE_USER"))
+              .findFirst().orElse("");
+
       PaginationResult<OrderInfo> paginationResult //
-            = orderDAO.listOrderInfo(page, MAX_RESULT, MAX_NAVIGATION_PAGE);
+            = orderDAO.listOrderInfo(page, MAX_RESULT, MAX_NAVIGATION_PAGE, username, role);
  
       model.addAttribute("paginationResult", paginationResult);
       return "orderList";
@@ -93,12 +102,18 @@ public class AdminController {
  
    // GET: Show product.
    @RequestMapping(value = { "/admin/product" }, method = RequestMethod.GET)
-   public String product(Model model, @RequestParam(value = "code", defaultValue = "") String code) {
+   public String product(Model model, @RequestParam(value = "code", defaultValue = "") String code,
+         final RedirectAttributes redirectAttributes) {
       ProductForm productForm = null;
  
       if (code != null && code.length() > 0) {
          Product product = productDAO.findProduct(code);
          if (product != null) {
+            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+            if (!product.getOwnerUsername().equals(currentUsername)) {
+               redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm của người khác!");
+               return "redirect:/productList";
+            }
             productForm = new ProductForm(product);
          }
       }
@@ -122,6 +137,7 @@ public class AdminController {
       }
       try {
          productDAO.save(productForm);
+         redirectAttributes.addFlashAttribute("message", "Lưu sản phẩm thành công!");
       } catch (Exception e) {
          Throwable rootCause = ExceptionUtils.getRootCause(e);
          String message = rootCause.getMessage();
@@ -142,12 +158,82 @@ public class AdminController {
       if (orderInfo == null) {
          return "redirect:/admin/orderList";
       }
+
+      org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+      String username = auth.getName();
+      boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+      boolean isUser = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_USER"));
+      
+      if (isUser) {
+          // Buyer can only view their own orders
+          com.example.demo.entity.Order orderEntity = orderDAO.findOrder(orderId);
+          if (orderEntity == null || !username.equals(orderEntity.getCustomerUsername())) {
+              return "redirect:/admin/orderList";
+          }
+      } else if (isAdmin) {
+          // Seller should only view if order contains at least one of their products
+          boolean ownsAny = orderDAO.listOrderDetailInfos(orderId).stream()
+                  .anyMatch(d -> {
+                      Product p = productDAO.findProduct(d.getProductCode());
+                      return p != null && username.equals(p.getOwnerUsername());
+                  });
+          if (!ownsAny) {
+              return "redirect:/admin/orderList";
+          }
+      }
+
       List<OrderDetailInfo> details = this.orderDAO.listOrderDetailInfos(orderId);
       orderInfo.setDetails(details);
  
       model.addAttribute("orderInfo", orderInfo);
  
       return "order";
+   }
+ 
+   // GET: Delete product
+   @RequestMapping(value = { "/admin/deleteProduct" }, method = RequestMethod.GET)
+   public String deleteProduct(Model model, @RequestParam(value = "code", defaultValue = "") String code,
+         final RedirectAttributes redirectAttributes) {
+      if (code != null && code.length() > 0) {
+         try {
+            Product product = productDAO.findProduct(code);
+            if (product != null) {
+               String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+               if (!product.getOwnerUsername().equals(currentUsername)) {
+                  redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền xóa sản phẩm của người khác!");
+                  return "redirect:/productList";
+               }
+            }
+            productDAO.deleteProduct(code);
+            redirectAttributes.addFlashAttribute("message", "Xóa sản phẩm thành công!");
+         } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể xóa sản phẩm: " + e.getMessage());
+         }
+      }
+      return "redirect:/productList";
+   }
+ 
+   // POST: Update order status
+   @RequestMapping(value = { "/admin/order/updateStatus" }, method = RequestMethod.POST)
+   public String updateOrderStatus(Model model, 
+         @RequestParam("orderId") String orderId,
+         @RequestParam("status") String status,
+         final RedirectAttributes redirectAttributes) {
+      org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+      boolean isAdmin = auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+      if (!isAdmin) {
+         return "redirect:/403";
+      }
+
+      if (orderId != null && status != null) {
+         try {
+            orderDAO.updateOrderStatus(orderId, status);
+            redirectAttributes.addFlashAttribute("message", "Cập nhật trạng thái đơn hàng thành công!");
+         } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Cập nhật trạng thái thất bại: " + e.getMessage());
+         }
+      }
+      return "redirect:/admin/order?orderId=" + orderId;
    }
  
 }

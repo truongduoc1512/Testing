@@ -40,6 +40,12 @@ public class Order implements Serializable {
  
     @Column(name = "Customer_Phone", length = 128, nullable = false)
     private String customerPhone;
+
+    @Column(name = "STATUS", length = 50, nullable = false)
+    private String status = "PENDING";
+
+    @Column(name = "CUSTOMER_USERNAME", length = 20, nullable = true)
+    private String customerUsername;
  
     public String getId() {
         return id;
@@ -104,5 +110,21 @@ public class Order implements Serializable {
     public void setCustomerPhone(String customerPhone) {
         this.customerPhone = customerPhone;
     }
- 
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getCustomerUsername() {
+        return customerUsername;
+    }
+
+    public void setCustomerUsername(String customerUsername) {
+        this.customerUsername = customerUsername;
+    }
+
 }

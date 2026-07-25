@@ -1,20 +1,57 @@
 version: '3.8'
 
 services:
-  # 1. Ứng dụng Backend
+  # 1. Cơ sở dữ liệu MySQL (Chạy Local)
+  shoeshop-mysql:
+    image: mysql:8.0
+    container_name: shoeshop-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: truonghoaiduoc5
+      MYSQL_DATABASE: shoe_shopdb
+    ports:
+      - "3307:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    # Quan trọng: Đợi MySQL khởi tạo xong hoàn toàn
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shoeshop-net
+
+  # 2. Khối AI Microservice
+  ai-service:
+    build: 
+      context: ./ai-service
+    container_name: shoeshop-ai
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - shoeshop-net
+
+  # 3. Ứng dụng Backend (Java Spring Boot)
   shoeshop-backend:
     build: .
     container_name: shoeshop-api
     restart: always
     environment:
-      # TRỎ THẲNG LÊN MÁY CHỦ AWS RDS
-      - SPRING_DATASOURCE_URL=${DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      # Trỏ vào container shoeshop-mysql ở trên
+      - SPRING_DATASOURCE_URL=jdbc:mysql://shoeshop-mysql:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=truonghoaiduoc5
+      - AI_SERVICE_URL=http://ai-service:8000
     networks:
       - shoeshop-net
+    depends_on:
+      shoeshop-mysql:
+        condition: service_healthy # Spring chỉ chạy khi DB đã "healthy"
+      ai-service:
+        condition: service_started
 
-  # 2. Nginx
+  # 4. Nginx
   nginx-proxy:
     image: nginx:alpine
     container_name: shoeshop-nginx

@@ -16,6 +16,7 @@ public class OrderInfo {
     private String customerPhone;
  
     private List<OrderDetailInfo> details;
+    private String status;
  
     public OrderInfo() {
  
@@ -24,7 +25,7 @@ public class OrderInfo {
     // Using for Hibernate Query.
     public OrderInfo(String id, Date orderDate, int orderNum, //
             double amount, String customerName, String customerAddress, //
-            String customerEmail, String customerPhone) {
+            String customerEmail, String customerPhone, String status) {
         this.id = id;
         this.orderDate = orderDate;
         this.orderNum = orderNum;
@@ -34,6 +35,7 @@ public class OrderInfo {
         this.customerAddress = customerAddress;
         this.customerEmail = customerEmail;
         this.customerPhone = customerPhone;
+        this.status = status;
     }
  
     public String getId() {
@@ -106,6 +108,14 @@ public class OrderInfo {
  
     public void setDetails(List<OrderDetailInfo> details) {
         this.details = details;
+    }
+ 
+    public String getStatus() {
+        return status;
+    }
+ 
+    public void setStatus(String status) {
+        this.status = status;
     }
  
 }

@@ -13,6 +13,7 @@ public class ProductForm {
  
     // Upload file.
     private MultipartFile fileData;
+    private int discountPercent;
  
     public ProductForm() {
         this.newProduct= true;
@@ -22,6 +23,7 @@ public class ProductForm {
         this.code = product.getCode();
         this.name = product.getName();
         this.price = product.getPrice();
+        this.discountPercent = product.getDiscountPercent();
     }
  
     public String getCode() {
@@ -62,6 +64,14 @@ public class ProductForm {
  
     public void setNewProduct(boolean newProduct) {
         this.newProduct = newProduct;
+    }
+
+    public int getDiscountPercent() {
+        return discountPercent;
+    }
+
+    public void setDiscountPercent(int discountPercent) {
+        this.discountPercent = discountPercent;
     }
  
 }

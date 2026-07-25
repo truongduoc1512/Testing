@@ -5,8 +5,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-// ... các import cũ giữ nguyên
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,6 +28,7 @@ import com.example.demo.dao.ProductDAO;
 import com.example.demo.entity.Product;
 import com.example.demo.form.CustomerForm;
 import com.example.demo.model.CartInfo;
+import com.example.demo.model.CartLineInfo;
 import com.example.demo.model.CustomerInfo;
 import com.example.demo.model.ProductInfo;
 import com.example.demo.pagination.PaginationResult;
@@ -87,16 +86,43 @@ public class MainController {
  
    // Product List
    @RequestMapping({ "/productList" })
-   public String listProductHandler(Model model, //
+   public String listProductHandler(HttpServletRequest request, Model model, //
          @RequestParam(value = "name", defaultValue = "") String likeName,
-         @RequestParam(value = "page", defaultValue = "1") int page) {
-      final int maxResult = 8;
-      final int maxNavigationPage = 10;
+         @RequestParam(value = "page", defaultValue = "1") int page,
+         @RequestParam(value = "sort", defaultValue = "newest") String sort,
+         @RequestParam(value = "minPrice", required = false) Double minPrice,
+         @RequestParam(value = "maxPrice", required = false) Double maxPrice,
+         @RequestParam(value = "location", required = false) String location,
+         @RequestParam(value = "brand", required = false) String brand,
+         @RequestParam(value = "isMall", required = false) Boolean isMall,
+         @RequestParam(value = "isFavored", required = false) Boolean isFavored,
+         @RequestParam(value = "rating", required = false) Integer rating) {
+      int maxResult = 12;
+      int maxNavigationPage = 10;
  
-      PaginationResult<ProductInfo> result = productDAO.queryProducts(page, //
-            maxResult, maxNavigationPage, likeName);
+      String ownerUsername = null;
+      org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+      if (auth != null && auth.isAuthenticated() && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)) {
+          boolean isManager = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+          if (isManager) {
+              ownerUsername = auth.getName();
+          }
+      }
+ 
+      PaginationResult<ProductInfo> result = productDAO.queryProducts(page, 
+            maxResult, maxNavigationPage, likeName, ownerUsername, sort, minPrice, maxPrice, 
+            location, brand, isMall, isFavored, rating);
  
       model.addAttribute("paginationProducts", result);
+      model.addAttribute("likeName", likeName);
+      model.addAttribute("sort", sort);
+      model.addAttribute("minPrice", minPrice);
+      model.addAttribute("maxPrice", maxPrice);
+      model.addAttribute("location", location);
+      model.addAttribute("brand", brand);
+      model.addAttribute("isMall", isMall);
+      model.addAttribute("isFavored", isFavored);
+      model.addAttribute("rating", rating);
       return "productList";
    }
  
@@ -119,6 +145,25 @@ public class MainController {
       }
  
       return "redirect:/shoppingCart";
+   }
+
+   @RequestMapping({ "/addToCart" })
+   public String addToCartHandler(HttpServletRequest request, Model model, //
+         @RequestParam(value = "code", defaultValue = "") String code,
+         final org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+ 
+      Product product = null;
+      if (code != null && code.length() > 0) {
+         product = productDAO.findProduct(code);
+      }
+      if (product != null) {
+         CartInfo cartInfo = Utils.getCartInSession(request);
+         ProductInfo productInfo = new ProductInfo(product);
+         cartInfo.addProduct(productInfo, 1);
+         redirectAttributes.addFlashAttribute("message", "Đã thêm sản phẩm \"" + product.getName() + "\" vào giỏ hàng!");
+      }
+ 
+      return "redirect:/productList";
    }
  
    @RequestMapping({ "/shoppingCartRemoveProduct" })
@@ -153,16 +198,23 @@ public class MainController {
       return "redirect:/shoppingCart";
    }
  
-   // GET: Show cart.
-   @RequestMapping(value = { "/shoppingCart" }, method = RequestMethod.GET)
-   public String shoppingCartHandler(HttpServletRequest request, Model model) {
-      CartInfo myCart = Utils.getCartInSession(request);
-      CartInfo cartInfo = Utils.getCartInSession(request);
+    // GET: Show cart.
+    @RequestMapping(value = { "/shoppingCart" }, method = RequestMethod.GET)
+    public String shoppingCartHandler(HttpServletRequest request, Model model) {
+       CartInfo myCart = Utils.getCartInSession(request);
+       CartInfo cartInfo = Utils.getCartInSession(request);
  
-      model.addAttribute("cartForm", myCart);
-      model.addAttribute("myCart", cartInfo);
-      return "shoppingCart";
-   }
+       model.addAttribute("cartForm", myCart);
+       model.addAttribute("myCart", cartInfo);
+       
+       // Query 4 recommended products for the "You May Also Like" section
+       PaginationResult<ProductInfo> recommendedProducts = productDAO.queryProducts(1, 4, 5, null, null, null, null, null, null, null, null, null, null);
+       if (recommendedProducts != null) {
+          model.addAttribute("recommendedProducts", recommendedProducts.getList());
+       }
+       
+       return "shoppingCart";
+    }
  
    // GET: Enter customer information.
    @RequestMapping(value = { "/shoppingCartCustomer" }, method = RequestMethod.GET)
@@ -238,7 +290,7 @@ public class MainController {
       try {
          orderDAO.saveOrder(cartInfo);
       } catch (Exception e) {
- 
+         e.printStackTrace();
          return "shoppingCartConfirmation";
       }
  
@@ -263,7 +315,55 @@ public class MainController {
       return "shoppingCartFinalize";
    }
  
-   @RequestMapping(value = { "/productImage" }, method = RequestMethod.GET)
+    @ResponseBody
+    @RequestMapping(value = { "/api/updateCartQuantity" }, method = RequestMethod.POST)
+    public java.util.Map<String, Object> updateCartQuantityAjax(HttpServletRequest request,
+            @RequestParam("code") String code,
+            @RequestParam("quantity") int quantity) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        CartInfo cartInfo = Utils.getCartInSession(request);
+        Product product = productDAO.findProduct(code);
+        if (product != null) {
+            cartInfo.updateProduct(code, quantity);
+            double lineAmount = 0;
+            for (CartLineInfo line : cartInfo.getCartLines()) {
+                if (line.getProductInfo().getCode().equals(code)) {
+                    lineAmount = line.getAmount();
+                    break;
+                }
+            }
+            response.put("success", true);
+            response.put("lineAmount", lineAmount);
+            response.put("quantityTotal", cartInfo.getQuantityTotal());
+            response.put("amountTotal", cartInfo.getAmountTotal());
+        } else {
+            response.put("success", false);
+            response.put("message", "Sản phẩm không tồn tại!");
+        }
+        return response;
+    }
+
+    @ResponseBody
+    @RequestMapping(value = { "/api/removeCartProduct" }, method = RequestMethod.POST)
+    public java.util.Map<String, Object> removeCartProductAjax(HttpServletRequest request,
+            @RequestParam("code") String code) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        CartInfo cartInfo = Utils.getCartInSession(request);
+        Product product = productDAO.findProduct(code);
+        if (product != null) {
+            ProductInfo productInfo = new ProductInfo(product);
+            cartInfo.removeProduct(productInfo);
+            response.put("success", true);
+            response.put("quantityTotal", cartInfo.getQuantityTotal());
+            response.put("amountTotal", cartInfo.getAmountTotal());
+        } else {
+            response.put("success", false);
+            response.put("message", "Sản phẩm không tồn tại!");
+        }
+        return response;
+    }
+
+    @RequestMapping(value = { "/productImage" }, method = RequestMethod.GET)
    public void productImage(HttpServletRequest request, HttpServletResponse response, Model model,
          @RequestParam("code") String code) throws IOException {
       Product product = null;

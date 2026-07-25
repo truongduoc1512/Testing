@@ -6,6 +6,14 @@ public class ProductInfo {
     private String code;
     private String name;
     private double price;
+    private double originalPrice;
+    private int discountPercent;
+    private int salesCount;
+    private String location;
+    private String brand;
+    private int rating;
+    private boolean isMall;
+    private boolean isFavored;
  
     public ProductInfo() {
     }
@@ -13,14 +21,38 @@ public class ProductInfo {
     public ProductInfo(Product product) {
         this.code = product.getCode();
         this.name = product.getName();
-        this.price = product.getPrice();
+        this.originalPrice = product.getPrice();
+        this.discountPercent = product.getDiscountPercent();
+        this.price = product.getPrice() * (100 - product.getDiscountPercent()) / 100.0;
+        this.salesCount = product.getSalesCount();
+        this.location = product.getLocation();
+        this.brand = product.getBrand();
+        this.rating = product.getRating();
+        this.isMall = product.isMall();
+        this.isFavored = product.isFavored();
     }
  
     // Using in JPA/Hibernate query
     public ProductInfo(String code, String name, double price) {
         this.code = code;
         this.name = name;
+        this.originalPrice = price;
         this.price = price;
+    }
+ 
+    public ProductInfo(String code, String name, double price, int discountPercent, int salesCount, 
+                       String location, String brand, int rating, boolean isMall, boolean isFavored) {
+        this.code = code;
+        this.name = name;
+        this.originalPrice = price;
+        this.discountPercent = discountPercent;
+        this.price = price * (100 - discountPercent) / 100.0;
+        this.salesCount = salesCount;
+        this.location = location;
+        this.brand = brand;
+        this.rating = rating;
+        this.isMall = isMall;
+        this.isFavored = isFavored;
     }
  
     public String getCode() {
@@ -46,5 +78,77 @@ public class ProductInfo {
     public void setPrice(double price) {
         this.price = price;
     }
- 
+
+    public int getDiscountPercent() {
+        return discountPercent;
+    }
+
+    public void setDiscountPercent(int discountPercent) {
+        this.discountPercent = discountPercent;
+    }
+
+    public int getSalesCount() {
+        return salesCount;
+    }
+
+    public void setSalesCount(int salesCount) {
+        this.salesCount = salesCount;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public void setRating(int rating) {
+        this.rating = rating;
+    }
+
+    public boolean isMall() {
+        return isMall;
+    }
+
+    public boolean getIsMall() {
+        return isMall;
+    }
+
+    public void setMall(boolean mall) {
+        isMall = mall;
+    }
+
+    public boolean isFavored() {
+        return isFavored;
+    }
+
+    public boolean getIsFavored() {
+        return isFavored;
+    }
+
+    public void setFavored(boolean favored) {
+        isFavored = favored;
+    }
+
+    public double getOriginalPrice() {
+        return originalPrice;
+    }
+
+    public void setOriginalPrice(double originalPrice) {
+        this.originalPrice = originalPrice;
+    }
+
 }

@@ -29,11 +29,11 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `Accounts` (
-  `USER_NAME` varchar(20) COLLATE latin1_general_ci NOT NULL,
+  `USER_NAME` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `ACTIVE` bit(1) NOT NULL,
-  `ENCRYTED_PASSWORD` varchar(128) COLLATE latin1_general_ci NOT NULL,
-  `USER_ROLE` varchar(20) COLLATE latin1_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+  `ENCRYTED_PASSWORD` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `USER_ROLE` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `accounts`
@@ -50,15 +50,15 @@ INSERT INTO `Accounts` (`USER_NAME`, `ACTIVE`, `ENCRYTED_PASSWORD`, `USER_ROLE`)
 --
 
 CREATE TABLE `Orders` (
-  `ID` varchar(50) COLLATE latin1_general_ci NOT NULL,
+  `ID` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `AMOUNT` double NOT NULL,
-  `CUSTOMER_ADDRESS` varchar(255) COLLATE latin1_general_ci NOT NULL,
-  `CUSTOMER_EMAIL` varchar(128) COLLATE latin1_general_ci NOT NULL,
-  `CUSTOMER_NAME` varchar(255) COLLATE latin1_general_ci NOT NULL,
-  `CUSTOMER_PHONE` varchar(128) COLLATE latin1_general_ci NOT NULL,
+  `CUSTOMER_ADDRESS` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `CUSTOMER_EMAIL` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `CUSTOMER_NAME` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `CUSTOMER_PHONE` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
   `ORDER_DATE` datetime NOT NULL,
   `ORDER_NUM` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `orders`
@@ -74,13 +74,13 @@ INSERT INTO `Orders` (`ID`, `AMOUNT`, `CUSTOMER_ADDRESS`, `CUSTOMER_EMAIL`, `CUS
 --
 
 CREATE TABLE `Order_details` (
-  `ID` varchar(50) COLLATE latin1_general_ci NOT NULL,
+  `ID` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `AMOUNT` double NOT NULL,
   `PRICE` double NOT NULL,
   `QUANITY` int(11) NOT NULL,
-  `ORDER_ID` varchar(50) COLLATE latin1_general_ci NOT NULL,
-  `PRODUCT_ID` varchar(20) COLLATE latin1_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+  `ORDER_ID` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `PRODUCT_ID` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `order_details`
@@ -97,12 +97,12 @@ INSERT INTO `Order_details` (`ID`, `AMOUNT`, `PRICE`, `QUANITY`, `ORDER_ID`, `PR
 --
 
 CREATE TABLE `Products` (
-  `CODE` varchar(20) COLLATE latin1_general_ci NOT NULL,
+  `CODE` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `IMAGE` longblob,
-  `NAME` varchar(255) COLLATE latin1_general_ci NOT NULL,
+  `NAME` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `PRICE` double NOT NULL,
   `CREATE_DATE` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `products`

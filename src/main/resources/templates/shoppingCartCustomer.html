@@ -2,64 +2,359 @@
 <html xmlns:th="http://www.thymeleaf.org">
    <head>
       <meta charset="UTF-8">
-      <title>Shoe Shop Online</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>ShoeShop — Thông tin khách hàng</title>
       <link rel="stylesheet" type="text/css" th:href="@{/style.css}" />
       <th:block th:include="_header"></th:block>
+      
+      <!-- Scoped styling for Customer Info checkout page -->
+      <style>
+         :root {
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            
+            --color-bg:             #F8FAFC;
+            --color-card:           #FFFFFF;
+            --color-primary:        #2563EB;
+            --color-primary-hover:  #1D4ED8;
+            --color-border:         #E5E7EB;
+            --color-text:           #111827;
+            --color-text-secondary: #4B5563;
+            --color-danger:         #DC2626;
+            --color-danger-light:   #FEF2F2;
+            
+            --shadow-soft: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md:   0 4px 16px rgba(0,0,0,0.06);
+            --transition:  200ms ease-in-out;
+         }
+
+         body {
+            background-color: var(--color-bg);
+            font-family: var(--font-family);
+         }
+
+         .checkout-container {
+            max-width: 680px;
+            margin: 40px auto;
+            padding-left: 16px;
+            padding-right: 16px;
+         }
+
+         /* Checkout progress steps tracker */
+         .checkout-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            position: relative;
+         }
+         .checkout-steps::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--color-border);
+            z-index: 1;
+         }
+         .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+            text-decoration: none !important;
+         }
+         .step-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            color: #6B7280;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #E5E7EB;
+            transition: all var(--transition);
+         }
+         .step-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B7280;
+            margin-top: 8px;
+            transition: all var(--transition);
+         }
+         
+         /* Active & completed states */
+         .step-item.completed .step-badge {
+            background-color: #ECFDF5;
+            border-color: #10B981;
+            color: #10B981;
+         }
+         .step-item.completed .step-label {
+            color: #10B981;
+         }
+         .step-item.active .step-badge {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+         }
+         .step-item.active .step-label {
+            color: var(--color-primary);
+            font-weight: 700;
+         }
+
+         /* Form card */
+         .form-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 36px;
+            transition: box-shadow var(--transition);
+         }
+         .form-card:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+         }
+
+         .form-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 24px;
+            letter-spacing: -0.3px;
+            text-align: center;
+         }
+
+         .form-group {
+            margin-bottom: 20px;
+            position: relative;
+         }
+         .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            display: block;
+            text-align: left;
+         }
+
+         /* Interactive inputs with icons */
+         .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+         }
+         .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            color: #9CA3AF;
+            font-size: 14px;
+            transition: color var(--transition);
+            pointer-events: none;
+         }
+         .form-control {
+            background-color: #F9FAFB !important;
+            border: 1px solid #D1D5DB !important;
+            border-radius: 10px !important;
+            font-size: 13.5px !important;
+            padding-left: 42px !important;
+            padding-right: 16px !important;
+            height: 44px !important;
+            transition: all var(--transition) !important;
+            color: var(--color-text) !important;
+            width: 100%;
+         }
+         .form-control:focus {
+            background-color: #ffffff !important;
+            border-color: var(--color-primary) !important;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+         }
+         .form-control:focus + i {
+            color: var(--color-primary);
+         }
+
+         /* Specific text-area height & padding adjustment */
+         textarea.form-control {
+            height: 90px !important;
+            padding-top: 12px !important;
+            padding-left: 42px !important;
+         }
+         .textarea-icon {
+            top: 15px !important;
+         }
+
+         /* Error styling */
+         .error-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-danger);
+            background-color: var(--color-danger-light);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11.5px;
+            font-weight: 600;
+            margin-top: 8px;
+            border: 1px solid rgba(220, 38, 38, 0.1);
+            width: 100%;
+            text-align: left;
+         }
+
+         /* Buttons */
+         .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+         }
+         .btn-submit {
+            background-color: var(--color-primary) !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 10px !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            height: 44px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 2;
+            cursor: pointer;
+            transition: transform var(--transition), background-color var(--transition) !important;
+         }
+         .btn-submit:hover {
+            background-color: var(--color-primary-hover) !important;
+            transform: translateY(-1px);
+         }
+         .btn-submit:active {
+            transform: scale(0.98);
+         }
+         
+         .btn-reset {
+            background-color: transparent !important;
+            color: #6B7280 !important;
+            border: 1px solid #D1D5DB !important;
+            border-radius: 10px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            height: 44px !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            cursor: pointer;
+            transition: all var(--transition) !important;
+         }
+         .btn-reset:hover {
+            background-color: #F3F4F6 !important;
+            color: #374151 !important;
+            border-color: #9CA3AF !important;
+         }
+         .btn-reset:active {
+            transform: scale(0.98);
+         }
+
+         @media (max-width: 480px) {
+            .form-card {
+               padding: 24px 16px;
+            }
+         }
+      </style>
    </head>
    <body>
       
       <th:block th:include="_menu"></th:block>
        
-      <div class="container">
-      	<div class="row">
-      		<div class="col-lg-6 offset-3">
-       
-       <div class="bd-example">
-      <h3>Enter Customer Information</h3>
-       <form method="POST" th:object = "${customerForm}" th:action="@{/shoppingCartCustomer}">
-		  <div class="form-group">
-		    <label for="exampleInputEmail1">CustomerName</label>
-		    <input type="text" class="form-control" id="exampleInputEmail1" th:field="*{name}">
-		    <span class="error-message"
-                     th:if="${#fields.hasErrors('name')}" th:errors="*{name}">..</span>
-		  </div>
-		  
-		  <div class="form-group">
-		    <label for="exampleInputEmail1">Email</label>
-		    <input type="email" class="form-control" id="exampleInputEmail1" th:field="*{email}">
-		    <span class="error-message"
-                     th:if="${#fields.hasErrors('email')}" th:errors="*{email}">..</span>
-		  </div>
-		  
-		  <div class="form-group">
-		    <label for="exampleInputEmail1">Phone</label>
-		    <input type="text" class="form-control" id="exampleInputEmail1" th:field="*{phone}">
-		    <span class="error-message"
-                     th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}">..</span>
-		  </div>
-		  
-		  <div class="form-group">
-		    <label for="exampleInputPassword1">Address</label>
-		    <textarea th:field="*{address}" class="form-control"></textarea>
-		    <span class="error-message"
-                     th:if="${#fields.hasErrors('address')}" th:errors="*{address}">..</span>
-		    
-		  </div>
-		 
-		  <input type="submit" value="Submit" class="btn btn-primary"/> 
-		  <input type="reset" class="btn btn-outline-primary"
-                  value="Reset" />
-		</form>
+      <div class="checkout-container">
+         <!-- Steps breadcrumbs tracker -->
+         <div class="checkout-steps">
+            <a th:href="@{/shoppingCart}" class="step-item completed">
+               <span class="step-badge"><i class="fas fa-check"></i></span>
+               <span class="step-label">Giỏ hàng</span>
+            </a>
+            <div class="step-item active">
+               <span class="step-badge">2</span>
+               <span class="step-label">Thông tin giao hàng</span>
+            </div>
+            <div class="step-item">
+               <span class="step-badge">3</span>
+               <span class="step-label">Xác nhận</span>
+            </div>
+         </div>
 
-      
-      </div>
-       </div>
-      	</div>
+         <!-- Form Card -->
+         <div class="form-card">
+            <h3 class="form-title"><i class="fas fa-shipping-fast text-primary mr-2"></i>Thông tin nhận hàng</h3>
+            
+            <form method="POST" th:object="${customerForm}" th:action="@{/shoppingCartCustomer}">
+               
+               <!-- Customer Name -->
+               <div class="form-group">
+                  <label class="form-label" for="customerName">Họ tên người nhận</label>
+                  <div class="input-wrapper">
+                     <input type="text" class="form-control" id="customerName" th:field="*{name}" placeholder="Nhập đầy đủ họ và tên">
+                     <i class="fas fa-user"></i>
+                  </div>
+                  <div class="error-wrapper" th:if="${#fields.hasErrors('name')}">
+                     <i class="fas fa-exclamation-circle"></i>
+                     <span th:errors="*{name}">Vui lòng nhập tên</span>
+                  </div>
+               </div>
+               
+               <!-- Email -->
+               <div class="form-group">
+                  <label class="form-label" for="customerEmail">Địa chỉ Email</label>
+                  <div class="input-wrapper">
+                     <input type="email" class="form-control" id="customerEmail" th:field="*{email}" placeholder="example@domain.com">
+                     <i class="fas fa-envelope"></i>
+                  </div>
+                  <div class="error-wrapper" th:if="${#fields.hasErrors('email')}">
+                     <i class="fas fa-exclamation-circle"></i>
+                     <span th:errors="*{email}">Vui lòng nhập email hợp lệ</span>
+                  </div>
+               </div>
+               
+               <!-- Phone -->
+               <div class="form-group">
+                  <label class="form-label" for="customerPhone">Số điện thoại</label>
+                  <div class="input-wrapper">
+                     <input type="text" class="form-control" id="customerPhone" th:field="*{phone}" placeholder="Nhập số điện thoại liên hệ">
+                     <i class="fas fa-phone-alt"></i>
+                  </div>
+                  <div class="error-wrapper" th:if="${#fields.hasErrors('phone')}">
+                     <i class="fas fa-exclamation-circle"></i>
+                     <span th:errors="*{phone}">Vui lòng nhập số điện thoại</span>
+                  </div>
+               </div>
+               
+               <!-- Address -->
+               <div class="form-group">
+                  <label class="form-label" for="customerAddress">Địa chỉ nhận hàng</label>
+                  <div class="input-wrapper">
+                     <textarea id="customerAddress" th:field="*{address}" class="form-control" placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."></textarea>
+                     <i class="fas fa-map-marker-alt textarea-icon"></i>
+                  </div>
+                  <div class="error-wrapper" th:if="${#fields.hasErrors('address')}">
+                     <i class="fas fa-exclamation-circle"></i>
+                     <span th:errors="*{address}">Vui lòng nhập địa chỉ</span>
+                  </div>
+               </div>
+              
+               <!-- Action buttons -->
+               <div class="btn-row">
+                  <input type="reset" class="btn-reset" value="Nhập lại" />
+                  <input type="submit" class="btn-submit" value="Tiếp tục" />
+               </div>
+            </form>
+         </div>
       </div> 
       
-      <!-- ------------------------------container end---------------------------------- -->
-      
-       
       <th:block th:include="_footer"></th:block>
        
    </body>
