@@ -9,6 +9,7 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:integration-api": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

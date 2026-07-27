@@ -1,0 +1,135 @@
+{
+  "info": {
+    "name": "VieShop Integration API",
+    "description": "Integration tests for authentication, admin and member APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "activeAdminId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Login status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Login succeeds', () => pm.expect(pm.response.json().message).to.eql('Login successful'));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Admin Management",
+      "item": [
+        {
+          "name": "Create Mock Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{newAdminEmail}}\",\n  \"displayName\": \"{{newAdminName}}\",\n  \"googlePassword\": \"mock-password\",\n  \"familyType\": \"ultra\",\n  \"monthlyCredit\": 100,\n  \"storageTB\": 2\n}" },
+            "url": "{{baseUrl}}/api/admin"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Admin status is 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.expect(body.admin.id).to.be.a('string');",
+            "pm.environment.set('activeAdminId', body.admin.id);"
+          ] } }]
+        },
+        {
+          "name": "Get Admin",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/{{activeAdminId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Get admin status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Correct admin is returned', () => pm.expect(pm.response.json().id).to.eql(pm.environment.get('activeAdminId')));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Member Operations",
+      "item": [
+        {
+          "name": "Invite Member",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"emails\": [\"{{testMemberEmail}}\"]\n}" },
+            "url": "{{baseUrl}}/api/admin/{{activeAdminId}}/invite"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Invite status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Invite succeeds', () => pm.expect(pm.response.json().results[0].success).to.eql(true));"
+          ] } }]
+        },
+        {
+          "name": "List Members",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/{{activeAdminId}}/members" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('List status is 200', () => pm.response.to.have.status(200));",
+            "const member = pm.response.json().members.find(item => item.email === pm.environment.get('testMemberEmail'));",
+            "pm.test('Member exists', () => pm.expect(member).to.exist);"
+          ] } }]
+        },
+        {
+          "name": "Update Member",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"memberEmail\": \"{{testMemberEmail}}\",\n  \"startDate\": \"2026-07-27\",\n  \"endDate\": \"2026-08-27\",\n  \"renewed\": true\n}" },
+            "url": "{{baseUrl}}/api/admin/{{activeAdminId}}/members"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Update status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Member is renewed', () => pm.expect(pm.response.json().renewed).to.eql(true));"
+          ] } }]
+        },
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"memberEmail\": \"{{testMemberEmail}}\"\n}" },
+            "url": "{{baseUrl}}/api/admin/{{activeAdminId}}/remove-member"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Remove status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Remove succeeds', () => pm.expect(pm.response.json().success).to.eql(true));"
+          ] } }]
+        },
+        {
+          "name": "Reject Empty Invite",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"emails\": []\n}" },
+            "url": "{{baseUrl}}/api/admin/{{activeAdminId}}/invite"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Empty invite status is 400', () => pm.response.to.have.status(400));"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Clean Up",
+      "item": [
+        {
+          "name": "Delete Mock Admin",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/admin/{{activeAdminId}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Delete status is 200', () => pm.response.to.have.status(200));"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}

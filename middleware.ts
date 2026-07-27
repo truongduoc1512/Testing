@@ -71,9 +71,12 @@ export async function middleware(request: NextRequest) {
     return nextWithSecurityHeaders(request, nonce);
   }
 
-  const publicAuthPaths = ["/register", "/api/auth/register"];
-  if (publicAuthPaths.some((p) => pathname.startsWith(p))) {
-    return nextWithSecurityHeaders(request, nonce);
+  const blockedAuthPaths = ["/register", "/api/auth/register"];
+  if (blockedAuthPaths.some((p) => pathname.startsWith(p))) {
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Not Found" }, { status: 404 }),
+      nonce,
+    );
   }
 
   if (pathname.startsWith("/api")) {
