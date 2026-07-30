@@ -378,5 +378,5 @@ docker compose up -d --build
 - 🌐 **Website ShoeShop (Nginx Reverse Proxy):** `http://localhost`
 - ⚡ **Backend Spring Boot Trực tiếp:** `http://localhost:8080`
 - 📖 **Swagger UI API Documentation:** `http://localhost/swagger-ui.html` hoặc `http://localhost:8082`
-- 🗄️ **phpMyAdmin Quản trị Database:** `http://localhost:8081` (User: `root` / Pass: `truonghoaiduoc5`)
+- 🗄️ **phpMyAdmin Quản trị Database:** `http://localhost:8081` (User: `root` / Pass: cài đặt trong file `.env`)
 - 🤖 **Python AI FastAPI Service:** `http://localhost:8000/docs`

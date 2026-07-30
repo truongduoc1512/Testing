@@ -27,9 +27,9 @@ spec:
           image: mysql:8.0
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: "0949096416!" # Nhập mật khẩu khớp với file application.properties của bạn
+              value: "<YOUR_MYSQL_ROOT_PASSWORD>" # Nhập mật khẩu MySQL của bạn
             - name: MYSQL_DATABASE
-              value: "shoeshop_db" # Nhập tên database khớp với dự án của bạn
+              value: "shoeshop_db"
           ports:
             - containerPort: 3306
               name: mysql

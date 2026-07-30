@@ -10,6 +10,8 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "Accounts")
 public class Account implements Serializable {
@@ -27,6 +29,7 @@ public class Account implements Serializable {
     private String fullName;
  
     @Column(name = "Encryted_Password", length = 255, nullable = true)
+    @JsonIgnore
     private String encrytedPassword;
  
     @Column(name = "Email", length = 100, nullable = true)
@@ -51,6 +54,7 @@ public class Account implements Serializable {
     private String userRole = "ROLE_USER";
 
     @Column(name = "Reset_Token", length = 100, nullable = true)
+    @JsonIgnore
     private String resetToken;
 
     @Column(name = "Provider", length = 20, nullable = true)

@@ -7,7 +7,7 @@ services:
     container_name: shoeshop-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: truonghoaiduoc5
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-truonghoaiduoc5}
       MYSQL_DATABASE: shoe_shopdb
     ports:
       - "3307:3306"
@@ -39,10 +39,10 @@ services:
     restart: always
     environment:
       # Trỏ vào container shoeshop-mysql ở trên
-      - SPRING_DATASOURCE_URL=jdbc:mysql://shoeshop-mysql:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=truonghoaiduoc5
-      - AI_SERVICE_URL=http://ai-service:8000
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:mysql://shoeshop-mysql:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-root}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-${MYSQL_ROOT_PASSWORD:-truonghoaiduoc5}}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai-service:8000}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     networks:
@@ -76,7 +76,7 @@ services:
       - "8081:80"
     environment:
       PMA_HOST: shoeshop-mysql
-      MYSQL_ROOT_PASSWORD: truonghoaiduoc5
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-truonghoaiduoc5}
     depends_on:
       - shoeshop-mysql
     networks:

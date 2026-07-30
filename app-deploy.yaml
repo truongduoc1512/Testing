@@ -38,4 +38,4 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: "root"
             - name: SPRING_DATASOURCE_PASSWORD
-              value: "0949096416!" # Nhập ĐÚNG mật khẩu bạn đã đặt ở file mysql-db.yaml
+              value: "<YOUR_MYSQL_ROOT_PASSWORD>" # Nhập ĐÚNG mật khẩu bạn đã đặt ở file mysql-db.yaml
