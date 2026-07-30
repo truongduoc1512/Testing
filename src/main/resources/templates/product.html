@@ -453,6 +453,18 @@
                    </div>
                 </div>
 
+                <!-- Product Stock Quantity -->
+                <div class="form-item">
+                   <label class="form-label">Số lượng tồn kho (Stock Quantity)</label>
+                   <div class="input-wrapper">
+                      <span class="input-icon"><i class="fas fa-cubes"></i></span>
+                      <input type="number" th:field="*{stockQuantity}" placeholder="Nhập số lượng tồn kho (Ví dụ: 50)..." min="0" class="form-input" required />
+                   </div>
+                   <div class="error-msg-block" th:if="${#fields.hasErrors('stockQuantity')}">
+                      <i class="fas fa-exclamation-circle"></i> <span th:errors="*{stockQuantity}"></span>
+                   </div>
+                </div>
+
                <!-- Product Image Preview & Upload Zone -->
                <div class="form-item">
                   <label class="form-label">Hình ảnh sản phẩm (Product Image)</label>

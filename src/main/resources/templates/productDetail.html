@@ -476,8 +476,8 @@
                </div>
                <div class="meta-item">
                   <span class="meta-label">Tồn kho</span>
-                  <span class="meta-value" style="color: #059669;"
-                     th:text="${productInfo.stockQuantity} + ' sản phẩm sẵn có'">100 sẵn có</span>
+                  <span class="meta-value" th:style="${productInfo.stockQuantity > 0 ? 'color: #059669;' : 'color: #DC2626;'}"
+                     th:text="${productInfo.stockQuantity > 0 ? productInfo.stockQuantity + ' sản phẩm sẵn có' : 'Hết hàng (0)'}">100 sẵn có</span>
                </div>
                <div class="meta-item">
                   <span class="meta-label">Đã bán</span>
@@ -492,9 +492,12 @@
 
             <!-- Add to cart (Customers / Users only) -->
             <th:block sec:authorize="!hasAnyRole('ROLE_MANAGER', 'ROLE_ADMIN')">
-               <a th:href="@{|/buyProduct?code=${productInfo.code}|}" class="btn-buy-now">
+               <a th:if="${productInfo.stockQuantity > 0}" th:href="@{|/buyProduct?code=${productInfo.code}|}" class="btn-buy-now">
                   <i class="fas fa-cart-plus"></i> Thêm vào Giỏ Hàng
                </a>
+               <button th:if="${productInfo.stockQuantity <= 0}" disabled class="btn-buy-now" style="background-color: #94A3B8; cursor: not-allowed; opacity: 0.8; border: none;">
+                  <i class="fas fa-times-circle"></i> Sản Phẩm Hết Hàng
+               </button>
             </th:block>
 
             <!-- Notice for Manager / Admin -->

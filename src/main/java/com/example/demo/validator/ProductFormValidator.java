@@ -31,6 +31,10 @@ public class ProductFormValidator implements Validator {
       ValidationUtils.rejectIfEmptyOrWhitespace(errors, "name", "NotEmpty.productForm.name");
       ValidationUtils.rejectIfEmptyOrWhitespace(errors, "price", "NotEmpty.productForm.price");
  
+      if (productForm.getStockQuantity() < 0) {
+         errors.rejectValue("stockQuantity", "Min.productForm.stockQuantity", "Số lượng tồn kho không được âm!");
+      }
+
       String code = productForm.getCode();
       if (code != null && code.length() > 0) {
          if (code.matches("\\s+")) {

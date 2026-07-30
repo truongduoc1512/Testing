@@ -60,6 +60,7 @@ public class ProductDAO {
         product.setName(productForm.getName());
         product.setPrice(productForm.getPrice());
         product.setDiscountPercent(productForm.getDiscountPercent());
+        product.setStockQuantity(productForm.getStockQuantity());
  
         if (productForm.getFileData() != null) {
             try {
@@ -104,7 +105,7 @@ public class ProductDAO {
             String location, String brand, Boolean isMall, Boolean isFavored, Integer rating, String category) {
         
         String sql = "Select new " + ProductInfo.class.getName() //
-                + "(p.code, p.name, p.price, p.discountPercent, p.salesCount, p.location, p.brand, p.rating, p.isMall, p.isFavored) "
+                + "(p.code, p.name, p.price, p.discountPercent, p.salesCount, p.location, p.brand, p.rating, p.isMall, p.isFavored, p.reviewCount, p.stockQuantity) "
                 + " from " + Product.class.getName() + " p Where 1=1 ";
         
         boolean hasLikeName = likeName != null && likeName.length() > 0;

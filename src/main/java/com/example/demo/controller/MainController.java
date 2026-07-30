@@ -129,41 +129,45 @@ public class MainController {
       model.addAttribute("brand", brand);
       model.addAttribute("isMall", isMall);
       model.addAttribute("isFavored", isFavored);
-      model.addAttribute("rating", rating);
       return "productList";
    }
- 
+
    @RequestMapping({ "/buyProduct" })
    public String listProductHandler(HttpServletRequest request, Model model, //
-         @RequestParam(value = "code", defaultValue = "") String code) {
+         @RequestParam(value = "code", defaultValue = "") String code,
+         final RedirectAttributes redirectAttributes) {
  
       Product product = null;
       if (code != null && code.length() > 0) {
          product = productDAO.findProduct(code);
       }
       if (product != null) {
- 
-         //
+         if (product.getStockQuantity() <= 0) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Sản phẩm \"" + product.getName() + "\" hiện đã hết hàng trong kho!");
+            return "redirect:/productList";
+         }
          CartInfo cartInfo = Utils.getCartInSession(request);
- 
          ProductInfo productInfo = new ProductInfo(product);
- 
          cartInfo.addProduct(productInfo, 1);
       }
  
       return "redirect:/shoppingCart";
    }
-
+ 
    @RequestMapping({ "/addToCart" })
    public String addToCartHandler(HttpServletRequest request, Model model, //
          @RequestParam(value = "code", defaultValue = "") String code,
-         final org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+         final RedirectAttributes redirectAttributes) {
  
       Product product = null;
       if (code != null && code.length() > 0) {
          product = productDAO.findProduct(code);
       }
       if (product != null) {
+         if (product.getStockQuantity() <= 0) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Sản phẩm \"" + product.getName() + "\" hiện đã hết hàng trong kho!");
+            return "redirect:/productList";
+         }
          CartInfo cartInfo = Utils.getCartInSession(request);
          ProductInfo productInfo = new ProductInfo(product);
          cartInfo.addProduct(productInfo, 1);
@@ -331,7 +335,13 @@ public class MainController {
         CartInfo cartInfo = Utils.getCartInSession(request);
         Product product = productDAO.findProduct(code);
         if (product != null) {
-            cartInfo.updateProduct(code, quantity);
+            int actualQty = quantity;
+            boolean capped = false;
+            if (quantity > product.getStockQuantity()) {
+                actualQty = product.getStockQuantity();
+                capped = true;
+            }
+            cartInfo.updateProduct(code, actualQty);
             double lineAmount = 0;
             for (CartLineInfo line : cartInfo.getCartLines()) {
                 if (line.getProductInfo().getCode().equals(code)) {
@@ -343,6 +353,11 @@ public class MainController {
             response.put("lineAmount", lineAmount);
             response.put("quantityTotal", cartInfo.getQuantityTotal());
             response.put("amountTotal", cartInfo.getAmountTotal());
+            response.put("actualQuantity", actualQty);
+            response.put("capped", capped);
+            if (capped) {
+                response.put("message", "Chỉ còn " + product.getStockQuantity() + " sản phẩm trong kho!");
+            }
         } else {
             response.put("success", false);
             response.put("message", "Sản phẩm không tồn tại!");

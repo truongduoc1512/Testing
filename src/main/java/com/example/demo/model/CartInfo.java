@@ -54,6 +54,10 @@ public class CartInfo {
             this.cartLines.add(line);
         }
         int newQuantity = line.getQuantity() + quantity;
+        int maxStock = productInfo.getStockQuantity();
+        if (newQuantity > maxStock) {
+            newQuantity = maxStock;
+        }
         if (newQuantity <= 0) {
             this.cartLines.remove(line);
         } else {
@@ -69,6 +73,10 @@ public class CartInfo {
         CartLineInfo line = this.findLineByCode(code);
  
         if (line != null) {
+            int maxStock = line.getProductInfo().getStockQuantity();
+            if (quantity > maxStock) {
+                quantity = maxStock;
+            }
             if (quantity <= 0) {
                 this.cartLines.remove(line);
             } else {

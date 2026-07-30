@@ -1166,6 +1166,7 @@
                               </a>
                               
                               <a sec:authorize="hasRole('ROLE_CUSTOMER')" 
+                                 th:if="${prod.stockQuantity > 0}"
                                  th:href="@{|/addToCart?code=${prod.code}|}" 
                                  class="btn-quick-circle" 
                                  title="Thêm vào giỏ" 
@@ -1203,16 +1204,24 @@
                            </div>
 
                            <!-- Social Proof & Meta (Rating Box linked directly to #reviews) -->
-                           <div class="product-footer-meta">
+                           <div class="product-footer-meta" style="display: flex; align-items: center; justify-content: space-between;">
                               <a th:href="@{|/productDetail?code=${prod.code}#reviews|}" class="rating-box" title="Xem đánh giá sản phẩm" onclick="event.stopPropagation();">
                                  <i class="fas fa-star"></i>
                                  <span th:text="${#numbers.formatDecimal(prod.rating, 1, 1)}">5.0</span>
                                  <span class="text-muted ml-1" th:text="'(' + ${prod.reviewCount} + ')'">(0)</span>
                               </a>
                               
-                              <span class="sold-badge-text" th:text="${prod.salesCount > 0 ? (prod.salesCount > 1000 ? (prod.salesCount/1000 + 'k+ đã bán') : (prod.salesCount + ' đã bán')) : '0 đã bán'}">
-                                 56k+ đã bán
-                              </span>
+                              <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+                                 <span class="sold-badge-text" th:text="${prod.salesCount > 0 ? (prod.salesCount > 1000 ? (prod.salesCount/1000 + 'k+ đã bán') : (prod.salesCount + ' đã bán')) : '0 đã bán'}">
+                                    56k+ đã bán
+                                 </span>
+                                 <span th:if="${prod.stockQuantity > 0}" style="font-size: 11px; font-weight: 600; color: #059669; margin-top: 1px;" th:text="'Sản phẩm còn: ' + ${prod.stockQuantity}">
+                                    Sản phẩm còn: 50
+                                 </span>
+                                 <span th:if="${prod.stockQuantity <= 0}" style="font-size: 11px; font-weight: 700; color: #DC2626; margin-top: 1px;">
+                                    Hết hàng
+                                 </span>
+                              </div>
                            </div>
 
                            <!-- Explicit "Xem Chi Tiết" Button -->

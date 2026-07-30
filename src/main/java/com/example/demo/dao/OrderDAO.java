@@ -72,17 +72,27 @@ public class OrderDAO {
         List<CartLineInfo> lines = cartInfo.getCartLines();
  
         for (CartLineInfo line : lines) {
+            String code = line.getProductInfo().getCode();
+            Product product = this.productDAO.findProduct(code);
+            if (product == null || product.getStockQuantity() < line.getQuantity()) {
+                int available = (product != null) ? product.getStockQuantity() : 0;
+                String name = (product != null) ? product.getName() : code;
+                throw new RuntimeException("Sản phẩm '" + name + "' không đủ số lượng trong kho! (Chỉ còn " + available + " sản phẩm)");
+            }
+
+            // Deduct inventory & increase sales count
+            product.setStockQuantity(product.getStockQuantity() - line.getQuantity());
+            product.setSalesCount(product.getSalesCount() + line.getQuantity());
+            session.update(product);
+
             OrderDetail detail = new OrderDetail();
             detail.setId(UUID.randomUUID().toString());
             detail.setOrder(order);
             detail.setAmount(line.getAmount());
             detail.setPrice(line.getProductInfo().getPrice());
             detail.setQuanity(line.getQuantity());
- 
-            String code = line.getProductInfo().getCode();
-            Product product = this.productDAO.findProduct(code);
             detail.setProduct(product);
- 
+
             session.persist(detail);
         }
  

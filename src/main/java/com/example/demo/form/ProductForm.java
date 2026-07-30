@@ -14,6 +14,7 @@ public class ProductForm {
     // Upload file.
     private MultipartFile fileData;
     private int discountPercent;
+    private int stockQuantity = 100;
  
     public ProductForm() {
         this.newProduct= true;
@@ -24,6 +25,15 @@ public class ProductForm {
         this.name = product.getName();
         this.price = product.getPrice();
         this.discountPercent = product.getDiscountPercent();
+        this.stockQuantity = product.getStockQuantity();
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
     }
  
     public String getCode() {
