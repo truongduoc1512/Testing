@@ -82,6 +82,20 @@ services:
     networks:
       - shoeshop-net
 
+  # 6. Giao diện Swagger UI (API Documentation)
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: shoeshop-swagger
+    restart: always
+    ports:
+      - "8082:8080"
+    environment:
+      SWAGGER_JSON_URL: http://localhost/v3/api-docs
+    depends_on:
+      - shoeshop-backend
+    networks:
+      - shoeshop-net
+
 
 networks:
   shoeshop-net:

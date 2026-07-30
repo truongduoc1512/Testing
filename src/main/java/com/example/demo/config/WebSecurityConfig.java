@@ -37,7 +37,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
 
         // Public endpoints
-        http.authorizeRequests().antMatchers("/", "/productList", "/productImage", "/productDetail", "/product/review", "/register", "/forgotPassword", "/resetPassword", "/oauth2/**", "/login/oauth2/**").permitAll();
+        http.authorizeRequests().antMatchers("/", "/productList", "/productImage", "/productDetail", "/product/review", "/register", "/forgotPassword", "/resetPassword", "/oauth2/**", "/login/oauth2/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/v1/**").permitAll();
 
         // Requires login with role ROLE_USER or ROLE_ADMIN.
         http.authorizeRequests().antMatchers("/admin/orderList", "/admin/order", "/admin/accountInfo", "/admin/user/profile", "/product/review/edit", "/product/review/delete")

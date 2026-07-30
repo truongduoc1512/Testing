@@ -94,6 +94,13 @@
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
 		</dependency>
+
+		<!-- Springdoc OpenAPI Swagger UI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.6.14</version>
+		</dependency>
 	</dependencies>
 
 	<build>
