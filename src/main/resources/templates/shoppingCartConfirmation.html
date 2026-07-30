@@ -422,17 +422,21 @@
                   <h5 class="card-sec-title"><i class="fas fa-file-invoice-dollar text-primary"></i> Tóm tắt đơn hàng</h5>
                   
                   <div class="summary-row">
-                     <span>Số lượng sản phẩm:</span>
-                     <span class="font-weight-bold text-dark" th:utext="${myCart.quantityTotal}">1</span>
+                     <span>Tạm tính sản phẩm:</span>
+                     <span class="font-weight-bold text-dark" th:utext="${#numbers.formatDecimal(myCart.amountTotal * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                   </div>
                   <div class="summary-row">
                      <span>Phí vận chuyển:</span>
                      <span class="text-success font-weight-bold">Miễn phí</span>
                   </div>
+                  <div th:if="${myCart.voucherCode != null}" class="summary-row">
+                     <span>Voucher (<strong th:text="${myCart.voucherCode}">WELCOME50</strong>):</span>
+                     <span class="text-success font-weight-bold" th:utext="'- ' + ${#numbers.formatDecimal(myCart.discountAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                  </div>
                   
                   <div class="summary-row total-row">
-                     <span class="total-label">Tổng cộng:</span>
-                      <span class="total-price" th:utext="${#numbers.formatDecimal(myCart.amountTotal * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                     <span class="total-label">Tổng thanh toán:</span>
+                      <span class="total-price" th:utext="${#numbers.formatDecimal(myCart.finalAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                   </div>
 
                   <!-- Checkout form action -->

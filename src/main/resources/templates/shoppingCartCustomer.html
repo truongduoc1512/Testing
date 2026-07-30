@@ -292,7 +292,26 @@
          <div class="form-card">
             <h3 class="form-title"><i class="fas fa-shipping-fast text-primary mr-2"></i>Thông tin nhận hàng</h3>
             
-            <form method="POST" th:object="${customerForm}" th:action="@{/shoppingCartCustomer}">
+             <!-- Saved Address Quick Selector -->
+             <div id="saved-address-container" class="mb-4 p-3 bg-light rounded" style="border: 1px dashed var(--color-primary); background-color: #EFF6FF !important;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                   <label class="font-weight-bold text-dark mb-0 small"><i class="fas fa-bookmark text-primary mr-1"></i> Sổ Địa Chỉ Giao Hàng</label>
+                   <button type="button" class="btn btn-sm btn-link p-0 font-weight-bold" style="font-size: 12px; text-decoration: none;" onclick="$('#quickAddAddressModal').modal('show')">
+                      <i class="fas fa-plus-circle mr-1"></i> + Thêm địa chỉ mới
+                   </button>
+                </div>
+                <div id="address-select-wrapper">
+                   <select id="saved-address-select" class="form-control" onchange="autoFillAddress(this)" style="padding-left: 12px !important; border-color: var(--color-primary) !important;">
+                      <option value="">-- Chọn địa chỉ đã lưu --</option>
+                   </select>
+                </div>
+                <div id="address-empty-msg" style="display:none;" class="text-muted small">
+                   <i class="fas fa-info-circle mr-1 text-primary"></i> Bạn chưa có địa chỉ đã lưu. 
+                   <a href="javascript:void(0)" onclick="$('#quickAddAddressModal').modal('show')" class="font-weight-bold text-primary">Bấm vào đây để thêm địa chỉ mới vào sổ địa chỉ</a>.
+                </div>
+             </div>
+
+             <form method="POST" th:object="${customerForm}" th:action="@{/shoppingCartCustomer}">
                
                <!-- Customer Name -->
                <div class="form-group">
@@ -355,7 +374,158 @@
          </div>
       </div> 
       
-      <th:block th:include="_footer"></th:block>
-       
-   </body>
-</html></html>
+       <!-- Modal Thêm Địa Chỉ Nhanh ngay tại trang Thanh toán -->
+       <div class="modal fade" id="quickAddAddressModal" tabindex="-1" role="dialog" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" role="document">
+             <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header bg-primary text-white font-weight-bold p-3 px-4" style="border-radius: 16px 16px 0 0;">
+                   <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px;">
+                      <i class="fas fa-map-marker-alt mr-2"></i> Thêm Địa Chỉ Giao Hàng Mới
+                   </h5>
+                   <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="outline:none;">
+                      <span aria-hidden="true">&times;</span>
+                   </button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                   <form id="quickAddAddressForm" onsubmit="saveQuickAddress(event)">
+                      <div class="form-row">
+                         <div class="form-group col-md-6 mb-3">
+                            <label class="font-weight-bold small text-dark">Tên người nhận <span class="text-danger">*</span></label>
+                            <input type="text" id="qa-receiver" class="form-control" placeholder="Họ tên người nhận" required style="padding-left: 12px !important;">
+                         </div>
+                         <div class="form-group col-md-6 mb-3">
+                            <label class="font-weight-bold small text-dark">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="text" id="qa-phone" class="form-control" placeholder="Số điện thoại liên hệ" required style="padding-left: 12px !important;">
+                         </div>
+                      </div>
+                      <div class="form-row">
+                         <div class="form-group col-md-4 mb-3">
+                            <label class="font-weight-bold small text-dark">Tỉnh / Thành <span class="text-danger">*</span></label>
+                            <input type="text" id="qa-province" class="form-control" placeholder="Tỉnh / Thành phố" required style="padding-left: 12px !important;">
+                         </div>
+                         <div class="form-group col-md-4 mb-3">
+                            <label class="font-weight-bold small text-dark">Quận / Huyện <span class="text-danger">*</span></label>
+                            <input type="text" id="qa-district" class="form-control" placeholder="Quận / Huyện" required style="padding-left: 12px !important;">
+                         </div>
+                         <div class="form-group col-md-4 mb-3">
+                            <label class="font-weight-bold small text-dark">Phường / Xã <span class="text-danger">*</span></label>
+                            <input type="text" id="qa-ward" class="form-control" placeholder="Phường / Xã" required style="padding-left: 12px !important;">
+                         </div>
+                      </div>
+                      <div class="form-group mb-3">
+                         <label class="font-weight-bold small text-dark">Địa chỉ chi tiết <span class="text-danger">*</span></label>
+                         <input type="text" id="qa-street" class="form-control" placeholder="Số nhà, tên đường..." required style="padding-left: 12px !important;">
+                      </div>
+                      <div class="form-group mb-3">
+                         <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="qa-default" checked>
+                            <label class="custom-control-label small font-weight-bold text-dark" for="qa-default">Đặt làm địa chỉ mặc định</label>
+                         </div>
+                      </div>
+                      <button type="submit" class="btn btn-primary font-weight-bold btn-block py-2" style="border-radius: 8px;">
+                         <i class="fas fa-save mr-1"></i> Lưu & Áp Dụng Ngay
+                      </button>
+                   </form>
+                </div>
+             </div>
+          </div>
+       </div>
+
+       <th:block th:include="_footer"></th:block>
+
+       <script>
+          var userAddressesList = [];
+
+          function loadSavedAddresses() {
+             fetch('/api/v1/users/addresses')
+                .then(res => res.ok ? res.json() : [])
+                .then(addresses => {
+                   var selectWrapper = document.getElementById('address-select-wrapper');
+                   var emptyMsg = document.getElementById('address-empty-msg');
+                   var select = document.getElementById('saved-address-select');
+
+                   if (Array.isArray(addresses) && addresses.length > 0) {
+                      userAddressesList = addresses;
+                      if (selectWrapper) selectWrapper.style.display = 'block';
+                      if (emptyMsg) emptyMsg.style.display = 'none';
+
+                      select.innerHTML = '<option value="">-- Chọn địa chỉ đã lưu --</option>';
+                      addresses.forEach(addr => {
+                         var opt = document.createElement('option');
+                         opt.value = addr.id;
+                         opt.textContent = (addr.isDefault ? '[Mặc định] ' : '') + addr.receiverName + ' - ' + addr.phone + ' (' + addr.streetAddress + ', ' + addr.district + ', ' + addr.province + ')';
+                         if (addr.isDefault) opt.selected = true;
+                         select.appendChild(opt);
+                      });
+
+                      var defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+                      if (defaultAddr) {
+                         fillForm(defaultAddr);
+                      }
+                   } else {
+                      if (selectWrapper) selectWrapper.style.display = 'none';
+                      if (emptyMsg) emptyMsg.style.display = 'block';
+                   }
+                }).catch(err => {});
+          }
+
+          window.addEventListener('DOMContentLoaded', () => {
+             loadSavedAddresses();
+          });
+
+          function autoFillAddress(selectEl) {
+             var id = parseInt(selectEl.value);
+             var addr = userAddressesList.find(a => a.id === id);
+             if (addr) {
+                fillForm(addr);
+             }
+          }
+
+          function fillForm(addr) {
+             var nameInput = document.getElementById('customerName');
+             var phoneInput = document.getElementById('customerPhone');
+             var addressInput = document.getElementById('customerAddress');
+
+             if (nameInput) nameInput.value = addr.receiverName;
+             if (phoneInput) phoneInput.value = addr.phone;
+             
+             var fullAddress = addr.streetAddress;
+             if (addr.ward) fullAddress += ', ' + addr.ward;
+             if (addr.district) fullAddress += ', ' + addr.district;
+             if (addr.province) fullAddress += ', ' + addr.province;
+             if (addressInput) addressInput.value = fullAddress;
+          }
+
+          function saveQuickAddress(event) {
+             event.preventDefault();
+             var payload = {
+                receiverName: document.getElementById('qa-receiver').value.trim(),
+                phone: document.getElementById('qa-phone').value.trim(),
+                province: document.getElementById('qa-province').value.trim(),
+                district: document.getElementById('qa-district').value.trim(),
+                ward: document.getElementById('qa-ward').value.trim(),
+                streetAddress: document.getElementById('qa-street').value.trim(),
+                isDefault: document.getElementById('qa-default').checked
+             };
+
+             fetch('/api/v1/users/addresses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+             })
+             .then(res => res.json())
+             .then(data => {
+                if (data.success) {
+                   alert('Thêm địa chỉ giao hàng mới thành công!');
+                   $('#quickAddAddressModal').modal('hide');
+                   document.getElementById('quickAddAddressForm').reset();
+                   loadSavedAddresses();
+                } else {
+                   alert(data.message || 'Lỗi thêm địa chỉ!');
+                }
+             })
+             .catch(err => alert('Lỗi kết nối máy chủ!'));
+          }
+       </script>
+    </body>
+ </html></html>

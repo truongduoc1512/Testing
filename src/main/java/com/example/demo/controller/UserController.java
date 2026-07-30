@@ -41,6 +41,9 @@ public class UserController {
     private OrderDAO orderDAO;
 
     @Autowired
+    private com.example.demo.dao.WishlistDAO wishlistDAO;
+
+    @Autowired
     private RegisterFormValidator registerFormValidator;
 
     @Autowired
@@ -210,6 +213,7 @@ public class UserController {
        model.addAttribute("userRole", role);
        model.addAttribute("totalOrders", orderDAO.getTotalOrdersCount(username, role));
        model.addAttribute("totalRevenue", orderDAO.getTotalRevenue(username, role));
+       model.addAttribute("wishlistCount", wishlistDAO.getWishlistCount(username));
        return "accountInfo";
     }
 

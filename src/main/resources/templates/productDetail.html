@@ -490,14 +490,19 @@
                </div>
             </div>
 
-            <!-- Add to cart (Customers / Users only) -->
+            <!-- Add to cart & Wishlist (Customers / Users only) -->
             <th:block sec:authorize="!hasAnyRole('ROLE_MANAGER', 'ROLE_ADMIN')">
-               <a th:if="${productInfo.stockQuantity > 0}" th:href="@{|/buyProduct?code=${productInfo.code}|}" class="btn-buy-now">
-                  <i class="fas fa-cart-plus"></i> Thêm vào Giỏ Hàng
-               </a>
-               <button th:if="${productInfo.stockQuantity <= 0}" disabled class="btn-buy-now" style="background-color: #94A3B8; cursor: not-allowed; opacity: 0.8; border: none;">
-                  <i class="fas fa-times-circle"></i> Sản Phẩm Hết Hàng
-               </button>
+               <div style="display: flex; gap: 12px; align-items: center;">
+                  <a th:if="${productInfo.stockQuantity > 0}" th:href="@{|/buyProduct?code=${productInfo.code}|}" class="btn-buy-now" style="flex: 1;">
+                     <i class="fas fa-cart-plus"></i> Thêm vào Giỏ Hàng
+                  </a>
+                  <button th:if="${productInfo.stockQuantity <= 0}" disabled class="btn-buy-now" style="flex: 1; background-color: #94A3B8; cursor: not-allowed; opacity: 0.8; border: none;">
+                     <i class="fas fa-times-circle"></i> Sản Phẩm Hết Hàng
+                  </button>
+                  <button type="button" class="btn-wishlist-detail" th:data-code="${productInfo.code}" onclick="toggleWishlistDetail(this)" style="padding: 12px 20px; border-radius: var(--radius-md); border: 2px solid #E2E8F0; background: #fff; cursor: pointer; font-size: 15px; font-weight: 700; color: #64748B; transition: all 0.2s; display: inline-flex; align-items: center;">
+                     <i class="far fa-heart" id="detail-wishlist-icon" style="font-size: 18px; margin-right: 6px;"></i> <span id="detail-wishlist-text">Yêu thích</span>
+                  </button>
+               </div>
             </th:block>
 
             <!-- Notice for Manager / Admin -->
@@ -699,6 +704,74 @@
             }
          }
       }
+
+      function toggleWishlistDetail(btn) {
+         var code = btn.getAttribute('data-code');
+         if (!code) return;
+         var icon = document.getElementById('detail-wishlist-icon');
+         var text = document.getElementById('detail-wishlist-text');
+         var isFav = icon.classList.contains('fas');
+         var method = isFav ? 'DELETE' : 'POST';
+
+         btn.disabled = true;
+         fetch('/api/v1/wishlist/' + code, { method: method })
+            .then(res => {
+               if (res.status === 401) {
+                  window.location.href = '/admin/login';
+                  return null;
+               }
+               return res.json();
+            })
+            .then(data => {
+               btn.disabled = false;
+               if (data && data.success) {
+                  if (isFav) {
+                     icon.className = 'far fa-heart';
+                     icon.style.color = '#64748B';
+                     text.textContent = 'Yêu thích';
+                     btn.style.borderColor = '#E2E8F0';
+                     btn.style.color = '#64748B';
+                     if (typeof showToastNotification === 'function') {
+                        showToastNotification('Đã xóa sản phẩm khỏi danh sách yêu thích!', 'success');
+                     }
+                  } else {
+                     icon.className = 'fas fa-heart';
+                     icon.style.color = '#EF4444';
+                     text.textContent = 'Đã thích';
+                     btn.style.borderColor = '#FCA5A5';
+                     btn.style.color = '#EF4444';
+                     if (typeof showToastNotification === 'function') {
+                        showToastNotification('Đã thêm sản phẩm vào danh sách yêu thích!', 'success');
+                     }
+                  }
+                  if (data.wishlistCount !== undefined && typeof updateWishlistCountBadge === 'function') {
+                     updateWishlistCountBadge(data.wishlistCount);
+                  }
+               }
+            }).catch(err => { btn.disabled = false; });
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+         var btn = document.querySelector('.btn-wishlist-detail');
+         if (btn) {
+            var code = btn.getAttribute('data-code');
+            fetch('/api/v1/wishlist/check/' + code)
+               .then(res => res.ok ? res.json() : null)
+               .then(data => {
+                  if (data && data.favorite) {
+                     var icon = document.getElementById('detail-wishlist-icon');
+                     var text = document.getElementById('detail-wishlist-text');
+                     if (icon) {
+                        icon.className = 'fas fa-heart';
+                        icon.style.color = '#EF4444';
+                     }
+                     if (text) text.textContent = 'Đã thích';
+                     btn.style.borderColor = '#FCA5A5';
+                     btn.style.color = '#EF4444';
+                  }
+               }).catch(err => {});
+         }
+      });
    </script>
 </body>
 

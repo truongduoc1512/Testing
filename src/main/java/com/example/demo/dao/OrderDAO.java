@@ -31,6 +31,9 @@ public class OrderDAO {
  
     @Autowired
     private ProductDAO productDAO;
+
+    @Autowired
+    private VoucherDAO voucherDAO;
  
     private int getMaxOrderNum() {
         String sql = "Select max(o.orderNum) from " + Order.class.getName() + " o ";
@@ -53,7 +56,7 @@ public class OrderDAO {
         order.setId(UUID.randomUUID().toString());
         order.setOrderNum(orderNum);
         order.setOrderDate(new Date());
-        order.setAmount(cartInfo.getAmountTotal());
+        order.setAmount(cartInfo.getFinalAmount());
         order.setStatus("PENDING");
  
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
@@ -95,6 +98,10 @@ public class OrderDAO {
 
             session.persist(detail);
         }
+
+        if (cartInfo.getVoucherCode() != null && !cartInfo.getVoucherCode().trim().isEmpty()) {
+            voucherDAO.recordVoucherUsage(cartInfo.getVoucherCode(), order.getCustomerUsername(), order.getId());
+        }
  
         // Order Number!
         cartInfo.setOrderNum(orderNum);
@@ -109,22 +116,22 @@ public class OrderDAO {
                 + " ord.customerName, ord.customerAddress, ord.customerEmail, ord.customerPhone, ord.status) " + " from "
                 + Order.class.getName() + " ord ";
         
-        boolean isUser = "ROLE_USER".equals(role);
-        boolean isAdmin = "ROLE_ADMIN".equals(role);
+        boolean isUser = "ROLE_USER".equals(role) || "ROLE_CUSTOMER".equals(role);
+        boolean isAdmin = "ROLE_ADMIN".equals(role) || "ROLE_MANAGER".equals(role);
         
-        if (isUser) {
+        if (isUser && username != null && !username.trim().isEmpty()) {
             sql += " where ord.customerUsername = :username ";
-        } else if (isAdmin) {
-            sql += " where exists (select 1 from com.example.demo.entity.OrderDetail od where od.order.id = ord.id and od.product.ownerUsername = :username) ";
+        } else if (isAdmin && username != null && !username.trim().isEmpty()) {
+            sql += " where (exists (select 1 from com.example.demo.entity.OrderDetail od where od.order.id = ord.id and od.product.ownerUsername = :username) or ord.customerUsername = :username) ";
         }
         
         sql += " order by ord.orderNum desc";
- 
+
         Session session = this.sessionFactory.getCurrentSession();
         Query<OrderInfo> query = session.createQuery(sql, OrderInfo.class);
         
-        if (isUser || isAdmin) {
-            query.setParameter("username", username);
+        if (sql.contains(":username")) {
+            query.setParameter("username", username != null ? username : "");
         }
         return new PaginationResult<OrderInfo>(query, page, maxResult, maxNavigationPage);
     }
@@ -153,11 +160,11 @@ public class OrderDAO {
                 + "(d.id, d.product.code, d.product.name , d.quanity,d.price,d.amount) "//
                 + " from " + OrderDetail.class.getName() + " d "//
                 + " where d.order.id = :orderId ";
- 
+
         Session session = this.sessionFactory.getCurrentSession();
         Query<OrderDetailInfo> query = session.createQuery(sql, OrderDetailInfo.class);
         query.setParameter("orderId", orderId);
- 
+
         return query.getResultList();
     }
  
@@ -173,19 +180,19 @@ public class OrderDAO {
     public long getTotalOrdersCount(String username, String role) {
         String sql = "Select count(o.id) from " + Order.class.getName() + " o ";
         
-        boolean isUser = "ROLE_USER".equals(role);
-        boolean isAdmin = "ROLE_ADMIN".equals(role);
+        boolean isUser = "ROLE_USER".equals(role) || "ROLE_CUSTOMER".equals(role);
+        boolean isAdmin = "ROLE_ADMIN".equals(role) || "ROLE_MANAGER".equals(role);
         
-        if (isUser) {
+        if (isUser && username != null && !username.trim().isEmpty()) {
             sql = "Select count(o.id) from " + Order.class.getName() + " o Where o.customerUsername = :username ";
-        } else if (isAdmin) {
-            sql = "Select count(distinct o.id) from " + Order.class.getName() + " o join com.example.demo.entity.OrderDetail od on o.id = od.order.id join com.example.demo.entity.Product p on od.product.code = p.code Where p.ownerUsername = :username ";
+        } else if (isAdmin && username != null && !username.trim().isEmpty()) {
+            sql = "Select count(distinct o.id) from " + Order.class.getName() + " o join com.example.demo.entity.OrderDetail od on o.id = od.order.id join com.example.demo.entity.Product p on od.product.code = p.code Where (p.ownerUsername = :username or o.customerUsername = :username) ";
         }
         
         Session session = this.sessionFactory.getCurrentSession();
         Query<Long> query = session.createQuery(sql, Long.class);
-        if (isUser || isAdmin) {
-            query.setParameter("username", username);
+        if (sql.contains(":username")) {
+            query.setParameter("username", username != null ? username : "");
         }
         Long val = query.getSingleResult();
         return val != null ? val : 0L;
@@ -198,19 +205,19 @@ public class OrderDAO {
     public double getTotalRevenue(String username, String role) {
         String sql = "Select sum(o.amount) from " + Order.class.getName() + " o ";
         
-        boolean isUser = "ROLE_USER".equals(role);
-        boolean isAdmin = "ROLE_ADMIN".equals(role);
+        boolean isUser = "ROLE_USER".equals(role) || "ROLE_CUSTOMER".equals(role);
+        boolean isAdmin = "ROLE_ADMIN".equals(role) || "ROLE_MANAGER".equals(role);
         
-        if (isUser) {
+        if (isUser && username != null && !username.trim().isEmpty()) {
             sql = "Select sum(o.amount) from " + Order.class.getName() + " o Where o.customerUsername = :username ";
-        } else if (isAdmin) {
-            sql = "Select sum(od.amount) from com.example.demo.entity.OrderDetail od join com.example.demo.entity.Product p on od.product.code = p.code Where p.ownerUsername = :username ";
+        } else if (isAdmin && username != null && !username.trim().isEmpty()) {
+            sql = "Select sum(od.amount) from com.example.demo.entity.OrderDetail od join com.example.demo.entity.Product p on od.product.code = p.code Where (p.ownerUsername = :username or od.order.customerUsername = :username) ";
         }
         
         Session session = this.sessionFactory.getCurrentSession();
         Query<Double> query = session.createQuery(sql, Double.class);
-        if (isUser || isAdmin) {
-            query.setParameter("username", username);
+        if (sql.contains(":username")) {
+            query.setParameter("username", username != null ? username : "");
         }
         Double val = query.getSingleResult();
         return val != null ? val : 0.0;
@@ -219,5 +226,4 @@ public class OrderDAO {
     public double getTotalRevenue() {
         return getTotalRevenue(null, null);
     }
- 
 }

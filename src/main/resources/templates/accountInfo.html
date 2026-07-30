@@ -668,45 +668,53 @@
                </div>
             </div>
 
-            <!-- KPI Card 3: Products (Mock/Placeholder) -->
+            <!-- KPI Card 3: Products (Admin) / Wishlist (User) -->
             <div class="col-lg-3 col-md-6 col-12 kpi-col mb-4">
                <div class="dashboard-card p-4 d-flex flex-column justify-content-between h-100" style="min-height: 140px;">
                   <div class="d-flex justify-content-between align-items-center mb-3">
                      <span class="text-muted small font-weight-bold" style="letter-spacing: 0.5px; font-size: 11px;">
                         <span sec:authorize="hasRole('ROLE_ADMIN')">TOTAL PRODUCTS</span>
-                        <span sec:authorize="hasRole('ROLE_USER')">ACTIVE CATALOG</span>
+                        <span sec:authorize="hasRole('ROLE_USER')">SẢN PHẨM YÊU THÍCH</span>
                      </span>
                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #FEF3C7; color: var(--color-warning);">
-                        <i class="fas fa-boxes"></i>
+                        <i sec:authorize="hasRole('ROLE_ADMIN')" class="fas fa-boxes"></i>
+                        <i sec:authorize="hasRole('ROLE_USER')" class="fas fa-heart"></i>
                      </div>
                   </div>
                   <div>
-                     <h3 class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;">11</h3>
+                     <h3 sec:authorize="hasRole('ROLE_ADMIN')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;">11</h3>
+                     <h3 sec:authorize="hasRole('ROLE_USER')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:utext="${wishlistCount != null ? wishlistCount : 0}">0</h3>
                      <div class="d-flex align-items-center mt-1" style="gap: 4px;">
-                        <span class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+4.5%</span>
-                        <span class="text-muted" style="font-size: 11px;">sản phẩm hoạt động</span>
+                        <span sec:authorize="hasRole('ROLE_ADMIN')" class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+4.5%</span>
+                        <span sec:authorize="hasRole('ROLE_USER')" class="text-primary small font-weight-bold"><i class="fas fa-bookmark mr-0.5"></i>Đã lưu</span>
+                        <span sec:authorize="hasRole('ROLE_ADMIN')" class="text-muted" style="font-size: 11px;">sản phẩm hoạt động</span>
+                        <span sec:authorize="hasRole('ROLE_USER')" class="text-muted" style="font-size: 11px;">sản phẩm ưa thích</span>
                      </div>
                   </div>
                </div>
             </div>
 
-            <!-- KPI Card 4: Customers (Mock/Placeholder) -->
+            <!-- KPI Card 4: Customers (Admin) / Addresses (User) -->
             <div class="col-lg-3 col-md-6 col-12 kpi-col mb-4">
                <div class="dashboard-card p-4 d-flex flex-column justify-content-between h-100" style="min-height: 140px;">
                   <div class="d-flex justify-content-between align-items-center mb-3">
                      <span class="text-muted small font-weight-bold" style="letter-spacing: 0.5px; font-size: 11px;">
                         <span sec:authorize="hasRole('ROLE_ADMIN')">TOTAL CUSTOMERS</span>
-                        <span sec:authorize="hasRole('ROLE_USER')">STORE MEMBERS</span>
+                        <span sec:authorize="hasRole('ROLE_USER')">SỔ ĐỊA CHỈ GIAO HÀNG</span>
                      </span>
                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #F3E8FF; color: #8B5CF6;">
-                        <i class="fas fa-users"></i>
+                        <i sec:authorize="hasRole('ROLE_ADMIN')" class="fas fa-users"></i>
+                        <i sec:authorize="hasRole('ROLE_USER')" class="fas fa-map-marked-alt"></i>
                      </div>
                   </div>
                   <div>
-                     <h3 class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;">12</h3>
+                     <h3 sec:authorize="hasRole('ROLE_ADMIN')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;">12</h3>
+                     <h3 sec:authorize="hasRole('ROLE_USER')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" id="user-address-kpi-val">1</h3>
                      <div class="d-flex align-items-center mt-1" style="gap: 4px;">
-                        <span class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+15.3%</span>
-                        <span class="text-muted" style="font-size: 11px;">thành viên đăng ký</span>
+                        <span sec:authorize="hasRole('ROLE_ADMIN')" class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+15.3%</span>
+                        <span sec:authorize="hasRole('ROLE_USER')" class="text-success small font-weight-bold"><i class="fas fa-check-circle mr-0.5"></i>Sẵn sàng</span>
+                        <span sec:authorize="hasRole('ROLE_ADMIN')" class="text-muted" style="font-size: 11px;">thành viên đăng ký</span>
+                        <span sec:authorize="hasRole('ROLE_USER')" class="text-muted" style="font-size: 11px;">địa chỉ nhận hàng</span>
                      </div>
                   </div>
                </div>
@@ -730,10 +738,8 @@
                      <div class="text-left">
                         <h4 class="font-weight-bold text-dark mb-1" style="font-size: 16px; margin: 0;" th:utext="${#request.userPrincipal.name}">User</h4>
                         <div class="d-flex gap-1.5 mt-1">
-                           <th:block th:each="auth : ${userDetails.authorities}">
-                              <span th:if="${auth.authority == 'ROLE_ADMIN'}" class="badge badge-danger px-2 py-0.5 font-weight-bold" style="font-size: 9px; background-color: var(--color-danger); border-radius: 4px; letter-spacing: 0.3px;">ADMIN</span>
-                              <span th:if="${auth.authority == 'ROLE_USER'}" class="badge badge-primary px-2 py-0.5 font-weight-bold" style="font-size: 9px; background-color: var(--color-primary); border-radius: 4px; letter-spacing: 0.3px;">CUSTOMER</span>
-                           </th:block>
+                           <span sec:authorize="hasRole('ROLE_ADMIN')" class="badge badge-danger px-2 py-0.5 font-weight-bold" style="font-size: 9px; background-color: var(--color-danger); border-radius: 4px; letter-spacing: 0.3px;">ADMIN</span>
+                           <span sec:authorize="hasRole('ROLE_USER')" class="badge badge-primary px-2 py-0.5 font-weight-bold" style="font-size: 9px; background-color: var(--color-primary); border-radius: 4px; letter-spacing: 0.3px;">CUSTOMER</span>
                         </div>
                      </div>
                   </div>
@@ -756,86 +762,89 @@
                   
                </div>
                
-               <!-- Recent Activity Timeline Card -->
-               <div class="dashboard-card p-4 mt-4">
-                  <h5 class="font-weight-bold text-dark mb-4" style="font-size: 16px; letter-spacing: -0.3px;"><i class="fas fa-list-ul text-primary mr-2"></i>Recent Activity</h5>
-                  
-                  <ul class="timeline mb-0">
-                     <!-- Activity 1 -->
-                     <li class="timeline-item">
-                        <div class="timeline-icon" style="border-color: #3B82F6; background-color: #EFF6FF; color: #3B82F6;">
-                           <i class="fas fa-plus"></i>
-                        </div>
-                        <div>
-                           <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Sản phẩm "Adidas Stan Smith" mới được đăng bán.</p>
-                           <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>10 phút trước</span>
-                        </div>
-                     </li>
-                     <!-- Activity 2 -->
-                     <li class="timeline-item">
-                        <div class="timeline-icon" style="border-color: #10B981; background-color: #ECFDF5; color: #10B981;">
-                           <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div>
-                           <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Đơn hàng mới #ORD-9024 được khởi tạo thành công.</p>
-                           <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>25 phút trước</span>
-                        </div>
-                     </li>
-                     <!-- Activity 3 -->
-                     <li class="timeline-item">
-                        <div class="timeline-icon" style="border-color: #06B6D4; background-color: #ECFEFF; color: #06B6D4;">
-                           <i class="fas fa-dollar-sign"></i>
-                        </div>
-                        <div>
-                           <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Thanh toán $85.00 nhận thành công qua ví PayPal.</p>
-                           <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>28 phút trước</span>
-                        </div>
-                     </li>
-                     <!-- Activity 4 -->
-                     <li class="timeline-item">
-                        <div class="timeline-icon" style="border-color: #F59E0B; background-color: #FFFBEB; color: #F59E0B;">
-                           <i class="fas fa-user-plus"></i>
-                        </div>
-                        <div>
-                           <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Thành viên mới "Nguyễn Thị Mai" đăng ký tài khoản.</p>
-                           <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>1 giờ trước</span>
-                        </div>
-                     </li>
-                  </ul>
-               </div>
-
-               <!-- AI Service Status Card -->
-               <div class="dashboard-card p-4 mt-4">
-                  <h5 class="font-weight-bold text-dark mb-3" style="font-size: 16px; letter-spacing: -0.3px;"><i class="fas fa-brain text-purple mr-2" style="color: #8B5CF6;"></i>AI Service Status</h5>
-                  
-                  <div class="border-top pt-3" style="font-size: 13.5px; border-top: 1px solid var(--color-border) !important;">
-                     <div class="d-flex justify-content-between align-items-center mb-2" style="margin-bottom: 10px;">
-                        <span class="text-muted">Dịch vụ AI</span>
-                        <span class="badge px-2.5 py-1 font-weight-bold" style="background-color: #E6F4EA; color: #137333; border-radius: 4px; font-size: 11px;">Hoạt động</span>
-                     </div>
-                     <div class="d-flex justify-content-between align-items-center mb-2" style="margin-bottom: 10px;">
-                        <span class="text-muted">Kết nối mạng</span>
-                        <span class="badge px-2.5 py-1 font-weight-bold" style="background-color: #E8F0FE; color: #1A73E8; border-radius: 4px; font-size: 11px;">Đã kết nối</span>
-                     </div>
-                     <div class="d-flex justify-content-between align-items-center mb-4" style="margin-bottom: 16px;">
-                        <span class="text-muted">Health Check</span>
-                        <span class="text-muted font-weight-medium" style="font-size: 12px;"><i class="far fa-clock mr-1"></i>Vừa xong</span>
-                     </div>
+               <!-- Recent Activity & AI Status Card (Admin Only) -->
+               <div sec:authorize="hasRole('ROLE_ADMIN')">
+                  <!-- Recent Activity Timeline Card -->
+                  <div class="dashboard-card p-4 mt-4">
+                     <h5 class="font-weight-bold text-dark mb-4" style="font-size: 16px; letter-spacing: -0.3px;"><i class="fas fa-list-ul text-primary mr-2"></i>Recent Activity</h5>
                      
-                     <a href="http://localhost:8000/docs" target="_blank" class="btn btn-outline-primary btn-block py-2.5 font-weight-bold" 
-                        style="border-radius: var(--radius-sm); font-size: 12.5px; transition: all 0.2s;"
-                        onmouseover="this.style.backgroundColor='var(--color-primary)'; this.style.color='#fff';"
-                        onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-primary)';">
-                        <i class="fas fa-book-open mr-2"></i>Swagger Documentation
-                     </a>
+                     <ul class="timeline mb-0">
+                        <!-- Activity 1 -->
+                        <li class="timeline-item">
+                           <div class="timeline-icon" style="border-color: #3B82F6; background-color: #EFF6FF; color: #3B82F6;">
+                              <i class="fas fa-plus"></i>
+                           </div>
+                           <div>
+                              <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Sản phẩm "Adidas Stan Smith" mới được đăng bán.</p>
+                              <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>10 phút trước</span>
+                           </div>
+                        </li>
+                        <!-- Activity 2 -->
+                        <li class="timeline-item">
+                           <div class="timeline-icon" style="border-color: #10B981; background-color: #ECFDF5; color: #10B981;">
+                              <i class="fas fa-shopping-cart"></i>
+                           </div>
+                           <div>
+                              <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Đơn hàng mới #ORD-9024 được khởi tạo thành công.</p>
+                              <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>25 phút trước</span>
+                           </div>
+                        </li>
+                        <!-- Activity 3 -->
+                        <li class="timeline-item">
+                           <div class="timeline-icon" style="border-color: #06B6D4; background-color: #ECFEFF; color: #06B6D4;">
+                              <i class="fas fa-dollar-sign"></i>
+                           </div>
+                           <div>
+                              <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Thanh toán $85.00 nhận thành công qua ví PayPal.</p>
+                              <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>28 phút trước</span>
+                           </div>
+                        </li>
+                        <!-- Activity 4 -->
+                        <li class="timeline-item">
+                           <div class="timeline-icon" style="border-color: #F59E0B; background-color: #FFFBEB; color: #F59E0B;">
+                              <i class="fas fa-user-plus"></i>
+                           </div>
+                           <div>
+                              <p class="text-dark mb-1 font-weight-medium" style="font-size: 13px; line-height: 1.4; margin: 0;">Thành viên mới "Nguyễn Thị Mai" đăng ký tài khoản.</p>
+                              <span class="text-muted small" style="font-size: 11px;"><i class="far fa-clock mr-1"></i>1 giờ trước</span>
+                           </div>
+                        </li>
+                     </ul>
+                  </div>
+
+                  <!-- AI Service Status Card -->
+                  <div class="dashboard-card p-4 mt-4">
+                     <h5 class="font-weight-bold text-dark mb-3" style="font-size: 16px; letter-spacing: -0.3px;"><i class="fas fa-brain text-purple mr-2" style="color: #8B5CF6;"></i>AI Service Status</h5>
+                     
+                     <div class="border-top pt-3" style="font-size: 13.5px; border-top: 1px solid var(--color-border) !important;">
+                        <div class="d-flex justify-content-between align-items-center mb-2" style="margin-bottom: 10px;">
+                           <span class="text-muted">Dịch vụ AI</span>
+                           <span class="badge px-2.5 py-1 font-weight-bold" style="background-color: #E6F4EA; color: #137333; border-radius: 4px; font-size: 11px;">Hoạt động</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2" style="margin-bottom: 10px;">
+                           <span class="text-muted">Kết nối mạng</span>
+                           <span class="badge px-2.5 py-1 font-weight-bold" style="background-color: #E8F0FE; color: #1A73E8; border-radius: 4px; font-size: 11px;">Đã kết nối</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4" style="margin-bottom: 16px;">
+                           <span class="text-muted">Health Check</span>
+                           <span class="text-muted font-weight-medium" style="font-size: 12px;"><i class="far fa-clock mr-1"></i>Vừa xong</span>
+                        </div>
+                        
+                        <a href="http://localhost:8000/docs" target="_blank" class="btn btn-outline-primary btn-block py-2.5 font-weight-bold" 
+                           style="border-radius: var(--radius-sm); font-size: 12.5px; transition: all 0.2s;"
+                           onmouseover="this.style.backgroundColor='var(--color-primary)'; this.style.color='#fff';"
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-primary)';">
+                           <i class="fas fa-book-open mr-2"></i>Swagger Documentation
+                        </a>
+                     </div>
                   </div>
                </div>
             </div>
             
-            <!-- Right Column: Quick Actions Card -->
+            <!-- Right Column: Chart, Orders & Quick Actions -->
             <div class="col-lg-8 col-12 mb-4">
-               <!-- Revenue Analytics Chart Section -->
-               <div class="dashboard-card p-4 mb-4" id="live-chart-card">
+               <!-- Revenue Analytics Chart Section (Admin Only) -->
+               <div sec:authorize="hasRole('ROLE_ADMIN')" class="dashboard-card p-4 mb-4" id="live-chart-card">
                   <div class="d-flex justify-content-between align-items-center mb-4">
                      <div>
                         <h5 class="font-weight-bold text-dark mb-0" style="font-size: 16px; letter-spacing: -0.3px;"><i class="fas fa-chart-area text-primary mr-2"></i>Revenue Analytics</h5>
@@ -976,109 +985,179 @@
                   </div>
                </div>
 
+               <!-- Quick Actions Section -->
                <div class="mb-4">
                   <h5 class="font-weight-bold text-dark mb-3" style="font-size: 16px; letter-spacing: -0.3px;"><i class="fas fa-th text-primary mr-2"></i>Thao tác nhanh</h5>
                   <div class="row">
-                     <!-- Card 1: Add Product -->
-                     <div class="col-md-6 col-12 action-card-col mb-4">
-                        <a th:href="@{/admin/product}" class="action-card p-4">
-                           <div class="d-flex align-items-start" style="gap: 16px;">
-                              <div class="rounded d-flex align-items-center justify-content-center text-primary" style="width: 44px; height: 44px; background-color: #EFF6FF; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
-                                 <i class="fas fa-plus-circle fa-lg"></i>
+                     <!-- ADMIN Quick Actions -->
+                     <th:block sec:authorize="hasRole('ROLE_ADMIN')">
+                        <!-- Card 1: Add Product -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/admin/product}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-primary" style="width: 44px; height: 44px; background-color: #EFF6FF; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-plus-circle fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Add Product</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Đăng bán sản phẩm giày mới lên cửa hàng.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <div style="flex: 1;">
-                                 <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Add Product</h6>
-                                 <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Đăng bán sản phẩm giày mới lên cửa hàng.</p>
-                              </div>
-                              <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
-                           </div>
-                        </a>
-                     </div>
+                           </a>
+                        </div>
 
-                     <!-- Card 2: Manage Orders -->
-                     <div class="col-md-6 col-12 action-card-col mb-4">
-                        <a th:href="@{/admin/orderList}" class="action-card p-4">
-                           <div class="d-flex align-items-start" style="gap: 16px;">
-                              <div class="rounded d-flex align-items-center justify-content-center text-success" style="width: 44px; height: 44px; background-color: #ECFDF5; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
-                                 <i class="fas fa-list-alt fa-lg"></i>
+                        <!-- Card 2: Manage Orders -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/admin/orderList}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-success" style="width: 44px; height: 44px; background-color: #ECFDF5; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-list-alt fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Manage Orders</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Xem và xử lý danh sách đơn hàng từ người mua.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <div style="flex: 1;">
-                                 <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Manage Orders</h6>
-                                 <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Xem và xử lý danh sách đơn hàng từ người mua.</p>
-                              </div>
-                              <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
-                           </div>
-                        </a>
-                     </div>
+                           </a>
+                        </div>
 
-                     <!-- Card 3: AI Image Inspection -->
-                     <div class="col-md-6 col-12 action-card-col mb-4">
-                        <a href="javascript:void(0)" onclick="$('#aiInspectModal').modal('show')" class="action-card p-4">
-                           <div class="d-flex align-items-start" style="gap: 16px;">
-                              <div class="rounded d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: #F3E8FF; color: #8B5CF6; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
-                                 <i class="fas fa-microscope fa-lg"></i>
+                        <!-- Card 3: AI Image Inspection -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a href="javascript:void(0)" onclick="$('#aiInspectModal').modal('show')" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; background-color: #F3E8FF; color: #8B5CF6; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-microscope fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">AI Image Inspection</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Phân tích chất lượng ảnh giày bằng AI trước khi upload.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <div style="flex: 1;">
-                                 <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">AI Image Inspection</h6>
-                                 <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Phân tích chất lượng ảnh giày bằng AI trước khi upload.</p>
-                              </div>
-                              <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
-                           </div>
-                        </a>
-                     </div>
+                           </a>
+                        </div>
 
-                     <!-- Card 4: Categories -->
-                     <div class="col-md-6 col-12 action-card-col mb-4">
-                        <a th:href="@{/productList}" class="action-card p-4">
-                           <div class="d-flex align-items-start" style="gap: 16px;">
-                              <div class="rounded d-flex align-items-center justify-content-center text-warning" style="width: 44px; height: 44px; background-color: #FEF3C7; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
-                                 <i class="fas fa-tags fa-lg"></i>
+                        <!-- Card 4: Categories -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/productList}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-warning" style="width: 44px; height: 44px; background-color: #FEF3C7; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-tags fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Categories</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Phân loại danh mục sản phẩm và thương hiệu.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <div style="flex: 1;">
-                                 <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Categories</h6>
-                                 <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Phân loại danh mục sản phẩm và thương hiệu.</p>
-                              </div>
-                              <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
-                           </div>
-                        </a>
-                     </div>
+                           </a>
+                        </div>
 
-                     <!-- Card 5: Coupons -->
-                     <div class="col-md-6 col-12 action-card-col mb-4">
-                        <a href="javascript:void(0)" onclick="alert('Tính năng quản lý mã giảm giá đang được xây dựng!')" class="action-card p-4">
-                           <div class="d-flex align-items-start" style="gap: 16px;">
-                              <div class="rounded d-flex align-items-center justify-content-center text-danger" style="width: 44px; height: 44px; background-color: #FEE2E2; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
-                                 <i class="fas fa-ticket-alt fa-lg"></i>
+                        <!-- Card 5: Coupons -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a href="javascript:void(0)" onclick="openVoucherAdminModal()" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-danger" style="width: 44px; height: 44px; background-color: #FEE2E2; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-ticket-alt fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Coupons / Vouchers</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Tạo và phân bổ mã giảm giá, khuyến mãi.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <div style="flex: 1;">
-                                 <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Coupons</h6>
-                                 <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Tạo và phân bổ mã giảm giá, khuyến mãi.</p>
-                              </div>
-                              <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
-                           </div>
-                        </a>
-                     </div>
+                           </a>
+                        </div>
 
-                     <!-- Card 6: Inventory -->
-                     <div class="col-md-6 col-12 action-card-col mb-4">
-                        <a th:href="@{/productList}" class="action-card p-4">
-                           <div class="d-flex align-items-start" style="gap: 16px;">
-                              <div class="rounded d-flex align-items-center justify-content-center text-info" style="width: 44px; height: 44px; background-color: #E0F2FE; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
-                                 <i class="fas fa-warehouse fa-lg"></i>
+                        <!-- Card 6: Inventory -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/productList}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-info" style="width: 44px; height: 44px; background-color: #E0F2FE; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-warehouse fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Inventory</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Kiểm kê số lượng hàng tồn kho của shop.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <div style="flex: 1;">
-                                 <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Inventory</h6>
-                                 <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Kiểm kê số lượng hàng tồn kho của shop.</p>
+                           </a>
+                        </div>
+                     </th:block>
+
+                     <!-- CUSTOMER (ROLE_USER) Quick Actions -->
+                     <th:block sec:authorize="hasRole('ROLE_USER')">
+                        <!-- Card 1: Address Book -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a href="javascript:void(0)" onclick="openAddressBookModal()" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-success" style="width: 44px; height: 44px; background-color: #DCFCE7; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-map-marked-alt fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Sổ Địa Chỉ Giao Hàng</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Thêm, sửa và quản lý địa chỉ nhận hàng của bạn.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
                               </div>
-                              <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
-                           </div>
-                        </a>
-                     </div>
+                           </a>
+                        </div>
+
+                        <!-- Card 2: My Orders -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/admin/orderList}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-primary" style="width: 44px; height: 44px; background-color: #EFF6FF; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-shopping-bag fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Lịch Sử Đơn Hàng</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Theo dõi tiến độ, hủy đơn hoặc yêu cầu trả hàng.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
+                              </div>
+                           </a>
+                        </div>
+
+                        <!-- Card 3: Wishlist -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/admin/accountInfo?action=wishlist}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-danger" style="width: 44px; height: 44px; background-color: #FEE2E2; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-heart fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Sản Phẩm Yêu Thích</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Xem lại danh sách sản phẩm giày mà bạn đã thích.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
+                              </div>
+                           </a>
+                        </div>
+
+                        <!-- Card 4: Shop Now -->
+                        <div class="col-md-6 col-12 action-card-col mb-4">
+                           <a th:href="@{/productList}" class="action-card p-4">
+                              <div class="d-flex align-items-start" style="gap: 16px;">
+                                 <div class="rounded d-flex align-items-center justify-content-center text-warning" style="width: 44px; height: 44px; background-color: #FEF3C7; flex-shrink: 0; border-radius: var(--radius-sm) !important;">
+                                    <i class="fas fa-store fa-lg"></i>
+                                 </div>
+                                 <div style="flex: 1;">
+                                    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 14px;">Khám Phá Cửa Hàng</h6>
+                                    <p class="text-muted mb-0 small" style="font-size: 12px; line-height: 1.4;">Tìm kiếm các mẫu giày hot mới nhất và mua sắm.</p>
+                                 </div>
+                                 <i class="fas fa-chevron-right text-muted arrow-icon align-self-center"></i>
+                              </div>
+                           </a>
+                        </div>
+                     </th:block>
                   </div>
                </div>
             </div>
          </div>
-         
       </div>
        
       <th:block th:include="_footer"></th:block>
@@ -1366,6 +1445,11 @@
 
                /* ── Empty State detection ── */
                checkEmptyStates();
+
+               var urlParams = new URLSearchParams(window.location.search);
+               if (urlParams.get('action') === 'voucher') {
+                  openVoucherAdminModal();
+               }
             });
 
             function checkEmptyStates() {
@@ -1405,5 +1489,233 @@
             }
          }());
       </script>
-   </body>
-</html>
+       <!-- ========================================== -->
+       <!-- VOUCHER ADMIN MANAGEMENT MODAL -->
+       <!-- ========================================== -->
+       <div class="modal fade" id="voucherAdminModal" tabindex="-1" role="dialog" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+             <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                
+                <!-- Modal Header -->
+                <div class="modal-header bg-primary text-white p-3 px-4 align-items-center" style="background: var(--hero-gradient) !important;">
+                   <h5 class="modal-title font-weight-bold text-white mb-0" style="font-size: 17px;">
+                      <i class="fas fa-ticket-alt mr-2"></i> Quản Lý Mã Giảm Giá & Voucher
+                   </h5>
+                   <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="outline: none;">
+                      <span aria-hidden="true">&times;</span>
+                   </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body p-4 bg-light">
+                   <ul class="nav nav-pills mb-3" id="voucherTab" role="tablist">
+                      <li class="nav-item">
+                         <a class="nav-link active font-weight-bold" id="vouchers-list-tab" data-toggle="pill" href="#vouchers-list" role="tab"><i class="fas fa-list mr-1"></i> Danh Sách Voucher</a>
+                      </li>
+                      <li class="nav-item">
+                         <a class="nav-link font-weight-bold" id="voucher-create-tab" data-toggle="pill" href="#voucher-create" role="tab"><i class="fas fa-plus-circle mr-1"></i> + Tạo Mã Mới</a>
+                      </li>
+                   </ul>
+
+                   <div class="tab-content" id="voucherTabContent">
+                      
+                      <!-- TAB 1: LIST -->
+                      <div class="tab-pane fade show active" id="vouchers-list" role="tabpanel">
+                         <div class="table-responsive bg-white rounded shadow-sm p-2">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+                               <thead class="thead-light">
+                                  <tr>
+                                     <th>Mã Voucher</th>
+                                     <th>Loại / Mức giảm</th>
+                                     <th>Đơn tối thiểu</th>
+                                     <th>Lượt dùng</th>
+                                     <th>Trạng thái</th>
+                                     <th class="text-right">Hành động</th>
+                                  </tr>
+                               </thead>
+                               <tbody id="voucher-table-body">
+                                  <tr>
+                                     <td colspan="6" class="text-center py-4 text-muted">Đang tải danh sách...</td>
+                                  </tr>
+                               </tbody>
+                            </table>
+                         </div>
+                      </div>
+
+                      <!-- TAB 2: CREATE -->
+                      <div class="tab-pane fade" id="voucher-create" role="tabpanel">
+                         <div class="card border-0 shadow-sm p-4" style="border-radius: 12px;">
+                            <form id="createVoucherForm" onsubmit="submitCreateVoucher(event)">
+                               <div class="row">
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Mã giảm giá (Code) <span class="text-danger">*</span></label>
+                                     <input type="text" id="v-code" class="form-control" placeholder="vd: SUMMER100" required style="text-transform: uppercase;">
+                                  </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Loại giảm giá <span class="text-danger">*</span></label>
+                                     <select id="v-type" class="form-control" onchange="toggleMaxDiscountField()">
+                                        <option value="PERCENT">Phần trăm (%)</option>
+                                        <option value="FIXED">Số tiền cố định (K VNĐ)</option>
+                                     </select>
+                                  </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Mức giảm (Value) <span class="text-danger">*</span></label>
+                                     <input type="number" step="0.1" id="v-value" class="form-control" placeholder="vd: 20 (% hoặc K)" required>
+                                  </div>
+                                  <div class="col-md-6 mb-3" id="v-max-discount-group">
+                                     <label class="font-weight-bold small text-dark">Mức giảm tối đa (K VNĐ)</label>
+                                     <input type="number" step="0.1" id="v-max-discount" class="form-control" placeholder="vd: 100 (để trống nếu không giới hạn)">
+                                  </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Đơn hàng tối thiểu (K VNĐ) <span class="text-danger">*</span></label>
+                                     <input type="number" step="0.1" id="v-min-order" class="form-control" value="0" required>
+                                  </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Hạn sử dụng</label>
+                                     <input type="date" id="v-expiry" class="form-control">
+                                  </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Tổng số lượt dùng</label>
+                                     <input type="number" id="v-usage-limit" class="form-control" value="100" required>
+                                  </div>
+                                  <div class="col-md-6 mb-3">
+                                     <label class="font-weight-bold small text-dark">Lượt dùng / Mỗi khách hàng</label>
+                                     <input type="number" id="v-per-user" class="form-control" value="1" required>
+                                  </div>
+                               </div>
+                               <button type="submit" class="btn btn-primary font-weight-bold px-4 py-2" style="border-radius: 8px;">
+                                  <i class="fas fa-save mr-1"></i> Lưu & Kích Hoạt Voucher
+                               </button>
+                            </form>
+                         </div>
+                      </div>
+
+                   </div>
+                </div>
+
+             </div>
+          </div>
+       </div>
+
+       <script>
+          function openVoucherAdminModal() {
+             $('#voucherAdminModal').modal('show');
+             loadVouchersListAdmin();
+          }
+
+          function toggleMaxDiscountField() {
+             var type = document.getElementById('v-type').value;
+             var group = document.getElementById('v-max-discount-group');
+             if (group) {
+                group.style.display = (type === 'PERCENT') ? 'block' : 'none';
+             }
+          }
+
+          function loadVouchersListAdmin() {
+             fetch('/api/v1/admin/vouchers')
+                .then(res => res.json())
+                .then(vouchers => {
+                   var tbody = document.getElementById('voucher-table-body');
+                   if (!tbody) return;
+                   if (!Array.isArray(vouchers) || vouchers.length === 0) {
+                      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Chưa có mã giảm giá nào. Hãy bấm "+ Tạo Mã Mới"!</td></tr>';
+                      return;
+                   }
+                   var html = '';
+                   vouchers.forEach(v => {
+                      var valStr = (v.discountType === 'PERCENT') ? (v.discountValue + '%') : (v.discountValue + 'K ₫');
+                      if (v.discountType === 'PERCENT' && v.maxDiscount) {
+                         valStr += ' (Tối đa ' + v.maxDiscount + 'K)';
+                      }
+                      var activeBadge = v.active 
+                         ? '<span class="badge badge-success px-2 py-1">Hoạt động</span>'
+                         : '<span class="badge badge-secondary px-2 py-1">Vô hiệu</span>';
+                      
+                      html += `
+                         <tr>
+                            <td class="font-weight-bold text-primary">${v.code}</td>
+                            <td class="font-weight-bold">${valStr}</td>
+                            <td>${v.minOrderValue ? v.minOrderValue + 'K ₫' : '0 ₫'}</td>
+                            <td>${v.usedCount} / ${v.usageLimit}</td>
+                            <td>${activeBadge}</td>
+                            <td class="text-right">
+                               ${v.active ? `<button class="btn btn-sm btn-outline-danger font-weight-bold" onclick="deactivateVoucher('${v.code}')"><i class="fas fa-ban"></i> Tắt</button>` : '<span class="text-muted small">Đã tắt</span>'}
+                            </td>
+                         </tr>
+                      `;
+                   });
+                   tbody.innerHTML = html;
+                }).catch(err => {
+                   var tbody = document.getElementById('voucher-table-body');
+                   if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Lỗi tải danh sách voucher!</td></tr>';
+                });
+          }
+
+          function submitCreateVoucher(event) {
+             event.preventDefault();
+             var code = document.getElementById('v-code').value.trim();
+             var type = document.getElementById('v-type').value;
+             var value = parseFloat(document.getElementById('v-value').value);
+             var maxDisc = document.getElementById('v-max-discount').value ? parseFloat(document.getElementById('v-max-discount').value) : null;
+             var minOrder = parseFloat(document.getElementById('v-min-order').value || 0);
+             var expiry = document.getElementById('v-expiry').value ? new Date(document.getElementById('v-expiry').value) : null;
+             var usageLimit = parseInt(document.getElementById('v-usage-limit').value || 100);
+             var perUser = parseInt(document.getElementById('v-per-user').value || 1);
+
+             var payload = {
+                code: code,
+                discountType: type,
+                discountValue: value,
+                maxDiscount: maxDisc,
+                minOrderValue: minOrder,
+                expiryDate: expiry,
+                active: true,
+                usageLimit: usageLimit,
+                perUserLimit: perUser
+             };
+
+             fetch('/api/v1/admin/vouchers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+             })
+             .then(res => res.json())
+             .then(data => {
+                if (data.success) {
+                   alert(data.message);
+                   document.getElementById('createVoucherForm').reset();
+                   $('#vouchers-list-tab').tab('show');
+                   loadVouchersListAdmin();
+                } else {
+                   alert(data.message || 'Lỗi tạo voucher!');
+                }
+             })
+             .catch(err => alert('Không thể kết nối máy chủ!'));
+          }
+
+          function deactivateVoucher(code) {
+             if (!confirm('Bạn có chắc chắn muốn vô hiệu hóa mã giảm giá "' + code + '"?')) return;
+             fetch('/api/v1/admin/vouchers/' + code, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                   if (data.success) {
+                      loadVouchersListAdmin();
+                   } else {
+                      alert(data.message);
+                   }
+                });
+          }
+          // Auto fetch address count for customer KPI card
+          window.addEventListener('DOMContentLoaded', () => {
+             fetch('/api/v1/users/addresses')
+                .then(res => res.ok ? res.json() : [])
+                .then(addrs => {
+                   var kpiVal = document.getElementById('user-address-kpi-val');
+                   if (kpiVal && Array.isArray(addrs)) {
+                      kpiVal.innerText = addrs.length;
+                   }
+                }).catch(err => {});
+          });
+       </script>
+    </body>
+ </html>

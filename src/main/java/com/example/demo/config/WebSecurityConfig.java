@@ -40,7 +40,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers("/", "/productList", "/productImage", "/productDetail", "/product/review", "/register", "/forgotPassword", "/resetPassword", "/oauth2/**", "/login/oauth2/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/api/v1/**").permitAll();
 
         // Requires login with role ROLE_USER or ROLE_ADMIN.
-        http.authorizeRequests().antMatchers("/admin/orderList", "/admin/order", "/admin/accountInfo", "/admin/user/profile", "/product/review/edit", "/product/review/delete")
+        http.authorizeRequests().antMatchers("/wishlist", "/admin/orderList", "/admin/order", "/admin/accountInfo", "/admin/user/profile", "/product/review/edit", "/product/review/delete")
                 .access("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')");
 
         // Pages only for ADMIN

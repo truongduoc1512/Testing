@@ -8,7 +8,9 @@ public class CartInfo {
     private int orderNum;
  
     private CustomerInfo customerInfo;
- 
+    private String voucherCode;
+    private double discountAmount = 0.0;
+
     private final List<CartLineInfo> cartLines = new ArrayList<CartLineInfo>();
  
     public CartInfo() {
@@ -114,6 +116,26 @@ public class CartInfo {
             total += line.getAmount();
         }
         return total;
+    }
+
+    public String getVoucherCode() {
+        return voucherCode;
+    }
+
+    public void setVoucherCode(String voucherCode) {
+        this.voucherCode = voucherCode;
+    }
+
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public double getFinalAmount() {
+        return Math.max(0, getAmountTotal() - discountAmount);
     }
  
     public void updateQuantity(CartInfo cartForm) {

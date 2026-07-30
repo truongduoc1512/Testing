@@ -367,12 +367,55 @@
                             <span class="order-amount" th:utext="${#numbers.formatDecimal(orderInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></span>
                          </td>
                         <td>
-                           <span th:class="'status-badge status-' + ${#strings.toLowerCase(orderInfo.status)}" th:utext="${orderInfo.status}">PENDING</span>
+                           <span th:if="${orderInfo.status == 'PENDING' or orderInfo.status == '1'}" class="badge badge-warning px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Đang chờ xử lý</span>
+                           <span th:if="${orderInfo.status == 'COMPLETED' or orderInfo.status == 'DELIVERED'}" class="badge badge-success px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Hoàn tất</span>
+                           <span th:if="${orderInfo.status == 'CANCELLED'}" class="badge badge-danger px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Đã hủy</span>
+                           <span th:if="${orderInfo.status == 'RETURN_PENDING'}" class="badge badge-warning px-2.5 py-1 font-weight-bold" style="border-radius: 4px; background-color: #FEF3C7; color: #D97706;">Chờ duyệt trả hàng</span>
+                           <span th:if="${orderInfo.status == 'RETURNED'}" class="badge badge-info px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Đã trả hàng</span>
+                           <span th:if="${orderInfo.status != 'PENDING' and orderInfo.status != '1' and orderInfo.status != 'COMPLETED' and orderInfo.status != 'DELIVERED' and orderInfo.status != 'CANCELLED' and orderInfo.status != 'RETURN_PENDING' and orderInfo.status != 'RETURNED'}" class="status-badge status-pending" th:utext="${orderInfo.status}">PENDING</span>
                         </td>
                         <td>
-                           <a th:href="@{|/admin/order?orderId=${orderInfo.id}|}" class="btn-view">
-                              <i class="fas fa-eye"></i> Xem
-                           </a>
+                           <div class="d-flex align-items-center" style="gap: 6px;">
+                              <a th:href="@{|/admin/order?orderId=${orderInfo.id}|}" class="btn-view" title="Xem chi tiết">
+                                 <i class="fas fa-eye"></i> Xem
+                              </a>
+                              
+                              <!-- User Cancel button for PENDING orders -->
+                              <button th:if="${orderInfo.status == 'PENDING' or orderInfo.status == '1'}" 
+                                      class="btn btn-sm btn-outline-danger font-weight-bold" 
+                                      style="border-radius: 6px;"
+                                      th:onclick="|cancelOrder('${orderInfo.id}')|"
+                                      title="Hủy đơn hàng này">
+                                 <i class="fas fa-times"></i> Hủy
+                              </button>
+
+                              <!-- User Return button for COMPLETED orders -->
+                              <button th:if="${orderInfo.status == 'COMPLETED' or orderInfo.status == 'DELIVERED'}" 
+                                      class="btn btn-sm btn-outline-warning font-weight-bold text-dark" 
+                                      style="border-radius: 6px;"
+                                      th:onclick="|openReturnModal('${orderInfo.id}')|"
+                                      title="Yêu cầu trả hàng / hoàn tiền">
+                                 <i class="fas fa-undo"></i> Trả hàng
+                              </button>
+
+                              <!-- Admin Approval buttons for RETURN_PENDING orders -->
+                              <th:block sec:authorize="hasRole('ROLE_ADMIN')">
+                                 <button th:if="${orderInfo.status == 'RETURN_PENDING'}" 
+                                         class="btn btn-sm btn-success font-weight-bold" 
+                                         style="border-radius: 6px;"
+                                         th:onclick="|handleAdminReturn('${orderInfo.id}', 'APPROVE')|"
+                                         title="Chấp nhận trả hàng & hoàn kho">
+                                    <i class="fas fa-check"></i> Duyệt
+                                 </button>
+                                 <button th:if="${orderInfo.status == 'RETURN_PENDING'}" 
+                                         class="btn btn-sm btn-danger font-weight-bold" 
+                                         style="border-radius: 6px;"
+                                         th:onclick="|handleAdminReturn('${orderInfo.id}', 'REJECT')|"
+                                         title="Từ chối trả hàng">
+                                    <i class="fas fa-ban"></i> Từ chối
+                                 </button>
+                              </th:block>
+                           </div>
                         </td>
                      </tr>
                   </tbody>
@@ -391,6 +434,118 @@
          </div>
       </div>
 
+      <!-- Modal Yêu Cầu Trả Hàng -->
+      <div class="modal fade" id="userReturnModal" tabindex="-1" role="dialog" aria-hidden="true">
+         <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+               <div class="modal-header bg-warning text-dark font-weight-bold p-3 px-4" style="border-radius: 16px 16px 0 0;">
+                  <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px;">
+                     <i class="fas fa-undo mr-2"></i> Yêu Cầu Trả Hàng / Hoàn Tiền
+                  </h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="outline:none;">
+                     <span aria-hidden="true">&times;</span>
+                  </button>
+               </div>
+               <div class="modal-body p-4 bg-light">
+                  <form id="returnRequestForm" onsubmit="submitReturnRequest(event)">
+                     <input type="hidden" id="return-order-id">
+                     <div class="form-group mb-3">
+                        <label class="font-weight-bold small text-dark">Lý do trả hàng <span class="text-danger">*</span></label>
+                        <textarea id="return-reason" class="form-control" rows="3" placeholder="Nhập chi tiết lý do trả hàng (vd: Giày không vừa size, lỗi sản xuất, không đúng mô tả...)" required style="border-radius: 8px;"></textarea>
+                     </div>
+                     <div class="form-group mb-3">
+                        <label class="font-weight-bold small text-dark">Link hình ảnh bằng chứng (Tùy chọn)</label>
+                        <input type="url" id="return-image-url" class="form-control" placeholder="https://example.com/proof.jpg" style="border-radius: 8px;">
+                     </div>
+                     <button type="submit" class="btn btn-warning font-weight-bold btn-block py-2" style="border-radius: 8px;">
+                        <i class="fas fa-paper-plane mr-1"></i> Gửi Yêu Cầu Trả Hàng
+                     </button>
+                  </form>
+               </div>
+            </div>
+         </div>
+      </div>
+
       <th:block th:include="_footer"></th:block>
+
+      <script>
+         function cancelOrder(orderId) {
+            if (!confirm('Bạn có chắc chắn muốn HỦY đơn hàng #' + orderId + '? Số lượng sản phẩm sẽ được tự động hoàn lại vào kho.')) {
+               return;
+            }
+            fetch('/api/v1/orders/' + orderId + '/cancel', { method: 'POST' })
+               .then(res => res.json())
+               .then(data => {
+                  if (data.success) {
+                     alert(data.message);
+                     location.reload();
+                  } else {
+                     alert(data.message || 'Không thể hủy đơn hàng!');
+                  }
+               })
+               .catch(err => alert('Lỗi kết nối máy chủ!'));
+         }
+
+         function openReturnModal(orderId) {
+            document.getElementById('return-order-id').value = orderId;
+            document.getElementById('returnRequestForm').reset();
+            $('#userReturnModal').modal('show');
+         }
+
+         function submitReturnRequest(event) {
+            event.preventDefault();
+            var orderId = document.getElementById('return-order-id').value;
+            var reason = document.getElementById('return-reason').value.trim();
+            var imageUrl = document.getElementById('return-image-url').value.trim();
+
+            if (!reason) {
+               alert('Vui lòng nhập lý do trả hàng!');
+               return;
+            }
+
+            var payload = { reason: reason, imageUrls: imageUrl };
+
+            fetch('/api/v1/orders/' + orderId + '/return', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+               if (data.success) {
+                  alert(data.message);
+                  $('#userReturnModal').modal('hide');
+                  location.reload();
+               } else {
+                  alert(data.message || 'Lỗi gửi yêu cầu!');
+               }
+            })
+            .catch(err => alert('Lỗi kết nối máy chủ!'));
+         }
+
+         function handleAdminReturn(orderId, action) {
+            var actionText = action === 'APPROVE' ? 'CHẤP NHẬN trả hàng & hoàn kho' : 'TỪ CHỐI trả hàng';
+            var note = prompt('Nhập ghi chú Admin cho quyết định ' + actionText + ' (nếu có):');
+            if (note === null) return; // User cancelled prompt
+
+            var payload = { action: action, adminNote: note };
+
+            fetch('/api/v1/admin/orders/' + orderId + '/return-status', {
+               method: 'PUT',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+               if (data.success) {
+                  alert(data.message);
+                  location.reload();
+               } else {
+                  alert(data.message || 'Lỗi xử lý!');
+               }
+            })
+            .catch(err => alert('Lỗi kết nối máy chủ!'));
+         }
+      </script>
    </body>
 </html>

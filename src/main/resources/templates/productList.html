@@ -1521,8 +1521,67 @@
              /*[/]*/
              
              $('#productDetailModal').modal('show');
-         }
-      </script>
+          }
+
+          function toggleWishlist(btn, event) {
+              if (event) event.stopPropagation();
+              var code = btn.getAttribute('data-code');
+              if (!code) return;
+
+              var icon = btn.querySelector('i');
+              var isFav = icon.classList.contains('fas');
+              var method = isFav ? 'DELETE' : 'POST';
+
+              btn.disabled = true;
+              fetch('/api/v1/wishlist/' + code, { method: method })
+                 .then(res => {
+                     if (res.status === 401) {
+                         window.location.href = '/admin/login';
+                         return null;
+                     }
+                     return res.json();
+                 })
+                 .then(data => {
+                     btn.disabled = false;
+                     if (data && data.success) {
+                         if (isFav) {
+                             icon.className = 'far fa-heart';
+                             icon.style.color = '#6B7280';
+                             if (typeof showToastNotification === 'function') {
+                                 showToastNotification('Đã xóa sản phẩm khỏi danh sách yêu thích!', 'success');
+                             }
+                         } else {
+                             icon.className = 'fas fa-heart';
+                             icon.style.color = '#EF4444';
+                             if (typeof showToastNotification === 'function') {
+                                 showToastNotification('Đã thêm sản phẩm vào danh sách yêu thích!', 'success');
+                             }
+                         }
+                         if (data.wishlistCount !== undefined && typeof updateWishlistCountBadge === 'function') {
+                             updateWishlistCountBadge(data.wishlistCount);
+                         }
+                     }
+                 }).catch(err => { btn.disabled = false; });
+          }
+
+          window.addEventListener('DOMContentLoaded', () => {
+              fetch('/api/v1/wishlist')
+                 .then(res => res.ok ? res.json() : [])
+                 .then(items => {
+                     if (Array.isArray(items)) {
+                         var favCodes = items.map(p => p.code);
+                         document.querySelectorAll('.btn-wishlist-toggle').forEach(btn => {
+                             var code = btn.getAttribute('data-code');
+                             if (favCodes.includes(code)) {
+                                 var icon = btn.querySelector('i');
+                                 if (icon) icon.className = 'fas fa-heart';
+                                 if (icon) icon.style.color = '#EF4444';
+                             }
+                         });
+                     }
+                 }).catch(err => {});
+          });
+       </script>
        
       <th:block th:include="_footer"></th:block>
        

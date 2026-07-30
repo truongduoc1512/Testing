@@ -440,6 +440,18 @@
                          <span class="text-success font-weight-bold">MIỄN PHÍ</span>
                       </div>
 
+                      <!-- Voucher Promo Input Section -->
+                      <div class="mb-3 pt-2 border-top" style="border-top: 1px solid var(--color-border) !important;">
+                         <label class="font-weight-bold text-dark mb-1" style="font-size: 13px;"><i class="fas fa-ticket-alt text-primary mr-1"></i> Mã giảm giá / Voucher</label>
+                         <div class="input-group">
+                            <input type="text" id="voucher-input" class="form-control" placeholder="Nhập mã (vd: WELCOME50)" th:value="${myCart != null ? myCart.voucherCode : ''}" style="border-radius: 8px 0 0 8px; text-transform: uppercase;">
+                            <div class="input-group-append">
+                               <button type="button" class="btn btn-primary font-weight-bold px-3" onclick="applyVoucher()" style="border-radius: 0 8px 8px 0; background-color: var(--color-primary); border-color: var(--color-primary);">Áp dụng</button>
+                            </div>
+                         </div>
+                         <div id="voucher-message" class="small mt-1 font-weight-bold" style="display:none;"></div>
+                      </div>
+
                       <div class="summary-row d-flex justify-content-between mb-3" style="font-size: 14px;">
                          <span class="text-muted">Giảm giá sản phẩm</span>
                          <span class="text-danger font-weight-bold">0 ₫</span>
@@ -447,7 +459,7 @@
 
                       <div class="summary-row d-flex justify-content-between mb-3" style="font-size: 14px;">
                          <span class="text-muted">Voucher áp dụng</span>
-                         <span class="text-danger font-weight-bold">0 ₫</span>
+                         <span id="summary-voucher-discount" class="text-success font-weight-bold" th:utext="'- ' + ${#numbers.formatDecimal((myCart != null ? myCart.discountAmount : 0) * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                       </div>
 
                       <div class="summary-row d-flex justify-content-between mb-3" style="font-size: 14px;">
@@ -458,7 +470,7 @@
                       <!-- Grand total -->
                       <div class="summary-total-row d-flex justify-content-between pt-3" style="font-size: 18px; font-weight: 800; border-top: 1px dashed var(--color-border) !important;">
                          <span class="text-dark">TỔNG CỘNG</span>
-                         <span id="summary-total" class="text-primary" style="color: var(--color-primary) !important;" th:utext="${#numbers.formatDecimal(myCart.amountTotal * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                         <span id="summary-total" class="text-primary" style="color: var(--color-primary) !important;" th:utext="${#numbers.formatDecimal((myCart != null ? myCart.finalAmount : 0) * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                       </div>
                       
                       <!-- Checkout Button -->
@@ -738,7 +750,46 @@
              });
          }
          
-         // Toast popup display function
+          function applyVoucher() {
+              var input = document.getElementById('voucher-input');
+              var msgDiv = document.getElementById('voucher-message');
+              var code = input ? input.value.trim() : '';
+              if (!code) {
+                  msgDiv.style.display = 'block';
+                  msgDiv.className = 'small mt-1 font-weight-bold text-danger';
+                  msgDiv.textContent = 'Vui lòng nhập mã giảm giá!';
+                  return;
+              }
+              fetch('/api/v1/vouchers/apply', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ voucherCode: code })
+              })
+              .then(res => res.json())
+              .then(data => {
+                  msgDiv.style.display = 'block';
+                  if (data.success) {
+                      msgDiv.className = 'small mt-1 font-weight-bold text-success';
+                      msgDiv.textContent = data.message;
+                      var discSpan = document.getElementById('summary-voucher-discount');
+                      if (discSpan) discSpan.textContent = '- ' + (data.discountAmount * 1000).toLocaleString('vi-VN') + ' ₫';
+                      var totalSpan = document.getElementById('summary-total');
+                      if (totalSpan) totalSpan.textContent = (data.finalAmount * 1000).toLocaleString('vi-VN') + ' ₫';
+                      showToastNotification(data.message, false);
+                  } else {
+                      msgDiv.className = 'small mt-1 font-weight-bold text-danger';
+                      msgDiv.textContent = data.message;
+                      showToastNotification(data.message, true);
+                  }
+              })
+              .catch(err => {
+                  msgDiv.style.display = 'block';
+                  msgDiv.className = 'small mt-1 font-weight-bold text-danger';
+                  msgDiv.textContent = 'Không thể áp dụng mã giảm giá. Vui lòng thử lại!';
+              });
+          }
+
+          // Toast popup display function
          function showToastNotification(msg, isError) {
              var container = document.getElementById('snackbar-container');
              if (!container) return;
