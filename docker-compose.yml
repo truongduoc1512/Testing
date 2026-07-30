@@ -43,6 +43,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=truonghoaiduoc5
       - AI_SERVICE_URL=http://ai-service:8000
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     networks:
       - shoeshop-net
     depends_on:
@@ -64,6 +66,22 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     networks:
       - shoeshop-net
+
+  # 5. Giao diện phpMyAdmin trên Web
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: shoeshop-phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: shoeshop-mysql
+      MYSQL_ROOT_PASSWORD: truonghoaiduoc5
+    depends_on:
+      - shoeshop-mysql
+    networks:
+      - shoeshop-net
+
 
 networks:
   shoeshop-net:

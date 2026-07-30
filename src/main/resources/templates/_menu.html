@@ -296,26 +296,53 @@
                      <a class="d-flex align-items-center gap-2 dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-decoration: none; gap: 9px; color: #111827;">
                         <!-- Avatar with online dot -->
                         <div class="user-avatar-wrapper">
-                           <div class="user-avatar-initials" th:text="${#request.userPrincipal.name.substring(0,1).toUpperCase()}">A</div>
+                           <img th:if="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)}" 
+                                th:src="${userAvatarUrl}" 
+                                referrerpolicy="no-referrer"
+                                onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"
+                                style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #2563EB;" 
+                                alt="Avatar" />
+                           <div th:style="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)} ? 'display:none;' : ''" 
+                                class="user-avatar-initials" 
+                                th:text="${userDisplayName != null ? userDisplayName.substring(0,1).toUpperCase() : #request.userPrincipal.name.substring(0,1).toUpperCase()}">A</div>
                            <span class="user-online-dot"></span>
                         </div>
                         <div class="d-none d-lg-block" style="line-height: 1.2;">
-                           <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:utext="${#request.userPrincipal.name}">Admin</div>
-                           <div style="font-size: 11px; color: #6B7280;">Administrator</div>
+                           <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:utext="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">Admin</div>
+                           <div style="font-size: 11px; color: #6B7280;">
+                              <span sec:authorize="hasRole('ROLE_ADMIN')">Administrator</span>
+                              <span sec:authorize="!hasRole('ROLE_ADMIN')">Customer</span>
+                           </div>
                         </div>
                      </a>
                      <div class="dropdown-menu dropdown-menu-right navbar-dropdown-menu" aria-labelledby="navbarDropdown">
                         <!-- Dropdown Header -->
                         <div class="dropdown-header">
                            <div class="d-flex align-items-center" style="gap: 10px;">
-                              <div class="user-avatar-initials" style="width: 32px; height: 32px; font-size: 12px;" th:text="${#request.userPrincipal.name.substring(0,1).toUpperCase()}">A</div>
+                              <img th:if="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)}" 
+                                   th:src="${userAvatarUrl}" 
+                                   referrerpolicy="no-referrer"
+                                   onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"
+                                   style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" 
+                                   alt="Avatar" />
+                              <div th:style="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)} ? 'display:none;' : ''" 
+                                   class="user-avatar-initials" 
+                                   style="width: 36px; height: 36px; font-size: 14px;" 
+                                   th:text="${userDisplayName != null ? userDisplayName.substring(0,1).toUpperCase() : #request.userPrincipal.name.substring(0,1).toUpperCase()}">A</div>
                               <div>
-                                 <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:utext="${#request.userPrincipal.name}">Admin</div>
-                                 <div style="font-size: 11px; color: #6B7280;">Quản trị viên</div>
+                                 <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:utext="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">Admin</div>
+                                 <div style="font-size: 11px; color: #6B7280;">
+                                    <span sec:authorize="hasRole('ROLE_ADMIN')">Quản trị viên</span>
+                                    <span sec:authorize="!hasRole('ROLE_ADMIN')">Khách hàng</span>
+                                 </div>
                               </div>
                            </div>
                         </div>
                         <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" th:href="@{/admin/user/profile}">
+                           <span class="dd-icon" style="background-color: #F3E8FF; color: #9333EA;"><i class="fas fa-user-circle"></i></span>
+                           Hồ sơ cá nhân
+                        </a>
                         <a class="dropdown-item" th:href="@{/admin/accountInfo}">
                            <span class="dd-icon" style="background-color: #EFF6FF; color: #2563EB;"><i class="fas fa-tachometer-alt"></i></span>
                            Dashboard
@@ -323,6 +350,10 @@
                         <a class="dropdown-item" th:href="@{/admin/orderList}">
                            <span class="dd-icon" style="background-color: #ECFDF5; color: #10B981;"><i class="fas fa-list-alt"></i></span>
                            Quản lý đơn hàng
+                        </a>
+                        <a sec:authorize="hasRole('ROLE_ADMIN')" class="dropdown-item" th:href="@{/admin/users}">
+                           <span class="dd-icon" style="background-color: #FEF3C7; color: #D97706;"><i class="fas fa-users-cog"></i></span>
+                           Quản lý người dùng
                         </a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item text-danger" th:href="@{/admin/logout}">

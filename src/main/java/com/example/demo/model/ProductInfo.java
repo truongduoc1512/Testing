@@ -11,7 +11,11 @@ public class ProductInfo {
     private int salesCount;
     private String location;
     private String brand;
-    private int rating;
+    private double rating;
+    private int reviewCount;
+    private int stockQuantity;
+    private String category;
+    private String status;
     private boolean isMall;
     private boolean isFavored;
  
@@ -28,6 +32,10 @@ public class ProductInfo {
         this.location = product.getLocation();
         this.brand = product.getBrand();
         this.rating = product.getRating();
+        this.reviewCount = product.getReviewCount();
+        this.stockQuantity = product.getStockQuantity();
+        this.category = product.getCategory();
+        this.status = product.getStatus();
         this.isMall = product.isMall();
         this.isFavored = product.isFavored();
     }
@@ -41,7 +49,7 @@ public class ProductInfo {
     }
  
     public ProductInfo(String code, String name, double price, int discountPercent, int salesCount, 
-                       String location, String brand, int rating, boolean isMall, boolean isFavored) {
+                       String location, String brand, double rating, boolean isMall, boolean isFavored) {
         this.code = code;
         this.name = name;
         this.originalPrice = price;
@@ -78,77 +86,109 @@ public class ProductInfo {
     public void setPrice(double price) {
         this.price = price;
     }
-
+ 
     public int getDiscountPercent() {
         return discountPercent;
     }
-
+ 
     public void setDiscountPercent(int discountPercent) {
         this.discountPercent = discountPercent;
     }
-
+ 
     public int getSalesCount() {
         return salesCount;
     }
-
+ 
     public void setSalesCount(int salesCount) {
         this.salesCount = salesCount;
     }
-
+ 
     public String getLocation() {
         return location;
     }
-
+ 
     public void setLocation(String location) {
         this.location = location;
     }
-
+ 
     public String getBrand() {
         return brand;
     }
-
+ 
     public void setBrand(String brand) {
         this.brand = brand;
     }
-
-    public int getRating() {
+ 
+    public double getRating() {
         return rating;
     }
-
-    public void setRating(int rating) {
+ 
+    public void setRating(double rating) {
         this.rating = rating;
     }
 
+    public int getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(int reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+ 
     public boolean isMall() {
         return isMall;
     }
-
+ 
     public boolean getIsMall() {
         return isMall;
     }
-
+ 
     public void setMall(boolean mall) {
         isMall = mall;
     }
-
+ 
     public boolean isFavored() {
         return isFavored;
     }
-
+ 
     public boolean getIsFavored() {
         return isFavored;
     }
-
+ 
     public void setFavored(boolean favored) {
         isFavored = favored;
     }
-
+ 
     public double getOriginalPrice() {
         return originalPrice;
     }
-
+ 
     public void setOriginalPrice(double originalPrice) {
         this.originalPrice = originalPrice;
     }
-
+ 
 }

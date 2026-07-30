@@ -37,9 +37,7 @@ public class ProductDAO {
         if (product == null) {
             return null;
         }
-        return new ProductInfo(product.getCode(), product.getName(), product.getPrice(),
-                               product.getDiscountPercent(), product.getSalesCount(), product.getLocation(),
-                               product.getBrand(), product.getRating(), product.isMall(), product.isFavored());
+        return new ProductInfo(product);
     }
  
     @Transactional(rollbackFor = Exception.class)
@@ -103,7 +101,7 @@ public class ProductDAO {
  
     public PaginationResult<ProductInfo> queryProducts(int page, int maxResult, int maxNavigationPage,
             String likeName, String ownerUsername, String sort, Double minPrice, Double maxPrice, 
-            String location, String brand, Boolean isMall, Boolean isFavored, Integer rating) {
+            String location, String brand, Boolean isMall, Boolean isFavored, Integer rating, String category) {
         
         String sql = "Select new " + ProductInfo.class.getName() //
                 + "(p.code, p.name, p.price, p.discountPercent, p.salesCount, p.location, p.brand, p.rating, p.isMall, p.isFavored) "
@@ -111,6 +109,7 @@ public class ProductDAO {
         
         boolean hasLikeName = likeName != null && likeName.length() > 0;
         boolean hasOwner = ownerUsername != null && ownerUsername.length() > 0;
+        boolean hasCategory = category != null && category.trim().length() > 0;
         
         if (hasLikeName) {
             sql += " and lower(p.name) like :likeName ";
@@ -118,18 +117,47 @@ public class ProductDAO {
         if (hasOwner) {
             sql += " and p.ownerUsername = :ownerUsername ";
         }
+        if (hasCategory) {
+            sql += " and (lower(p.category) like :category or lower(p.name) like :category) ";
+        }
         if (minPrice != null) {
             sql += " and p.price >= :minPrice ";
         }
         if (maxPrice != null) {
             sql += " and p.price <= :maxPrice ";
         }
-        if (location != null && location.length() > 0) {
-            sql += " and p.location = :location ";
+        
+        // Multi-location support (Fuzzy & Flexible matching)
+        boolean hasLocation = location != null && location.trim().length() > 0;
+        java.util.List<String> locList = null;
+        if (hasLocation) {
+            String[] locArr = location.split(",");
+            locList = java.util.Arrays.stream(locArr).map(String::trim).filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toList());
+            if (!locList.isEmpty()) {
+                sql += " and (";
+                for (int i = 0; i < locList.size(); i++) {
+                    if (i > 0) sql += " or ";
+                    sql += " lower(p.location) like :loc_" + i + " ";
+                }
+                sql += ") ";
+            }
         }
-        if (brand != null && brand.length() > 0) {
-            sql += " and p.brand = :brand ";
+        
+        // Multi-brand support
+        boolean hasBrand = brand != null && brand.trim().length() > 0;
+        java.util.List<String> brandList = null;
+        if (hasBrand) {
+            String[] brandArr = brand.split(",");
+            brandList = java.util.Arrays.stream(brandArr).map(String::trim).filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toList());
+            if (!brandList.isEmpty()) {
+                if (brandList.size() == 1) {
+                    sql += " and p.brand = :brand ";
+                } else {
+                    sql += " and p.brand in (:brandList) ";
+                }
+            }
         }
+        
         if (isMall != null) {
             sql += " and p.isMall = :isMall ";
         }
@@ -153,7 +181,7 @@ public class ProductDAO {
             // newest
             sql += " order by p.createDate desc ";
         }
- 
+
         Session session = this.sessionFactory.getCurrentSession();
         Query<ProductInfo> query = session.createQuery(sql, ProductInfo.class);
   
@@ -163,17 +191,32 @@ public class ProductDAO {
         if (hasOwner) {
             query.setParameter("ownerUsername", ownerUsername);
         }
+        if (hasCategory) {
+            query.setParameter("category", "%" + category.trim().toLowerCase() + "%");
+        }
         if (minPrice != null) {
             query.setParameter("minPrice", minPrice);
         }
         if (maxPrice != null) {
             query.setParameter("maxPrice", maxPrice);
         }
-        if (location != null && location.length() > 0) {
-            query.setParameter("location", location);
+        if (hasLocation && locList != null && !locList.isEmpty()) {
+            for (int i = 0; i < locList.size(); i++) {
+                String locVal = locList.get(i).toLowerCase();
+                if (locVal.contains("hồ chí minh") || locVal.contains("hcm")) locVal = "%hồ chí minh%";
+                else if (locVal.contains("hà nội") || locVal.contains("hn")) locVal = "%hà nội%";
+                else if (locVal.contains("an giang")) locVal = "%an giang%";
+                else if (locVal.contains("cà mau")) locVal = "%cà mau%";
+                else locVal = "%" + locVal + "%";
+                query.setParameter("loc_" + i, locVal);
+            }
         }
-        if (brand != null && brand.length() > 0) {
-            query.setParameter("brand", brand);
+        if (hasBrand && brandList != null && !brandList.isEmpty()) {
+            if (brandList.size() == 1) {
+                query.setParameter("brand", brandList.get(0));
+            } else {
+                query.setParameterList("brandList", brandList);
+            }
         }
         if (isMall != null) {
             query.setParameter("isMall", isMall);
@@ -186,6 +229,12 @@ public class ProductDAO {
         }
         
         return new PaginationResult<ProductInfo>(query, page, maxResult, maxNavigationPage);
+    }
+
+    public PaginationResult<ProductInfo> queryProducts(int page, int maxResult, int maxNavigationPage,
+            String likeName, String ownerUsername, String sort, Double minPrice, Double maxPrice, 
+            String location, String brand, Boolean isMall, Boolean isFavored, Integer rating) {
+        return queryProducts(page, maxResult, maxNavigationPage, likeName, ownerUsername, sort, minPrice, maxPrice, location, brand, isMall, isFavored, rating, null);
     }
  
     public PaginationResult<ProductInfo> queryProducts(int page, int maxResult, int maxNavigationPage,

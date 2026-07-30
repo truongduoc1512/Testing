@@ -35,6 +35,10 @@ public class Product implements Serializable {
     @Column(name = "Create_Date", nullable = false)
     private Date createDate;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "UPDATE_DATE", nullable = true)
+    private Date updateDate;
+
     @Column(name = "OWNER_USERNAME", length = 20, nullable = false)
     private String ownerUsername = "manager1";
 
@@ -51,7 +55,19 @@ public class Product implements Serializable {
     private String brand = "Originals";
 
     @Column(name = "RATING", nullable = false)
-    private int rating = 5;
+    private double rating = 5.0;
+
+    @Column(name = "REVIEW_COUNT", nullable = false)
+    private int reviewCount = 0;
+
+    @Column(name = "STOCK_QUANTITY", nullable = false)
+    private int stockQuantity = 100;
+
+    @Column(name = "CATEGORY", length = 100, nullable = false)
+    private String category = "Giày Sneaker";
+
+    @Column(name = "STATUS", length = 20, nullable = false)
+    private String status = "ACTIVE";
 
     @Column(name = "IS_MALL", nullable = false)
     private boolean isMall = false;
@@ -93,6 +109,14 @@ public class Product implements Serializable {
     public void setCreateDate(Date createDate) {
         this.createDate = createDate;
     }
+
+    public Date getUpdateDate() {
+        return updateDate;
+    }
+
+    public void setUpdateDate(Date updateDate) {
+        this.updateDate = updateDate;
+    }
  
     public byte[] getImage() {
         return image;
@@ -109,61 +133,93 @@ public class Product implements Serializable {
     public void setOwnerUsername(String ownerUsername) {
         this.ownerUsername = ownerUsername;
     }
-
+ 
     public int getDiscountPercent() {
         return discountPercent;
     }
-
+ 
     public void setDiscountPercent(int discountPercent) {
         this.discountPercent = discountPercent;
     }
-
+ 
     public int getSalesCount() {
         return salesCount;
     }
-
+ 
     public void setSalesCount(int salesCount) {
         this.salesCount = salesCount;
     }
-
+ 
     public String getLocation() {
         return location;
     }
-
+ 
     public void setLocation(String location) {
         this.location = location;
     }
-
+ 
     public String getBrand() {
         return brand;
     }
-
+ 
     public void setBrand(String brand) {
         this.brand = brand;
     }
-
-    public int getRating() {
+ 
+    public double getRating() {
         return rating;
     }
-
-    public void setRating(int rating) {
+ 
+    public void setRating(double rating) {
         this.rating = rating;
     }
 
+    public int getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(int reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(int stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+ 
     public boolean isMall() {
         return isMall;
     }
-
+ 
     public void setMall(boolean mall) {
         isMall = mall;
     }
-
+ 
     public boolean isFavored() {
         return isFavored;
     }
-
+ 
     public void setFavored(boolean favored) {
         isFavored = favored;
     }
-
+ 
 }

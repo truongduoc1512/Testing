@@ -587,22 +587,30 @@
              <div class="position-absolute" style="width: 300px; height: 300px; background: rgba(255,255,255,0.03); border-radius: 50%; top: -100px; right: -50px; pointer-events: none;"></div>
              <div class="position-absolute" style="width: 150px; height: 150px; background: rgba(255,255,255,0.05); border-radius: 50%; bottom: -50px; left: 10%; pointer-events: none;"></div>
 
-             <div class="d-flex align-items-center" style="gap: 20px; z-index: 1;">
-                <!-- User avatar inside hero -->
-                <div class="d-flex align-items-center justify-content-center text-primary font-weight-bold shadow hero-avatar" 
-                     style="width: 72px; height: 72px; background-color: #FFFFFF; border-radius: 50%; font-size: 28px; border: 4px solid rgba(255,255,255,0.25);" 
-                     th:utext="${#strings.substring(#request.userPrincipal.name, 0, 1).toUpperCase()}">
-                   U
-                </div>
-                <div>
-                   <span class="text-white-50 small font-weight-bold text-uppercase" style="letter-spacing: 1px;">Welcome back</span>
-                   <h2 class="font-weight-bold text-white mb-1" style="font-size: 22px; margin: 0; line-height: 1.2;" th:utext="${#request.userPrincipal.name}">User Name</h2>
-                   <p class="text-white-50 mb-0 small" style="max-width: 480px; font-weight: 500;">
-                      <span sec:authorize="hasRole('ROLE_ADMIN')">Quản trị viên hệ thống cửa hàng giày trực tuyến. Theo dõi doanh thu, quản lý danh mục và vận hành hiệu quả.</span>
-                      <span sec:authorize="hasRole('ROLE_USER')">Khám phá các bộ sưu tập giày thời thượng, quản lý giỏ hàng và xem lại lịch sử đơn hàng của bạn.</span>
-                   </p>
-                </div>
-             </div>
+              <div class="d-flex align-items-center" style="gap: 20px; z-index: 1;">
+                 <!-- User avatar inside hero -->
+                 <img th:if="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)}" 
+                      th:src="${userAvatarUrl}" 
+                      referrerpolicy="no-referrer"
+                      onerror="this.onerror=null; this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';"
+                      class="shadow hero-avatar" 
+                      style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 4px solid rgba(255,255,255,0.25);" 
+                      alt="Avatar" />
+                 <div th:style="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)} ? 'display:none;' : ''" 
+                      class="d-flex align-items-center justify-content-center text-primary font-weight-bold shadow hero-avatar" 
+                      style="width: 72px; height: 72px; background-color: #FFFFFF; border-radius: 50%; font-size: 28px; border: 4px solid rgba(255,255,255,0.25);" 
+                      th:utext="${userDisplayName != null ? userDisplayName.substring(0,1).toUpperCase() : #request.userPrincipal.name.substring(0,1).toUpperCase()}">
+                    U
+                 </div>
+                 <div>
+                    <span class="text-white-50 small font-weight-bold text-uppercase" style="letter-spacing: 1px;">Welcome back</span>
+                    <h2 class="font-weight-bold text-white mb-1" style="font-size: 22px; margin: 0; line-height: 1.2;" th:utext="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">User Name</h2>
+                    <p class="text-white-50 mb-0 small" style="max-width: 480px; font-weight: 500;">
+                       <span sec:authorize="hasRole('ROLE_ADMIN')">Quản trị viên hệ thống cửa hàng giày trực tuyến. Theo dõi doanh thu, quản lý danh mục và vận hành hiệu quả.</span>
+                       <span sec:authorize="hasRole('ROLE_USER')">Khám phá các bộ sưu tập giày thời thượng, quản lý giỏ hàng và xem lại lịch sử đơn hàng của bạn.</span>
+                    </p>
+                 </div>
+              </div>
              
              <div class="mt-3 mt-md-0 d-flex flex-column align-items-md-end hero-right" style="gap: 12px; z-index: 1;">
                 <span class="text-white-50 small font-weight-medium"><i class="far fa-calendar-alt mr-1.5"></i>Hôm nay: <span id="current-date-span-hero">24/07/2026</span></span>
