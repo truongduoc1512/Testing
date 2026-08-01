@@ -179,7 +179,6 @@ SonarQube được chạy riêng vì cần server ở trạng thái `UP` và c�
 |---|---|
 | Project | `ShoeShop` |
 | Project key | `shoeshop` |
-| SonarQube Server | `13.1.3.3768` |
 | Maven plugin | `3.10.0.2594` |
 | Ngôn ngữ được nhận diện | Java và XML |
 | Tổng tệp được lập chỉ mục | 68 |
