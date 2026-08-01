@@ -119,18 +119,22 @@ public class OrderReturn implements Serializable {
     }
 
     public Date getCreatedAt() {
-        return createdAt;
+        return copyOf(createdAt);
     }
 
     public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = copyOf(createdAt);
     }
 
     public Date getUpdatedAt() {
-        return updatedAt;
+        return copyOf(updatedAt);
     }
 
     public void setUpdatedAt(Date updatedAt) {
-        this.updatedAt = updatedAt;
+        this.updatedAt = copyOf(updatedAt);
+    }
+
+    private static Date copyOf(Date value) {
+        return value == null ? null : new Date(value.getTime());
     }
 }

@@ -15,23 +15,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 @Table(name = "Accounts")
 public class Account implements Serializable {
- 
+
     private static final long serialVersionUID = -2054386655979281969L;
- 
+
     public static final String ROLE_ADMIN = "ADMIN";
     public static final String ROLE_USER = "USER";
- 
+
     @Id
     @Column(name = "User_Name", length = 50, nullable = false)
     private String userName;
 
     @Column(name = "Full_Name", length = 100, nullable = true)
     private String fullName;
- 
+
     @Column(name = "Encryted_Password", length = 255, nullable = true)
     @JsonIgnore
     private String encrytedPassword;
- 
+
     @Column(name = "Email", length = 100, nullable = true)
     private String email;
 
@@ -49,7 +49,7 @@ public class Account implements Serializable {
 
     @Column(name = "Failed_Attempts", nullable = false)
     private int failedAttempts = 0;
- 
+
     @Column(name = "User_Role", length = 20, nullable = false)
     private String userRole = "ROLE_USER";
 
@@ -74,11 +74,11 @@ public class Account implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "Last_Login", nullable = true)
     private Date lastLogin;
- 
+
     public String getUserName() {
         return userName;
     }
- 
+
     public void setUserName(String userName) {
         this.userName = userName;
     }
@@ -90,19 +90,19 @@ public class Account implements Serializable {
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
- 
+
     public String getEncrytedPassword() {
         return encrytedPassword;
     }
- 
+
     public void setEncrytedPassword(String encrytedPassword) {
         this.encrytedPassword = encrytedPassword;
     }
- 
+
     public boolean isActive() {
         return active;
     }
- 
+
     public void setActive(boolean active) {
         this.active = active;
     }
@@ -122,11 +122,11 @@ public class Account implements Serializable {
     public void setFailedAttempts(int failedAttempts) {
         this.failedAttempts = failedAttempts;
     }
- 
+
     public String getUserRole() {
         return userRole;
     }
- 
+
     public void setUserRole(String userRole) {
         this.userRole = userRole;
     }
@@ -180,29 +180,33 @@ public class Account implements Serializable {
     }
 
     public Date getCreatedAt() {
-        return createdAt;
+        return copyOf(createdAt);
     }
 
     public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = copyOf(createdAt);
     }
 
     public Date getUpdatedAt() {
-        return updatedAt;
+        return copyOf(updatedAt);
     }
 
     public void setUpdatedAt(Date updatedAt) {
-        this.updatedAt = updatedAt;
+        this.updatedAt = copyOf(updatedAt);
     }
 
     public Date getLastLogin() {
-        return lastLogin;
+        return copyOf(lastLogin);
     }
 
     public void setLastLogin(Date lastLogin) {
-        this.lastLogin = lastLogin;
+        this.lastLogin = copyOf(lastLogin);
     }
- 
+
+    private static Date copyOf(Date value) {
+        return value == null ? null : new Date(value.getTime());
+    }
+
     @Override
     public String toString() {
         return "[" + this.userName + "," + this.fullName + "," + this.userRole + "]";

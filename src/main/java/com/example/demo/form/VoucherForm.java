@@ -58,11 +58,11 @@ public class VoucherForm {
     }
 
     public Date getExpiryDate() {
-        return expiryDate;
+        return expiryDate == null ? null : new Date(expiryDate.getTime());
     }
 
     public void setExpiryDate(Date expiryDate) {
-        this.expiryDate = expiryDate;
+        this.expiryDate = expiryDate == null ? null : new Date(expiryDate.getTime());
     }
 
     public boolean isActive() {
