@@ -124,9 +124,9 @@ Dự án được đóng gói và vận hành thử nghiệm trên môi trườn
 
 ### 👥 Phân công Vai trò (Team Roles)
 * **Leader (Trương Hoài Dược):** Quản lý dự án Jira, Lập Test Plan, Dựng AI Mock Server, Automate API User/Product/Cart/Order, Build GitHub Actions CI/CD, Tổng hợp Báo cáo Release.
-* **Bạn P:** Kiểm thử tĩnh (SonarQube/Checkstyle), Develop Validator & DAO Unit Tests, Đo Coverage JaCoCo, Kiểm thử Bảo mật (SQLi/Security), Trích xuất Coverage Metrics.
-* **Bạn L:** Chuẩn bị Docker Test Env, Seed Data Flyway, Test Search & Pagination API, Code Selenium UI Auth & Checkout, Chạy Load Test JMeter, Đóng gói Assets.
-* **Bạn T:** Xây dựng Requirement Traceability Matrix (RTM), Design Auth & Cart/Order Test Cases, Manual AI Upload Testing, Quản lý Bug trên Jira, Cross-browser Testing, Bảng điểm đóng góp & Slide presentation.
+* **Bạn Phương:** Kiểm thử tĩnh (SonarQube/Checkstyle), Develop Validator & DAO Unit Tests, Đo Coverage JaCoCo, Kiểm thử Bảo mật (SQLi/Security), Trích xuất Coverage Metrics.
+* **Bạn Lĩnh:** Chuẩn bị Docker Test Env, Seed Data Flyway, Test Search & Pagination API, Code Selenium UI Auth & Checkout, Chạy Load Test JMeter, Đóng gói Assets.
+* **Bạn Thịnh:** Xây dựng Requirement Traceability Matrix (RTM), Design Auth & Cart/Order Test Cases, Manual AI Upload Testing, Quản lý Bug trên Jira, Cross-browser Testing, Bảng điểm đóng góp & Slide presentation.
 
 ### 📆 Lịch trình Chi tiết 6 Tuần
 
@@ -136,39 +136,39 @@ gantt
     dateFormat  YYYY-MM-DD
     section Tuần 1: Plan & Static Test
     Setup Jira & Test Plan (Leader)        :active, w1_1, 2026-07-27, 7d
-    Config SonarQube & Review (Bạn P)      :w1_2, 2026-07-27, 7d
-    Prepare Docker Environment (Bạn L)     :w1_3, 2026-07-27, 7d
-    Build RTM Matrix (Bạn T)               :w1_4, 2026-07-27, 7d
+    Config SonarQube & Review (Bạn Phương)      :w1_2, 2026-07-27, 7d
+    Prepare Docker Environment (Bạn Lĩnh)     :w1_3, 2026-07-27, 7d
+    Build RTM Matrix (Bạn Thịnh)               :w1_4, 2026-07-27, 7d
 
     section Tuần 2: Test Design & Unit Test
     Build AI Mock Server (Leader)          :w2_1, 2026-08-03, 7d
-    Validator & DAO Unit Tests (Bạn P)     :w2_2, 2026-08-03, 7d
-    Database Seed Data (Bạn L)            :w2_3, 2026-08-03, 7d
-    Design API Test Cases (Bạn T)          :w2_4, 2026-08-03, 7d
+    Validator & DAO Unit Tests (Bạn Phương)     :w2_2, 2026-08-03, 7d
+    Database Seed Data (Bạn Lĩnh)            :w2_3, 2026-08-03, 7d
+    Design API Test Cases (Bạn Thịnh)          :w2_4, 2026-08-03, 7d
 
     section Tuần 3: White-box & API Auto
     Automate REST APIs (Leader)            :w3_1, 2026-08-10, 7d
-    JaCoCo Coverage Measure (Bạn P)        :w3_2, 2026-08-10, 7d
-    Search & Pagination API (Bạn L)        :w3_3, 2026-08-10, 7d
-    Manual AI Test & Jira Bug (Bạn T)      :w3_4, 2026-08-10, 7d
+    JaCoCo Coverage Measure (Bạn Phương)        :w3_2, 2026-08-10, 7d
+    Search & Pagination API (Bạn Lĩnh)        :w3_3, 2026-08-10, 7d
+    Manual AI Test & Jira Bug (Bạn Thịnh)      :w3_4, 2026-08-10, 7d
 
     section Tuần 4: UI Auto & Integration
     Package Newman Scripts (Leader)        :w4_1, 2026-08-17, 7d
-    SpringBoot DB Integration (Bạn P)      :w4_2, 2026-08-17, 7d
-    Selenium UI Auth & Checkout (Bạn L)    :w4_3, 2026-08-17, 7d
-    Cross-browser & Retest Bug (Bạn T)     :w4_4, 2026-08-17, 7d
+    SpringBoot DB Integration (Bạn Phương)     :w4_2, 2026-08-17, 7d
+    Selenium UI Auth & Checkout (Bạn Lĩnh)    :w4_3, 2026-08-17, 7d
+    Cross-browser & Retest Bug (Bạn Thịnh)     :w4_4, 2026-08-17, 7d
 
     section Tuần 5: Security, Load & CI/CD
     GitHub Actions Pipeline (Leader)       :w5_1, 2026-08-24, 7d
-    Security Testing SQLi (Bạn P)          :w5_2, 2026-08-24, 7d
-    JMeter Load Testing (Bạn L)            :w5_3, 2026-08-24, 7d
-    Time Limit Test & Performance (Bạn T)  :w5_4, 2026-08-24, 7d
+    Security Testing SQLi (Bạn Phương)          :w5_2, 2026-08-24, 7d
+    JMeter Load Testing (Bạn Lĩnh)            :w5_3, 2026-08-24, 7d
+    Time Limit Test & Performance (Bạn Thịnh)  :w5_4, 2026-08-24, 7d
 
     section Tuần 6: Final Report & Release
     Test Summary & Release v1.0 (Leader)   :w6_1, 2026-08-31, 7d
-    Coverage Metrics (Bạn P)               :w6_2, 2026-08-31, 7d
-    Package Automation Assets (Bạn L)      :w6_3, 2026-08-31, 7d
-    Contribution Report & Demo (Bạn T)     :w6_4, 2026-08-31, 7d
+    Coverage Metrics (Bạn Phương)              :w6_2, 2026-08-31, 7d
+    Package Automation Assets (Bạn Lĩnh)      :w6_3, 2026-08-31, 7d
+    Contribution Report & Demo (Bạn Thịnh)     :w6_4, 2026-08-31, 7d
 ```
 
 ---
