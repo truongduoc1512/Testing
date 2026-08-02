@@ -21,10 +21,10 @@ public class CustomerInfo implements Serializable {
 
 
     public CustomerInfo(CustomerForm customerForm) {
-        this.name = customerForm.getName();
-        this.address = customerForm.getAddress();
-        this.email = customerForm.getEmail();
-        this.phone = customerForm.getPhone();
+        this.name = customerForm.getName().trim();
+        this.address = customerForm.getAddress().trim();
+        this.email = customerForm.getEmail().trim().toLowerCase();
+        this.phone = customerForm.getPhone().trim();
         this.valid = customerForm.isValid();
     }
 

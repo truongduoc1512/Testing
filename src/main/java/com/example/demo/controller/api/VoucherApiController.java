@@ -59,19 +59,12 @@ public class VoucherApiController {
             @RequestBody Map<String, Object> payload,
             HttpServletRequest request) {
 
-        String voucherCode = payload.get("voucherCode") != null ? payload.get("voucherCode").toString() : null;
+        String voucherCode = payload != null && payload.get("voucherCode") != null
+                ? payload.get("voucherCode").toString() : null;
         CartInfo myCart = Utils.getCartInSession(request);
 
-        double orderAmount = 0.0;
-        if (payload.containsKey("orderAmount") && payload.get("orderAmount") != null) {
-            try {
-                orderAmount = Double.parseDouble(payload.get("orderAmount").toString());
-            } catch (NumberFormatException e) {
-                orderAmount = myCart.getAmountTotal();
-            }
-        } else {
-            orderAmount = myCart.getAmountTotal();
-        }
+        // Giá trị đơn hàng luôn được tính từ cart phía server, không tin dữ liệu client gửi lên.
+        double orderAmount = myCart.getAmountTotal();
 
         String username = getCurrentUsername();
         VoucherApplyResult result = voucherDAO.validateAndApplyVoucher(voucherCode, orderAmount, username);

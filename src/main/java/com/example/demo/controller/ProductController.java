@@ -1,13 +1,15 @@
 package com.example.demo.controller;
 
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -15,9 +17,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -46,8 +48,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "Product Controller", description = "Các API quản lý, danh sách và chi tiết sản phẩm")
 @Controller
-@Transactional
 public class ProductController {
+
+   private static final Logger LOGGER = LoggerFactory.getLogger(ProductController.class);
 
    @Value("${ai.service.url:http://localhost:8000}")
    private String aiServiceUrl;
@@ -86,7 +89,8 @@ public class ProductController {
          @RequestParam(value = "brand", required = false) String brand,
          @RequestParam(value = "isMall", required = false) Boolean isMall,
          @RequestParam(value = "isFavored", required = false) Boolean isFavored,
-         @RequestParam(value = "rating", required = false) Integer rating) {
+         @RequestParam(value = "rating", required = false) Integer rating,
+         @RequestParam(value = "category", required = false) String category) {
       int maxResult = 12;
       int maxNavigationPage = 10;
 
@@ -99,9 +103,9 @@ public class ProductController {
           }
       }
 
-      PaginationResult<ProductInfo> result = productDAO.queryProducts(page,
+      PaginationResult<ProductInfo> result = productDAO.queryProducts(Math.max(page, 1),
             maxResult, maxNavigationPage, likeName, ownerUsername, sort, minPrice, maxPrice,
-            location, brand, isMall, isFavored, rating);
+            location, brand, isMall, isFavored, rating, category);
 
       model.addAttribute("paginationProducts", result);
       model.addAttribute("likeName", likeName);
@@ -112,6 +116,8 @@ public class ProductController {
       model.addAttribute("brand", brand);
       model.addAttribute("isMall", isMall);
       model.addAttribute("isFavored", isFavored);
+      model.addAttribute("rating", rating);
+      model.addAttribute("category", category);
       return "productList";
    }
 
@@ -142,8 +148,10 @@ public class ProductController {
          product = this.productDAO.findProduct(code);
       }
       if (product != null && product.getImage() != null) {
-         response.setContentType("image/jpeg, image/jpg, image/png, image/gif");
-         response.getOutputStream().write(product.getImage());
+         byte[] image = product.getImage();
+         String contentType = java.net.URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(image));
+         response.setContentType(contentType != null ? contentType : MediaType.APPLICATION_OCTET_STREAM_VALUE);
+         response.getOutputStream().write(image);
       }
       response.getOutputStream().close();
    }
@@ -184,6 +192,16 @@ public class ProductController {
          return "product";
       }
 
+      productForm.setCode(productForm.getCode().trim());
+      productForm.setName(productForm.getName().trim());
+
+      Product existingProduct = productDAO.findProduct(productForm.getCode());
+      String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+      if (existingProduct != null && !currentUsername.equals(existingProduct.getOwnerUsername())) {
+         redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền cập nhật sản phẩm của người khác!");
+         return "redirect:/productList";
+      }
+
       // ── AI Quality Gate: Kiểm duyệt ảnh trước khi lưu ──────────────────────
       if (productForm.getFileData() != null && !productForm.getFileData().isEmpty()) {
          try {
@@ -220,7 +238,7 @@ public class ProductController {
                }
             }
          } catch (Exception aiEx) {
-            System.err.println("[AI-QA] Cảnh báo: Không thể kết nối AI service: " + aiEx.getMessage());
+            LOGGER.warn("AI quality service không khả dụng", aiEx);
             model.addAttribute("aiWarning", "AI service tạm thời không khả dụng. Ảnh sẽ được lưu mà không qua kiểm duyệt.");
          }
       }
@@ -228,18 +246,23 @@ public class ProductController {
       try {
          productDAO.save(productForm);
          redirectAttributes.addFlashAttribute("message", "Lưu sản phẩm thành công!");
+      } catch (IllegalArgumentException e) {
+         model.addAttribute("errorMessage", e.getMessage());
+         return "product";
+      } catch (AccessDeniedException e) {
+         redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền cập nhật sản phẩm này.");
+         return "redirect:/403";
       } catch (Exception e) {
-         Throwable rootCause = ExceptionUtils.getRootCause(e);
-         String message = rootCause != null ? rootCause.getMessage() : e.getMessage();
-         model.addAttribute("errorMessage", message);
+         LOGGER.error("Không thể lưu sản phẩm {}", productForm.getCode(), e);
+         model.addAttribute("errorMessage", "Không thể lưu sản phẩm. Vui lòng kiểm tra lại dữ liệu.");
          return "product";
       }
 
       return "redirect:/productList";
    }
 
-   // GET: Xóa sản phẩm.
-   @RequestMapping(value = { "/admin/deleteProduct" }, method = RequestMethod.GET)
+   // POST: Vô hiệu hóa sản phẩm, giữ nguyên lịch sử đơn hàng.
+   @RequestMapping(value = { "/admin/deleteProduct" }, method = RequestMethod.POST)
    public String deleteProduct(Model model, @RequestParam(value = "code", defaultValue = "") String code,
          final RedirectAttributes redirectAttributes) {
       if (code != null && code.length() > 0) {
@@ -253,9 +276,10 @@ public class ProductController {
                }
             }
             productDAO.deleteProduct(code);
-            redirectAttributes.addFlashAttribute("message", "Xóa sản phẩm thành công!");
+            redirectAttributes.addFlashAttribute("message", "Đã vô hiệu hóa sản phẩm thành công!");
          } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không thể xóa sản phẩm: " + e.getMessage());
+            LOGGER.error("Không thể vô hiệu hóa sản phẩm {}", code, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể vô hiệu hóa sản phẩm.");
          }
       }
       return "redirect:/productList";

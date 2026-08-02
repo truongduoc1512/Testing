@@ -3,6 +3,8 @@ package com.example.demo.dao;
 import java.util.Date;
 import java.util.List;
 
+import javax.persistence.LockModeType;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
@@ -28,6 +30,14 @@ public class VoucherDAO {
         }
         Session session = this.sessionFactory.getCurrentSession();
         return session.find(Voucher.class, code.trim().toUpperCase());
+    }
+
+    private Voucher findVoucherForUpdate(String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return null;
+        }
+        Session session = this.sessionFactory.getCurrentSession();
+        return session.find(Voucher.class, code.trim().toUpperCase(), LockModeType.PESSIMISTIC_WRITE);
     }
 
     public List<Voucher> listActiveVouchers() {
@@ -108,6 +118,20 @@ public class VoucherDAO {
         }
 
         Voucher voucher = findVoucher(voucherCode);
+        return validateVoucher(voucher, orderAmount, username);
+    }
+
+    public VoucherApplyResult validateAndApplyVoucherForCheckout(String voucherCode, double orderAmount,
+            String username) {
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            return new VoucherApplyResult(false, "Vui lòng nhập mã giảm giá!");
+        }
+
+        Voucher voucher = findVoucherForUpdate(voucherCode);
+        return validateVoucher(voucher, orderAmount, username);
+    }
+
+    private VoucherApplyResult validateVoucher(Voucher voucher, double orderAmount, String username) {
         if (voucher == null || !voucher.isActive()) {
             return new VoucherApplyResult(false, "Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa!");
         }

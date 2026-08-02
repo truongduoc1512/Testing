@@ -1,6 +1,8 @@
 <div class="menu-container"
    xmlns:th="http://www.thymeleaf.org"
    xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4" >
+   <meta name="_csrf" th:content="${_csrf.token}" />
+   <meta name="_csrf_header" th:content="${_csrf.headerName}" />
    
    <style>
       /* ===== NAVBAR BASE ===== */
@@ -308,7 +310,7 @@
                            <span class="user-online-dot"></span>
                         </div>
                         <div class="d-none d-lg-block" style="line-height: 1.2;">
-                           <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:utext="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">Admin</div>
+                           <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:text="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">Admin</div>
                            <div style="font-size: 11px; color: #6B7280;">
                               <span sec:authorize="hasRole('ROLE_ADMIN')">Administrator</span>
                               <span sec:authorize="!hasRole('ROLE_ADMIN')">Customer</span>
@@ -330,7 +332,7 @@
                                    style="width: 36px; height: 36px; font-size: 14px;" 
                                    th:text="${userDisplayName != null ? userDisplayName.substring(0,1).toUpperCase() : #request.userPrincipal.name.substring(0,1).toUpperCase()}">A</div>
                               <div>
-                                 <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:utext="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">Admin</div>
+                                 <div class="font-weight-bold" style="font-size: 13px; color: #111827;" th:text="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">Admin</div>
                                  <div style="font-size: 11px; color: #6B7280;">
                                     <span sec:authorize="hasRole('ROLE_ADMIN')">Quản trị viên</span>
                                     <span sec:authorize="!hasRole('ROLE_ADMIN')">Khách hàng</span>
@@ -384,7 +386,7 @@
       <div th:if="${message != null}" class="toast show shadow-lg border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px; background-color: #28a745; color: #fff; transition: opacity 0.5s; opacity: 1;">
          <div class="d-flex align-items-center p-3">
             <i class="fas fa-check-circle fa-lg mr-2"></i>
-            <div class="toast-body font-weight-bold" th:utext="${message}" style="flex: 1;">Success message</div>
+            <div class="toast-body font-weight-bold" th:text="${message}" style="flex: 1;">Success message</div>
             <button type="button" class="close ml-2 text-white" onclick="closeSnackbar(this)" style="outline:none; text-shadow:none; opacity:0.8; font-size: 1.5rem;">
                <span aria-hidden="true">&times;</span>
              </button>
@@ -393,7 +395,7 @@
       <div th:if="${errorMessage != null}" class="toast show shadow-lg border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px; background-color: #dc3545; color: #fff; transition: opacity 0.5s; opacity: 1;">
          <div class="d-flex align-items-center p-3">
             <i class="fas fa-exclamation-circle fa-lg mr-2"></i>
-            <div class="toast-body font-weight-bold" th:utext="${errorMessage}" style="flex: 1;">Error message</div>
+            <div class="toast-body font-weight-bold" th:text="${errorMessage}" style="flex: 1;">Error message</div>
             <button type="button" class="close ml-2 text-white" onclick="closeSnackbar(this)" style="outline:none; text-shadow:none; opacity:0.8; font-size: 1.5rem;">
                <span aria-hidden="true">&times;</span>
              </button>
@@ -402,6 +404,16 @@
    </div>
 
    <script>
+      function csrfHeaders(headers) {
+          var result = Object.assign({}, headers || {});
+          var token = document.querySelector('meta[name="_csrf"]');
+          var header = document.querySelector('meta[name="_csrf_header"]');
+          if (token && header) {
+              result[header.getAttribute('content')] = token.getAttribute('content');
+          }
+          return result;
+      }
+
       function closeSnackbar(btn) {
           var toast = btn.closest('.toast');
           if (toast) {
@@ -429,15 +441,6 @@
              }
           });
 
-          // Fetch wishlist count on page load
-          fetch('/api/v1/wishlist')
-             .then(res => res.ok ? res.json() : [])
-             .then(data => {
-                if (Array.isArray(data)) {
-                   var badge = document.getElementById('wishlist-count-badge');
-                   if (badge) badge.textContent = data.length;
-                }
-             }).catch(err => {});
        });
 
        function updateWishlistCountBadge(count) {
@@ -465,6 +468,20 @@
              setTimeout(function() { toast.remove(); }, 500);
           }, 3500);
        }
+   </script>
+
+   <script sec:authorize="isAuthenticated()">
+      window.addEventListener('DOMContentLoaded', function() {
+         fetch('/api/v1/wishlist')
+            .then(function(res) { return res.ok ? res.json() : []; })
+            .then(function(data) {
+               if (Array.isArray(data)) {
+                  var badge = document.getElementById('wishlist-count-badge');
+                  if (badge) badge.textContent = data.length;
+               }
+            })
+            .catch(function() {});
+      });
    </script>
 </div>
    

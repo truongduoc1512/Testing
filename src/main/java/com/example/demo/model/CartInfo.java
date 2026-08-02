@@ -70,10 +70,6 @@ public class CartInfo implements Serializable {
         }
     }
 
-    public void validate() {
-
-    }
-
     public void updateProduct(String code, int quantity) {
         CartLineInfo line = this.findLineByCode(code);
 

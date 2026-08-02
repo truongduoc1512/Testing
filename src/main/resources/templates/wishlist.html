@@ -254,9 +254,12 @@
                </div>
 
                <!-- Add to Cart -->
-               <a th:if="${prod.stockQuantity > 0}" th:href="@{|/buyProduct?code=${prod.code}|}" class="btn-add-cart-wishlist">
-                  <i class="fas fa-cart-plus"></i> Thêm Vào Giỏ Hàng
-               </a>
+               <form th:if="${prod.stockQuantity > 0}" th:action="@{/buyProduct}" method="post">
+                  <input type="hidden" name="code" th:value="${prod.code}" />
+                  <button type="submit" class="btn-add-cart-wishlist">
+                     <i class="fas fa-cart-plus"></i> Thêm Vào Giỏ Hàng
+                  </button>
+               </form>
                <button th:if="${prod.stockQuantity <= 0}" disabled class="btn-add-cart-wishlist" style="background-color: #94A3B8; cursor: not-allowed;">
                   <i class="fas fa-ban"></i> Sản Phẩm Hết Hàng
                </button>
@@ -274,7 +277,7 @@
          if (!code) return;
          if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này khỏi danh sách yêu thích?')) return;
          btn.disabled = true;
-         fetch('/api/v1/wishlist/' + code, { method: 'DELETE' })
+         fetch('/api/v1/wishlist/' + code, { method: 'DELETE', headers: csrfHeaders() })
             .then(res => res.json())
             .then(data => {
                btn.disabled = false;

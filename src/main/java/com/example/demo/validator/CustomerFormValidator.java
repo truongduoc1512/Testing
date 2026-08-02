@@ -32,6 +32,18 @@ public class CustomerFormValidator implements Validator {
       if (!emailValidator.isValid(custInfo.getEmail())) {
          errors.rejectValue("email", "Pattern.customerForm.email");
       }
+      if (custInfo.getName() != null && custInfo.getName().trim().length() > 255) {
+         errors.rejectValue("name", "Length.customerForm.name", "Tên người nhận tối đa 255 ký tự");
+      }
+      if (custInfo.getAddress() != null && custInfo.getAddress().trim().length() > 255) {
+         errors.rejectValue("address", "Length.customerForm.address", "Địa chỉ tối đa 255 ký tự");
+      }
+      if (custInfo.getEmail() != null && custInfo.getEmail().trim().length() > 128) {
+         errors.rejectValue("email", "Length.customerForm.email", "Email tối đa 128 ký tự");
+      }
+      if (custInfo.getPhone() != null && custInfo.getPhone().trim().length() > 128) {
+         errors.rejectValue("phone", "Length.customerForm.phone", "Số điện thoại quá dài");
+      }
    }
  
 }

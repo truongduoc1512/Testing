@@ -206,7 +206,7 @@
             </div>
 
             <div th:if="${errorMessage != null}" class="alert-danger" style="background:#FEF2F2; border:1px solid #FECACA; color:#DC2626; padding:12px; border-radius:8px; margin-bottom:16px; font-size:14px;">
-               <i class="fas fa-exclamation-circle"></i> <span th:utext="${errorMessage}"></span>
+               <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
             </div>
 
             <form th:object="${registerForm}" th:action="@{/register}" method="POST" class="auth-form">

@@ -34,6 +34,13 @@ public class ProductFormValidator implements Validator {
       if (productForm.getStockQuantity() < 0) {
          errors.rejectValue("stockQuantity", "Min.productForm.stockQuantity", "Số lượng tồn kho không được âm!");
       }
+      if (!Double.isFinite(productForm.getPrice()) || productForm.getPrice() <= 0) {
+         errors.rejectValue("price", "Min.productForm.price", "Giá sản phẩm phải lớn hơn 0!");
+      }
+      if (productForm.getDiscountPercent() < 0 || productForm.getDiscountPercent() > 100) {
+         errors.rejectValue("discountPercent", "Range.productForm.discountPercent",
+               "Phần trăm giảm giá phải trong khoảng 0 đến 100!");
+      }
 
       String code = productForm.getCode();
       if (code != null && code.length() > 0) {

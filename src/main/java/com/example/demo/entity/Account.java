@@ -57,6 +57,11 @@ public class Account implements Serializable {
     @JsonIgnore
     private String resetToken;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "Reset_Token_Expires_At", nullable = true)
+    @JsonIgnore
+    private Date resetTokenExpiresAt;
+
     @Column(name = "Provider", length = 20, nullable = true)
     private String provider = "LOCAL";
 
@@ -161,6 +166,14 @@ public class Account implements Serializable {
 
     public void setResetToken(String resetToken) {
         this.resetToken = resetToken;
+    }
+
+    public Date getResetTokenExpiresAt() {
+        return copyOf(resetTokenExpiresAt);
+    }
+
+    public void setResetTokenExpiresAt(Date resetTokenExpiresAt) {
+        this.resetTokenExpiresAt = copyOf(resetTokenExpiresAt);
     }
 
     public String getProvider() {

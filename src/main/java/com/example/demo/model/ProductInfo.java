@@ -75,6 +75,15 @@ public class ProductInfo implements Serializable {
         this.stockQuantity = stockQuantity;
     }
 
+    public ProductInfo(String code, String name, double price, int discountPercent, int salesCount,
+                       String location, String brand, double rating, boolean isMall, boolean isFavored,
+                       int reviewCount, int stockQuantity, String category, String status) {
+        this(code, name, price, discountPercent, salesCount, location, brand, rating,
+                isMall, isFavored, reviewCount, stockQuantity);
+        this.category = category;
+        this.status = status;
+    }
+
     public String getCode() {
         return code;
     }

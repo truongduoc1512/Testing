@@ -599,12 +599,12 @@
                  <div th:style="${userAvatarUrl != null and !#strings.isEmpty(userAvatarUrl)} ? 'display:none;' : ''" 
                       class="d-flex align-items-center justify-content-center text-primary font-weight-bold shadow hero-avatar" 
                       style="width: 72px; height: 72px; background-color: #FFFFFF; border-radius: 50%; font-size: 28px; border: 4px solid rgba(255,255,255,0.25);" 
-                      th:utext="${userDisplayName != null ? userDisplayName.substring(0,1).toUpperCase() : #request.userPrincipal.name.substring(0,1).toUpperCase()}">
+                      th:text="${userDisplayName != null ? userDisplayName.substring(0,1).toUpperCase() : #request.userPrincipal.name.substring(0,1).toUpperCase()}">
                     U
                  </div>
                  <div>
                     <span class="text-white-50 small font-weight-bold text-uppercase" style="letter-spacing: 1px;">Welcome back</span>
-                    <h2 class="font-weight-bold text-white mb-1" style="font-size: 22px; margin: 0; line-height: 1.2;" th:utext="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">User Name</h2>
+                    <h2 class="font-weight-bold text-white mb-1" style="font-size: 22px; margin: 0; line-height: 1.2;" th:text="${userDisplayName != null ? userDisplayName : #request.userPrincipal.name}">User Name</h2>
                     <p class="text-white-50 mb-0 small" style="max-width: 480px; font-weight: 500;">
                        <span sec:authorize="hasRole('ROLE_ADMIN')">Quản trị viên hệ thống cửa hàng giày trực tuyến. Theo dõi doanh thu, quản lý danh mục và vận hành hiệu quả.</span>
                        <span sec:authorize="hasRole('ROLE_USER')">Khám phá các bộ sưu tập giày thời thượng, quản lý giỏ hàng và xem lại lịch sử đơn hàng của bạn.</span>
@@ -637,7 +637,7 @@
                      </div>
                   </div>
                   <div>
-                     <h3 class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:utext="${#numbers.formatDecimal(totalRevenue * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</h3>
+                     <h3 class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:text="${#numbers.formatDecimal(totalRevenue * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</h3>
                      <div class="d-flex align-items-center mt-1" style="gap: 4px;">
                         <span class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+12.4%</span>
                         <span class="text-muted" style="font-size: 11px;">so với tháng trước</span>
@@ -659,7 +659,7 @@
                      </div>
                   </div>
                   <div>
-                     <h3 class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:utext="${totalOrders}">0</h3>
+                     <h3 class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:text="${totalOrders}">0</h3>
                      <div class="d-flex align-items-center mt-1" style="gap: 4px;">
                         <span class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+8.2%</span>
                         <span class="text-muted" style="font-size: 11px;">đơn hoàn tất</span>
@@ -683,7 +683,7 @@
                   </div>
                   <div>
                      <h3 sec:authorize="hasRole('ROLE_ADMIN')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;">11</h3>
-                     <h3 sec:authorize="hasRole('ROLE_USER')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:utext="${wishlistCount != null ? wishlistCount : 0}">0</h3>
+                     <h3 sec:authorize="hasRole('ROLE_USER')" class="font-weight-bold text-dark mb-1" style="font-size: 22px; margin: 0;" th:text="${wishlistCount != null ? wishlistCount : 0}">0</h3>
                      <div class="d-flex align-items-center mt-1" style="gap: 4px;">
                         <span sec:authorize="hasRole('ROLE_ADMIN')" class="text-success small font-weight-bold"><i class="fas fa-arrow-up mr-0.5"></i>+4.5%</span>
                         <span sec:authorize="hasRole('ROLE_USER')" class="text-primary small font-weight-bold"><i class="fas fa-bookmark mr-0.5"></i>Đã lưu</span>
@@ -732,11 +732,11 @@
                      <!-- Profile Avatar Box -->
                      <div class="d-inline-flex align-items-center justify-content-center text-white font-weight-bold shadow-sm" 
                           style="width: 64px; height: 64px; background-color: #3B82F6; border-radius: 50%; font-size: 26px; border: 3px solid #EFF6FF;" 
-                          th:utext="${#strings.substring(#request.userPrincipal.name, 0, 1).toUpperCase()}">
+                          th:text="${#strings.substring(#request.userPrincipal.name, 0, 1).toUpperCase()}">
                         U
                      </div>
                      <div class="text-left">
-                        <h4 class="font-weight-bold text-dark mb-1" style="font-size: 16px; margin: 0;" th:utext="${#request.userPrincipal.name}">User</h4>
+                        <h4 class="font-weight-bold text-dark mb-1" style="font-size: 16px; margin: 0;" th:text="${#request.userPrincipal.name}">User</h4>
                         <div class="d-flex gap-1.5 mt-1">
                            <span sec:authorize="hasRole('ROLE_ADMIN')" class="badge badge-danger px-2 py-0.5 font-weight-bold" style="font-size: 9px; background-color: var(--color-danger); border-radius: 4px; letter-spacing: 0.3px;">ADMIN</span>
                            <span sec:authorize="hasRole('ROLE_USER')" class="badge badge-primary px-2 py-0.5 font-weight-bold" style="font-size: 9px; background-color: var(--color-primary); border-radius: 4px; letter-spacing: 0.3px;">CUSTOMER</span>
@@ -748,7 +748,7 @@
                   <div class="border-top pt-3" style="font-size: 13.5px; border-top: 1px solid var(--color-border) !important;">
                      <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Username</span>
-                        <span class="font-weight-bold text-dark" th:utext="${#request.userPrincipal.name}">user</span>
+                        <span class="font-weight-bold text-dark" th:text="${#request.userPrincipal.name}">user</span>
                      </div>
                      <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Trạng thái</span>
@@ -864,11 +864,11 @@
                   <div class="row chart-stats-row mb-4" style="gap: 24px; margin-left: 0; margin-right: 0;">
                      <div class="pl-0 pr-4 border-right" style="border-right: 1px solid var(--color-border) !important;">
                         <span class="text-muted small font-weight-bold d-block" style="font-size: 10px; letter-spacing: 0.5px;">REVENUE</span>
-                        <h4 class="font-weight-bold text-dark mb-0 mt-1" style="font-size: 20px;" th:utext="${#numbers.formatDecimal(totalRevenue * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</h4>
+                        <h4 class="font-weight-bold text-dark mb-0 mt-1" style="font-size: 20px;" th:text="${#numbers.formatDecimal(totalRevenue * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</h4>
                      </div>
                      <div class="px-4 border-right" style="border-right: 1px solid var(--color-border) !important;">
                         <span class="text-muted small font-weight-bold d-block" style="font-size: 10px; letter-spacing: 0.5px;">ORDERS</span>
-                        <h4 class="font-weight-bold text-dark mb-0 mt-1" style="font-size: 20px;" th:utext="${totalOrders}">0</h4>
+                        <h4 class="font-weight-bold text-dark mb-0 mt-1" style="font-size: 20px;" th:text="${totalOrders}">0</h4>
                      </div>
                      <div class="px-4">
                         <span class="text-muted small font-weight-bold d-block" style="font-size: 10px; letter-spacing: 0.5px;">GROWTH</span>
@@ -1676,7 +1676,7 @@
 
              fetch('/api/v1/admin/vouchers', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(payload)
              })
              .then(res => res.json())
@@ -1695,7 +1695,7 @@
 
           function deactivateVoucher(code) {
              if (!confirm('Bạn có chắc chắn muốn vô hiệu hóa mã giảm giá "' + code + '"?')) return;
-             fetch('/api/v1/admin/vouchers/' + code, { method: 'DELETE' })
+             fetch('/api/v1/admin/vouchers/' + code, { method: 'DELETE', headers: csrfHeaders() })
                 .then(res => res.json())
                 .then(data => {
                    if (data.success) {

@@ -17,13 +17,14 @@ import com.example.demo.entity.Account;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService{
+    private static final String ROLE_PREFIX = "ROLE_";
+
     @Autowired
     private AccountDAO accountDAO;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Account account = accountDAO.findAccount(username);
-        System.out.println("Account= " + account);
 
         if (account == null) {
             throw new UsernameNotFoundException("User " //
@@ -31,7 +32,7 @@ public class UserDetailsServiceImpl implements UserDetailsService{
         }
 
         // Các vai trò nghiệp vụ như nhân viên hoặc quản lý.
-        String role = account.getUserRole();
+        String role = normalizeRole(account.getUserRole());
 
         List<GrantedAuthority> grantList = new ArrayList<GrantedAuthority>();
 
@@ -50,5 +51,9 @@ public class UserDetailsServiceImpl implements UserDetailsService{
                 credentialsNonExpired, accountNonLocked, grantList);
 
         return userDetails;
+    }
+
+    private String normalizeRole(String role) {
+        return role.startsWith(ROLE_PREFIX) ? role : ROLE_PREFIX + role;
     }
 }

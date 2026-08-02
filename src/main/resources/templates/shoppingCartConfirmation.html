@@ -373,19 +373,19 @@
                   <ul class="info-list">
                      <li class="info-item">
                         <span class="info-label">Người nhận:</span>
-                        <span class="info-value" th:utext="${myCart.customerInfo.name}">Trương Hoài Được</span>
+                        <span class="info-value" th:text="${myCart.customerInfo.name}">Trương Hoài Được</span>
                      </li>
                      <li class="info-item">
                         <span class="info-label">Email:</span>
-                        <span class="info-value" th:utext="${myCart.customerInfo.email}">hoaiduoc15@gmail.com</span>
+                        <span class="info-value" th:text="${myCart.customerInfo.email}">hoaiduoc15@gmail.com</span>
                      </li>
                      <li class="info-item">
                         <span class="info-label">Số điện thoại:</span>
-                        <span class="info-value" th:utext="${myCart.customerInfo.phone}">0949096416</span>
+                        <span class="info-value" th:text="${myCart.customerInfo.phone}">0949096416</span>
                      </li>
                      <li class="info-item">
                         <span class="info-label">Địa chỉ nhận:</span>
-                        <span class="info-value" th:utext="${myCart.customerInfo.address}">123 abc</span>
+                        <span class="info-value" th:text="${myCart.customerInfo.address}">123 abc</span>
                      </li>
                   </ul>
                </div>
@@ -401,14 +401,14 @@
                            <img class="prod-img" th:src="@{|/productImage?code=${cartLineInfo.productInfo.code}|}" />
                         </div>
                         <div class="prod-details">
-                           <h6 class="prod-name" th:utext="${cartLineInfo.productInfo.name}">Product Name</h6>
-                           <span class="prod-code" th:utext="'Mã: ' + ${cartLineInfo.productInfo.code}">Mã: S-013</span>
+                           <h6 class="prod-name" th:text="${cartLineInfo.productInfo.name}">Product Name</h6>
+                           <span class="prod-code" th:text="'Mã: ' + ${cartLineInfo.productInfo.code}">Mã: S-013</span>
                            <input type="hidden" name="code" th:value="${cartLineInfo.productInfo.code}" />
-                           <span class="prod-qty" th:utext="'Số lượng: ' + ${cartLineInfo.quantity}">Số lượng: 1</span>
+                           <span class="prod-qty" th:text="'Số lượng: ' + ${cartLineInfo.quantity}">Số lượng: 1</span>
                         </div>
                         <div class="prod-price-block">
-                            <p class="prod-subtotal" th:utext="${#numbers.formatDecimal(cartLineInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</p>
-                            <span class="prod-unit-price" th:utext="'Đơn giá: ' + ${#numbers.formatDecimal(cartLineInfo.productInfo.price * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">Đơn giá: 0 ₫</span>
+                            <p class="prod-subtotal" th:text="${#numbers.formatDecimal(cartLineInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</p>
+                            <span class="prod-unit-price" th:text="'Đơn giá: ' + ${#numbers.formatDecimal(cartLineInfo.productInfo.price * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">Đơn giá: 0 ₫</span>
                         </div>
                      </div>
                   </div>
@@ -423,7 +423,7 @@
                   
                   <div class="summary-row">
                      <span>Tạm tính sản phẩm:</span>
-                     <span class="font-weight-bold text-dark" th:utext="${#numbers.formatDecimal(myCart.amountTotal * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                     <span class="font-weight-bold text-dark" th:text="${#numbers.formatDecimal(myCart.amountTotal * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                   </div>
                   <div class="summary-row">
                      <span>Phí vận chuyển:</span>
@@ -431,12 +431,12 @@
                   </div>
                   <div th:if="${myCart.voucherCode != null}" class="summary-row">
                      <span>Voucher (<strong th:text="${myCart.voucherCode}">WELCOME50</strong>):</span>
-                     <span class="text-success font-weight-bold" th:utext="'- ' + ${#numbers.formatDecimal(myCart.discountAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                     <span class="text-success font-weight-bold" th:text="'- ' + ${#numbers.formatDecimal(myCart.discountAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                   </div>
                   
                   <div class="summary-row total-row">
                      <span class="total-label">Tổng thanh toán:</span>
-                      <span class="total-price" th:utext="${#numbers.formatDecimal(myCart.finalAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                      <span class="total-price" th:text="${#numbers.formatDecimal(myCart.finalAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">0 ₫</span>
                   </div>
 
                   <!-- Checkout form action -->

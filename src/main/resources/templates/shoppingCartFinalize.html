@@ -2,21 +2,290 @@
 <html xmlns:th="http://www.thymeleaf.org">
    <head>
       <meta charset="UTF-8">
-      <title>Shoe Shop Online</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>ShoeShop — Đặt hàng thành công</title>
       <link rel="stylesheet" type="text/css" th:href="@{/style.css}" />
       <th:block th:include="_header"></th:block>
+
+      <style>
+         :root {
+            --finalize-primary: #2563eb;
+            --finalize-primary-dark: #1d4ed8;
+            --finalize-success: #16a34a;
+            --finalize-success-light: #ecfdf5;
+            --finalize-text: #111827;
+            --finalize-muted: #64748b;
+            --finalize-border: #e2e8f0;
+            --finalize-bg: #f8fafc;
+         }
+
+         body {
+            background: var(--finalize-bg);
+            color: var(--finalize-text);
+         }
+
+         .finalize-page {
+            width: 100%;
+            min-height: calc(100vh - 11rem);
+            padding: 2rem 1rem 3rem;
+         }
+
+         .finalize-card {
+            width: 100%;
+            max-width: 46rem;
+            margin: 0 auto;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--finalize-border);
+            border-radius: 1rem;
+            box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.08);
+         }
+
+         .finalize-hero {
+            padding: 2rem 1.25rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--finalize-success-light) 0%, #fff 100%);
+         }
+
+         .success-icon {
+            display: inline-flex;
+            width: 4rem;
+            height: 4rem;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: #fff;
+            background: var(--finalize-success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0.5rem rgba(22, 163, 74, 0.12);
+            font-size: 1.75rem;
+         }
+
+         .finalize-title {
+            margin: 0;
+            font-size: clamp(1.6rem, 6vw, 2.2rem);
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+         }
+
+         .finalize-subtitle {
+            max-width: 35rem;
+            margin: 0.75rem auto 0;
+            color: var(--finalize-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+         }
+
+         .finalize-body {
+            padding: 0 1.25rem 2rem;
+         }
+
+         .order-summary {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+            margin: 0 0 1.5rem;
+            border: 1px solid var(--finalize-border);
+            border-radius: 0.875rem;
+            background: #fff;
+         }
+
+         .summary-item {
+            display: flex;
+            min-height: 4.5rem;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--finalize-border);
+         }
+
+         .summary-item:last-child {
+            border-bottom: 0;
+         }
+
+         .summary-label {
+            color: var(--finalize-muted);
+            font-size: 0.875rem;
+            font-weight: 600;
+         }
+
+         .summary-value {
+            color: var(--finalize-text);
+            font-size: 1rem;
+            font-weight: 800;
+            text-align: right;
+            overflow-wrap: anywhere;
+         }
+
+         .summary-value.order-code {
+            color: var(--finalize-primary);
+            font-size: 1.125rem;
+         }
+
+         .finalize-note {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            color: #334155;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.55;
+         }
+
+         .finalize-note i {
+            flex: 0 0 auto;
+            margin-top: 0.15rem;
+            color: var(--finalize-primary);
+         }
+
+         .finalize-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+         }
+
+         .finalize-btn {
+            display: inline-flex;
+            min-height: 3rem;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--finalize-border);
+            border-radius: 0.75rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none !important;
+            transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+         }
+
+         .finalize-btn-primary {
+            color: #fff !important;
+            background: var(--finalize-primary);
+            border-color: var(--finalize-primary);
+         }
+
+         .finalize-btn-primary:hover,
+         .finalize-btn-primary:focus-visible {
+            color: #fff !important;
+            background: var(--finalize-primary-dark);
+            border-color: var(--finalize-primary-dark);
+         }
+
+         .finalize-btn-secondary {
+            color: #334155 !important;
+            background: #fff;
+         }
+
+         .finalize-btn-secondary:hover,
+         .finalize-btn-secondary:focus-visible {
+            color: var(--finalize-primary) !important;
+            background: #eff6ff;
+            border-color: #93c5fd;
+         }
+
+         .finalize-btn:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.25);
+            outline-offset: 2px;
+         }
+
+         @media (min-width: 48rem) {
+            .finalize-page {
+               padding-top: 3.5rem;
+            }
+
+            .finalize-hero {
+               padding: 2.75rem 2.5rem 2rem;
+            }
+
+            .finalize-body {
+               padding: 0 2.5rem 2.5rem;
+            }
+
+            .order-summary {
+               grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .summary-item {
+               display: block;
+               min-height: 5.5rem;
+               border-right: 1px solid var(--finalize-border);
+               border-bottom: 0;
+            }
+
+            .summary-item:last-child {
+               border-right: 0;
+            }
+
+            .summary-value {
+               display: block;
+               margin-top: 0.35rem;
+               text-align: left;
+            }
+
+            .finalize-actions {
+               grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+         }
+      </style>
    </head>
    <body>
-      
       <th:block th:include="_menu"></th:block>
-       
-      <div class="page-title">Finalize</div>
-      <div class="container">
-         <h3>Thank you for Order</h3>
-         Your order number is: <span th:utext="${lastOrderedCart.orderNum}"></span>
-      </div>
-       
+
+      <main class="finalize-page">
+         <section class="finalize-card" aria-labelledby="finalize-title">
+            <div class="finalize-hero">
+               <div class="success-icon" aria-hidden="true">
+                  <i class="fas fa-check"></i>
+               </div>
+               <h1 class="finalize-title" id="finalize-title">Đặt hàng thành công!</h1>
+               <p class="finalize-subtitle">
+                  Cảm ơn bạn đã mua sắm tại ShoeShop. Đơn hàng của bạn đã được tiếp nhận và đang chờ xử lý.
+               </p>
+            </div>
+
+            <div class="finalize-body">
+               <div class="order-summary" aria-label="Tóm tắt đơn hàng">
+                  <div class="summary-item">
+                     <span class="summary-label">Mã đơn hàng</span>
+                     <span class="summary-value order-code" th:text="|Đơn #${lastOrderedCart.orderNum}|">Đơn #2</span>
+                  </div>
+                  <div class="summary-item">
+                     <span class="summary-label">Số lượng sản phẩm</span>
+                     <span class="summary-value" th:text="|${lastOrderedCart.quantityTotal} sản phẩm|">1 sản phẩm</span>
+                  </div>
+                  <div class="summary-item">
+                     <span class="summary-label">Tổng thanh toán</span>
+                     <span class="summary-value"
+                           th:text="${#numbers.formatDecimal(lastOrderedCart.finalAmount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'">
+                        0 ₫
+                     </span>
+                  </div>
+               </div>
+
+               <div class="finalize-note">
+                  <i class="fas fa-info-circle" aria-hidden="true"></i>
+                  <span>Bạn có thể theo dõi trạng thái và xem chi tiết đơn hàng trong mục Đơn hàng.</span>
+               </div>
+
+               <div class="finalize-actions">
+                  <a class="finalize-btn finalize-btn-primary" th:href="@{/admin/orderList}">
+                     <i class="fas fa-receipt" aria-hidden="true"></i>
+                     Xem đơn hàng
+                  </a>
+                  <a class="finalize-btn finalize-btn-secondary" th:href="@{/productList}">
+                     <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                     Tiếp tục mua sắm
+                  </a>
+               </div>
+            </div>
+         </section>
+      </main>
+
       <th:block th:include="_footer"></th:block>
-       
    </body>
-</html>>
+</html>

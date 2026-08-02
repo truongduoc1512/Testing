@@ -331,7 +331,7 @@
       
       <div class="dash-container">
          <div class="detail-header-row">
-            <h1 class="detail-title" th:utext="'Đơn hàng #' + ${orderInfo.orderNum}">Đơn hàng</h1>
+            <h1 class="detail-title" th:text="'Đơn hàng #' + ${orderInfo.orderNum}">Đơn hàng</h1>
             <a th:href="@{/admin/orderList}" class="btn-back">
                <i class="fas fa-arrow-left"></i> Danh sách đơn hàng
             </a>
@@ -339,10 +339,10 @@
 
          <!-- Alert messages -->
          <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: var(--radius-md); font-size: var(--font-size-sm); font-family: var(--font-family);">
-            <span th:utext="${message}"></span>
+            <span th:text="${message}"></span>
          </div>
          <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: var(--radius-md); font-size: var(--font-size-sm); font-family: var(--font-family);">
-            <span th:utext="${errorMessage}"></span>
+            <span th:text="${errorMessage}"></span>
          </div>
 
          <div class="detail-grid">
@@ -367,14 +367,14 @@
                      <tbody>
                         <tr th:each="orderDetailInfo : ${orderInfo.details}">
                            <td>
-                              <span class="prod-code" th:utext="${orderDetailInfo.productCode}"></span>
+                              <span class="prod-code" th:text="${orderDetailInfo.productCode}"></span>
                            </td>
                            <td>
-                              <span class="prod-name" th:utext="${orderDetailInfo.productName}"></span>
+                              <span class="prod-name" th:text="${orderDetailInfo.productName}"></span>
                            </td>
-                           <td style="font-weight: 600;" th:utext="${orderDetailInfo.quanity}"></td>
-                            <td th:utext="${#numbers.formatDecimal(orderDetailInfo.price * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></td>
-                            <td style="font-weight: 700;" th:utext="${#numbers.formatDecimal(orderDetailInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></td>
+                           <td style="font-weight: 600;" th:text="${orderDetailInfo.quanity}"></td>
+                            <td th:text="${#numbers.formatDecimal(orderDetailInfo.price * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></td>
+                            <td style="font-weight: 700;" th:text="${#numbers.formatDecimal(orderDetailInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></td>
                         </tr>
                      </tbody>
                   </table>
@@ -395,7 +395,7 @@
                         </div>
                         <div class="info-details">
                            <span class="info-label">Họ và tên</span>
-                           <span class="info-value" th:utext="${orderInfo.customerName}"></span>
+                           <span class="info-value" th:text="${orderInfo.customerName}"></span>
                         </div>
                      </div>
                      <div class="info-row">
@@ -404,7 +404,7 @@
                         </div>
                         <div class="info-details">
                            <span class="info-label">Địa chỉ Email</span>
-                           <span class="info-value" th:utext="${orderInfo.customerEmail}"></span>
+                           <span class="info-value" th:text="${orderInfo.customerEmail}"></span>
                         </div>
                      </div>
                      <div class="info-row">
@@ -413,7 +413,7 @@
                         </div>
                         <div class="info-details">
                            <span class="info-label">Số điện thoại</span>
-                           <span class="info-value" th:utext="${orderInfo.customerPhone}"></span>
+                           <span class="info-value" th:text="${orderInfo.customerPhone}"></span>
                         </div>
                      </div>
                      <div class="info-row">
@@ -422,7 +422,7 @@
                         </div>
                         <div class="info-details">
                            <span class="info-label">Địa chỉ nhận hàng</span>
-                           <span class="info-value" th:utext="${orderInfo.customerAddress}"></span>
+                           <span class="info-value" th:text="${orderInfo.customerAddress}"></span>
                         </div>
                      </div>
                   </div>
@@ -435,11 +435,11 @@
                   </h3>
                   <div class="summary-row">
                      <span class="summary-label">Trạng thái</span>
-                     <span th:class="'status-badge status-' + ${#strings.toLowerCase(orderInfo.status)}" th:utext="${orderInfo.status}">PENDING</span>
+                     <span th:class="'status-badge status-' + ${#strings.toLowerCase(orderInfo.status)}" th:text="${orderInfo.status}">PENDING</span>
                   </div>
                   <div class="summary-row">
                      <span class="summary-label">Tổng thanh toán</span>
-                      <span class="summary-value total-price" th:utext="${#numbers.formatDecimal(orderInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></span>
+                      <span class="summary-value total-price" th:text="${#numbers.formatDecimal(orderInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></span>
                   </div>
 
                   <!-- Form update status (Only visible to admin/employee) -->
@@ -449,7 +449,8 @@
                         <input type="hidden" name="orderId" th:value="${orderInfo.id}" />
                         <select name="status" class="select-status">
                            <option value="PENDING" th:selected="${orderInfo.status == 'PENDING'}">Chờ xử lý</option>
-                           <option value="SHIPPING" th:selected="${orderInfo.status == 'SHIPPING'}">Đang giao hàng</option>
+                           <option value="APPROVED" th:selected="${orderInfo.status == 'APPROVED'}">Đã xác nhận</option>
+                           <option value="SHIPPING" th:selected="${orderInfo.status == 'SHIPPING' or orderInfo.status == 'SHIPPED'}">Đang giao hàng</option>
                            <option value="COMPLETED" th:selected="${orderInfo.status == 'COMPLETED'}">Hoàn thành</option>
                            <option value="CANCELLED" th:selected="${orderInfo.status == 'CANCELLED'}">Đã hủy</option>
                         </select>

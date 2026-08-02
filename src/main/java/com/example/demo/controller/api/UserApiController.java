@@ -1,9 +1,8 @@
 package com.example.demo.controller.api;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +21,8 @@ import com.example.demo.entity.Account;
 import com.example.demo.form.RegisterForm;
 import com.example.demo.form.UserProfileForm;
 import com.example.demo.pagination.PaginationResult;
+import com.example.demo.service.AccountProfileService;
+import com.example.demo.service.AuthenticatedAccountService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,11 +32,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v1/users")
 public class UserApiController {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserApiController.class);
+
     @Autowired
     private AccountDAO accountDAO;
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticatedAccountService authenticatedAccountService;
+
+    @Autowired
+    private AccountProfileService accountProfileService;
 
     @Operation(summary = "Lấy danh sách người dùng có phân trang (Admin)")
     @GetMapping
@@ -43,7 +52,7 @@ public class UserApiController {
             @RequestParam(value = "page", defaultValue = "1") int page) {
         int maxResult = 10;
         int maxNavigationPage = 10;
-        PaginationResult<Account> result = accountDAO.listAccounts(page, maxResult, maxNavigationPage);
+        PaginationResult<Account> result = accountDAO.listAccounts(Math.max(page, 1), maxResult, maxNavigationPage);
         return ResponseEntity.ok(result);
     }
 
@@ -52,10 +61,8 @@ public class UserApiController {
     public ResponseEntity<?> getUserByUsername(@PathVariable("userName") String userName) {
         Account account = accountDAO.findAccount(userName);
         if (account == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Không tìm thấy tài khoản với username: " + userName);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Không tìm thấy tài khoản với username: " + userName));
         }
         return ResponseEntity.ok(account);
     }
@@ -63,29 +70,34 @@ public class UserApiController {
     @Operation(summary = "Đăng ký tài khoản mới (JSON Payload)")
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterForm registerForm) {
-        if (registerForm.getUserName() == null || registerForm.getUserName().trim().isEmpty() ||
+        if (registerForm == null || registerForm.getUserName() == null || registerForm.getUserName().trim().isEmpty() ||
             registerForm.getEmail() == null || registerForm.getEmail().trim().isEmpty() ||
             registerForm.getPassword() == null || registerForm.getPassword().trim().isEmpty()) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng nhập đầy đủ userName, email và password!");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Vui lòng nhập đầy đủ userName, email và password!"));
+        }
+        if (registerForm.getUserName().trim().length() > 50
+                || registerForm.getPassword().length() < 8 || registerForm.getPassword().length() > 72
+                || !org.apache.commons.validator.routines.EmailValidator.getInstance()
+                        .isValid(registerForm.getEmail().trim())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Username, email hoặc mật khẩu không hợp lệ; mật khẩu phải từ 8 đến 72 ký tự."));
+        }
+        if (registerForm.getConfirmPassword() != null
+                && !registerForm.getPassword().equals(registerForm.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mật khẩu xác nhận không khớp."));
         }
 
         Account existingAccount = accountDAO.findAccount(registerForm.getUserName().trim());
         if (existingAccount != null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Tên đăng nhập đã tồn tại trong hệ thống!");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Tên đăng nhập đã tồn tại trong hệ thống!"));
         }
 
         Account existingEmail = accountDAO.findAccountByEmail(registerForm.getEmail().trim().toLowerCase());
         if (existingEmail != null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Email đã được sử dụng bởi tài khoản khác!");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Email đã được sử dụng bởi tài khoản khác!"));
         }
 
         try {
@@ -101,10 +113,9 @@ public class UserApiController {
             Account savedAccount = accountDAO.findAccount(account.getUserName());
             return ResponseEntity.status(HttpStatus.CREATED).body(savedAccount);
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Lỗi tạo tài khoản: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            LOGGER.error("Không thể đăng ký tài khoản {} qua REST", registerForm.getUserName(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Không thể tạo tài khoản."));
         }
     }
 
@@ -113,19 +124,14 @@ public class UserApiController {
     public ResponseEntity<?> getCurrentUserProfile() {
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng đăng nhập để xem thông tin cá nhân!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để xem thông tin cá nhân!"));
         }
 
-        String username = auth.getName();
-        Account account = accountDAO.findAccount(username);
+        Account account = authenticatedAccountService.resolve(auth);
         if (account == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Không tìm thấy thông tin tài khoản trong hệ thống!");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Không tìm thấy thông tin tài khoản trong hệ thống!"));
         }
         return ResponseEntity.ok(account);
     }
@@ -133,37 +139,33 @@ public class UserApiController {
     @Operation(summary = "Cập nhật hồ sơ cá nhân (FullName, Email, Phone, AvatarUrl)")
     @PutMapping("/profile")
     public ResponseEntity<?> updateUserProfile(@RequestBody UserProfileForm profileForm) {
-        if (profileForm.getUserName() == null || profileForm.getUserName().trim().isEmpty()) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Tên đăng nhập 'userName' không được để trống!");
-            return ResponseEntity.badRequest().body(error);
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để cập nhật hồ sơ!"));
         }
 
-        Account account = accountDAO.findAccount(profileForm.getUserName().trim());
+        Account account = authenticatedAccountService.resolve(auth);
         if (account == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Không tìm thấy tài khoản cần cập nhật!");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Không tìm thấy tài khoản cần cập nhật!"));
         }
 
         try {
-            if (profileForm.getFullName() != null) account.setFullName(profileForm.getFullName().trim());
-            if (profileForm.getEmail() != null) account.setEmail(profileForm.getEmail().trim().toLowerCase());
-            if (profileForm.getPhoneNumber() != null) account.setPhoneNumber(profileForm.getPhoneNumber().trim());
-            if (profileForm.getAvatarUrl() != null && !profileForm.getAvatarUrl().trim().isEmpty()) {
-                account.setAvatarUrl(profileForm.getAvatarUrl().trim());
+            String validationError = accountProfileService.validate(account, profileForm);
+            if (validationError != null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(validationError));
             }
+
+            accountProfileService.apply(account, profileForm);
 
             accountDAO.saveAccount(account);
             Account updatedAccount = accountDAO.findAccount(account.getUserName());
             return ResponseEntity.ok(updatedAccount);
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Cập nhật hồ sơ thất bại: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            LOGGER.error("Không thể cập nhật hồ sơ {} qua REST", account.getUserName(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Không thể cập nhật hồ sơ."));
         }
     }
 }

@@ -44,6 +44,12 @@ public class RegisterFormValidator implements Validator {
         if (!form.getPassword().equals(form.getConfirmPassword())) {
             errors.rejectValue("confirmPassword", "Match.registerForm.confirmPassword", "Mật khẩu xác nhận không khớp");
         }
+        if (form.getUserName().trim().length() > 50) {
+            errors.rejectValue("userName", "Length.registerForm.userName", "Tên tài khoản tối đa 50 ký tự");
+        }
+        if (form.getPassword().length() < 8 || form.getPassword().length() > 72) {
+            errors.rejectValue("password", "Length.registerForm.password", "Mật khẩu phải từ 8 đến 72 ký tự");
+        }
 
         // Check duplicate username
         Account existingAccount = accountDAO.findAccount(form.getUserName());
