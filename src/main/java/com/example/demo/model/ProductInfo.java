@@ -1,8 +1,12 @@
 package com.example.demo.model;
 
+import java.io.Serializable;
+
 import com.example.demo.entity.Product;
 
-public class ProductInfo {
+public class ProductInfo implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     private String code;
     private String name;
     private double price;
@@ -18,10 +22,10 @@ public class ProductInfo {
     private String status;
     private boolean isMall;
     private boolean isFavored;
- 
+
     public ProductInfo() {
     }
- 
+
     public ProductInfo(Product product) {
         this.code = product.getCode();
         this.name = product.getName();
@@ -39,16 +43,16 @@ public class ProductInfo {
         this.isMall = product.isMall();
         this.isFavored = product.isFavored();
     }
- 
-    // Using in JPA/Hibernate query
+
+    // Dùng trong truy vấn JPA/Hibernate.
     public ProductInfo(String code, String name, double price) {
         this.code = code;
         this.name = name;
         this.originalPrice = price;
         this.price = price;
     }
- 
-    public ProductInfo(String code, String name, double price, int discountPercent, int salesCount, 
+
+    public ProductInfo(String code, String name, double price, int discountPercent, int salesCount,
                        String location, String brand, double rating, boolean isMall, boolean isFavored) {
         this.code = code;
         this.name = name;
@@ -63,74 +67,74 @@ public class ProductInfo {
         this.isFavored = isFavored;
     }
 
-    public ProductInfo(String code, String name, double price, int discountPercent, int salesCount, 
+    public ProductInfo(String code, String name, double price, int discountPercent, int salesCount,
                        String location, String brand, double rating, boolean isMall, boolean isFavored,
                        int reviewCount, int stockQuantity) {
         this(code, name, price, discountPercent, salesCount, location, brand, rating, isMall, isFavored);
         this.reviewCount = reviewCount;
         this.stockQuantity = stockQuantity;
     }
- 
+
     public String getCode() {
         return code;
     }
- 
+
     public void setCode(String code) {
         this.code = code;
     }
- 
+
     public String getName() {
         return name;
     }
- 
+
     public void setName(String name) {
         this.name = name;
     }
- 
+
     public double getPrice() {
         return price;
     }
- 
+
     public void setPrice(double price) {
         this.price = price;
     }
- 
+
     public int getDiscountPercent() {
         return discountPercent;
     }
- 
+
     public void setDiscountPercent(int discountPercent) {
         this.discountPercent = discountPercent;
     }
- 
+
     public int getSalesCount() {
         return salesCount;
     }
- 
+
     public void setSalesCount(int salesCount) {
         this.salesCount = salesCount;
     }
- 
+
     public String getLocation() {
         return location;
     }
- 
+
     public void setLocation(String location) {
         this.location = location;
     }
- 
+
     public String getBrand() {
         return brand;
     }
- 
+
     public void setBrand(String brand) {
         this.brand = brand;
     }
- 
+
     public double getRating() {
         return rating;
     }
- 
+
     public void setRating(double rating) {
         this.rating = rating;
     }
@@ -166,37 +170,37 @@ public class ProductInfo {
     public void setStatus(String status) {
         this.status = status;
     }
- 
+
     public boolean isMall() {
         return isMall;
     }
- 
+
     public boolean getIsMall() {
         return isMall;
     }
- 
+
     public void setMall(boolean mall) {
         isMall = mall;
     }
- 
+
     public boolean isFavored() {
         return isFavored;
     }
- 
+
     public boolean getIsFavored() {
         return isFavored;
     }
- 
+
     public void setFavored(boolean favored) {
         isFavored = favored;
     }
- 
+
     public double getOriginalPrice() {
         return originalPrice;
     }
- 
+
     public void setOriginalPrice(double originalPrice) {
         this.originalPrice = originalPrice;
     }
- 
+
 }

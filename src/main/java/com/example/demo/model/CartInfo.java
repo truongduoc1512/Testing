@@ -1,42 +1,45 @@
 package com.example.demo.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CartInfo {
-	 
+public class CartInfo implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private int orderNum;
- 
+
     private CustomerInfo customerInfo;
     private String voucherCode;
     private double discountAmount = 0.0;
 
     private final List<CartLineInfo> cartLines = new ArrayList<CartLineInfo>();
- 
+
     public CartInfo() {
- 
+
     }
- 
+
     public int getOrderNum() {
         return orderNum;
     }
- 
+
     public void setOrderNum(int orderNum) {
         this.orderNum = orderNum;
     }
- 
+
     public CustomerInfo getCustomerInfo() {
         return customerInfo;
     }
- 
+
     public void setCustomerInfo(CustomerInfo customerInfo) {
         this.customerInfo = customerInfo;
     }
- 
+
     public List<CartLineInfo> getCartLines() {
         return this.cartLines;
     }
- 
+
     private CartLineInfo findLineByCode(String code) {
         for (CartLineInfo line : this.cartLines) {
             if (line.getProductInfo().getCode().equals(code)) {
@@ -45,10 +48,10 @@ public class CartInfo {
         }
         return null;
     }
- 
+
     public void addProduct(ProductInfo productInfo, int quantity) {
         CartLineInfo line = this.findLineByCode(productInfo.getCode());
- 
+
         if (line == null) {
             line = new CartLineInfo();
             line.setQuantity(0);
@@ -66,14 +69,14 @@ public class CartInfo {
             line.setQuantity(newQuantity);
         }
     }
- 
+
     public void validate() {
- 
+
     }
- 
+
     public void updateProduct(String code, int quantity) {
         CartLineInfo line = this.findLineByCode(code);
- 
+
         if (line != null) {
             int maxStock = line.getProductInfo().getStockQuantity();
             if (quantity > maxStock) {
@@ -86,22 +89,22 @@ public class CartInfo {
             }
         }
     }
- 
+
     public void removeProduct(ProductInfo productInfo) {
         CartLineInfo line = this.findLineByCode(productInfo.getCode());
         if (line != null) {
             this.cartLines.remove(line);
         }
     }
- 
+
     public boolean isEmpty() {
         return this.cartLines.isEmpty();
     }
- 
+
     public boolean isValidCustomer() {
         return this.customerInfo != null && this.customerInfo.isValid();
     }
- 
+
     public int getQuantityTotal() {
         int quantity = 0;
         for (CartLineInfo line : this.cartLines) {
@@ -109,7 +112,7 @@ public class CartInfo {
         }
         return quantity;
     }
- 
+
     public double getAmountTotal() {
         double total = 0;
         for (CartLineInfo line : this.cartLines) {
@@ -137,7 +140,7 @@ public class CartInfo {
     public double getFinalAmount() {
         return Math.max(0, getAmountTotal() - discountAmount);
     }
- 
+
     public void updateQuantity(CartInfo cartForm) {
         if (cartForm != null) {
             List<CartLineInfo> lines = cartForm.getCartLines();
@@ -145,7 +148,7 @@ public class CartInfo {
                 this.updateProduct(line.getProductInfo().getCode(), line.getQuantity());
             }
         }
- 
+
     }
- 
+
 }

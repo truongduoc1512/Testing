@@ -74,7 +74,7 @@ public class ProductController {
       }
    }
 
-   // GET: Product List
+   // GET: Danh sách sản phẩm.
    @RequestMapping({ "/productList" })
    public String listProductHandler(HttpServletRequest request, Model model,
          @RequestParam(value = "name", defaultValue = "") String likeName,
@@ -99,8 +99,8 @@ public class ProductController {
           }
       }
 
-      PaginationResult<ProductInfo> result = productDAO.queryProducts(page, 
-            maxResult, maxNavigationPage, likeName, ownerUsername, sort, minPrice, maxPrice, 
+      PaginationResult<ProductInfo> result = productDAO.queryProducts(page,
+            maxResult, maxNavigationPage, likeName, ownerUsername, sort, minPrice, maxPrice,
             location, brand, isMall, isFavored, rating);
 
       model.addAttribute("paginationProducts", result);
@@ -115,7 +115,7 @@ public class ProductController {
       return "productList";
    }
 
-   // GET: Product Detail page with reviews, rating and stock info
+   // GET: Chi tiết sản phẩm, đánh giá và tồn kho.
    @RequestMapping(value = { "/productDetail" }, method = RequestMethod.GET)
    public String productDetail(Model model, @RequestParam("code") String code) {
       ProductInfo productInfo = productDAO.findProductInfo(code);
@@ -133,7 +133,7 @@ public class ProductController {
       return "productDetail";
    }
 
-   // GET: Product Image
+   // GET: Ảnh sản phẩm.
    @RequestMapping(value = { "/productImage" }, method = RequestMethod.GET)
    public void productImage(HttpServletRequest request, HttpServletResponse response, Model model,
          @RequestParam("code") String code) throws IOException {
@@ -148,7 +148,7 @@ public class ProductController {
       response.getOutputStream().close();
    }
 
-   // GET: Show admin product edit form
+   // GET: Hiển thị biểu mẫu chỉnh sửa sản phẩm cho quản trị viên.
    @RequestMapping(value = { "/admin/product" }, method = RequestMethod.GET)
    public String product(Model model, @RequestParam(value = "code", defaultValue = "") String code,
          final RedirectAttributes redirectAttributes) {
@@ -158,7 +158,7 @@ public class ProductController {
          Product product = productDAO.findProduct(code);
          if (product != null) {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            if (!product.getOwnerUsername().equals(currentUsername)) {
+            if (!currentUsername.equals(product.getOwnerUsername())) {
                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa sản phẩm của người khác!");
                return "redirect:/productList";
             }
@@ -173,7 +173,7 @@ public class ProductController {
       return "product";
    }
 
-   // POST: Save product
+   // POST: Lưu sản phẩm.
    @RequestMapping(value = { "/admin/product" }, method = RequestMethod.POST)
    public String productSave(Model model,
          @ModelAttribute("productForm") @Validated ProductForm productForm,
@@ -208,8 +208,8 @@ public class ProductController {
             String analyzeUrl = aiServiceUrl + "/api/v1/analyze";
             ResponseEntity<Map> response = restTemplate.postForEntity(analyzeUrl, requestEntity, Map.class);
 
-            if (response.getBody() != null) {
-               Map<?, ?> aiResult = response.getBody();
+            Map<?, ?> aiResult = response.getBody();
+            if (aiResult != null) {
                Boolean approved = (Boolean) aiResult.get("approved");
                String reason = (String) aiResult.get("reason");
 
@@ -238,7 +238,7 @@ public class ProductController {
       return "redirect:/productList";
    }
 
-   // GET: Delete product
+   // GET: Xóa sản phẩm.
    @RequestMapping(value = { "/admin/deleteProduct" }, method = RequestMethod.GET)
    public String deleteProduct(Model model, @RequestParam(value = "code", defaultValue = "") String code,
          final RedirectAttributes redirectAttributes) {
@@ -247,7 +247,7 @@ public class ProductController {
             Product product = productDAO.findProduct(code);
             if (product != null) {
                String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-               if (!product.getOwnerUsername().equals(currentUsername)) {
+               if (!currentUsername.equals(product.getOwnerUsername())) {
                   redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền xóa sản phẩm của người khác!");
                   return "redirect:/productList";
                }

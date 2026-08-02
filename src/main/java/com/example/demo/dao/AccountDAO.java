@@ -1,7 +1,6 @@
 package com.example.demo.dao;
 
 import java.util.Date;
-import java.util.List;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -16,10 +15,10 @@ import com.example.demo.pagination.PaginationResult;
 @Transactional
 @Repository
 public class AccountDAO {
- 
+
     @Autowired
     private SessionFactory sessionFactory;
- 
+
     public Account findAccount(String userName) {
         Session session = this.sessionFactory.getCurrentSession();
         return session.find(Account.class, userName);

@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dao.VoucherDAO;
@@ -45,7 +43,7 @@ public class VoucherApiController {
     }
 
     // ==========================================
-    // USER APIs
+    // API dành cho người dùng.
     // ==========================================
 
     @Operation(summary = "Lấy danh sách các mã giảm giá hợp lệ đang có hiệu lực")
@@ -68,17 +66,17 @@ public class VoucherApiController {
         if (payload.containsKey("orderAmount") && payload.get("orderAmount") != null) {
             try {
                 orderAmount = Double.parseDouble(payload.get("orderAmount").toString());
-            } catch (Exception e) {
-                orderAmount = myCart != null ? myCart.getAmountTotal() : 0.0;
+            } catch (NumberFormatException e) {
+                orderAmount = myCart.getAmountTotal();
             }
-        } else if (myCart != null) {
+        } else {
             orderAmount = myCart.getAmountTotal();
         }
 
         String username = getCurrentUsername();
         VoucherApplyResult result = voucherDAO.validateAndApplyVoucher(voucherCode, orderAmount, username);
 
-        if (result.isSuccess() && myCart != null) {
+        if (result.isSuccess()) {
             myCart.setVoucherCode(result.getVoucherCode());
             myCart.setDiscountAmount(result.getDiscountAmount());
         }
@@ -91,7 +89,7 @@ public class VoucherApiController {
     }
 
     // ==========================================
-    // ADMIN APIs
+    // API dành cho quản trị viên.
     // ==========================================
 
     @Operation(summary = "Lấy toàn bộ danh sách voucher (Admin)")

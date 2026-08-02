@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,7 @@ public class HomeController {
       return "403";
    }
 
-   // --- DEMO PATH TRAVERSAL ---
+   // --- Minh họa truy cập đường dẫn tệp ---
    @RequestMapping(value = "/viewFile", method = RequestMethod.GET)
    @ResponseBody
    public String viewFile(@RequestParam("filename") String filename) {
@@ -39,11 +40,11 @@ public class HomeController {
          String basePath = "src/main/resources/static/";
          File file = new File(basePath + filename);
          if (file.exists()) {
-             return new String(Files.readAllBytes(file.toPath()));
+             return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
          } else {
              File systemFile = new File(filename);
              if (systemFile.exists()) {
-                 return new String(Files.readAllBytes(systemFile.toPath()));
+                 return new String(Files.readAllBytes(systemFile.toPath()), StandardCharsets.UTF_8);
              }
          }
          return "File not found: " + filename;
