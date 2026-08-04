@@ -1,0 +1,1785 @@
+{
+	"info": {
+		"_postman_id": "shoeshop-enterprise-testing-collection",
+		"name": "Shoeshop Enterprise E-Commerce Platform - Automated Test Suite",
+		"description": "Enterprise End-to-End (E2E) Postman API & Web MVC Test Suite for Shoeshop E-Commerce System, covering Customer and Administrative Workflows, Session Cart Operations, Promotions, Reviews, and AI Quality Inspection.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "ai_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "existing_product_code",
+			"value": "S001",
+			"type": "string"
+		},
+		{
+			"key": "created_address_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "created_order_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "created_product_code",
+			"value": "P999",
+			"type": "string"
+		},
+		{
+			"key": "created_voucher_code",
+			"value": "SALE2026",
+			"type": "string"
+		},
+		{
+			"key": "active_voucher_code",
+			"value": "DISCOUNT10",
+			"type": "string"
+		},
+		{
+			"key": "created_review_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "csrf_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "0. User Authentication (Customer Role)",
+			"item": [
+				{
+					"name": "0.1 POST /j_spring_security_check - Authenticate User Account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "employee1"},
+								{"key": "password", "value": "123"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "1. Web MVC User Portal",
+			"item": [
+				{
+					"name": "GET / - Home Landing Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"try {",
+									"    const html = pm.response.text();",
+									"    const match = html.match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"    if (match && match[1]) {",
+									"        pm.variables.set('csrf_token', match[1]);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						}
+					}
+				},
+				{
+					"name": "GET /productList - Product Catalog & Filtering",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/productList?likeName=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["productList"],
+							"query": [
+								{"key": "likeName", "value": ""},
+								{"key": "page", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /productDetail - Product Detail View",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/productDetail?code={{existing_product_code}}",
+							"host": ["{{base_url}}"],
+							"path": ["productDetail"],
+							"query": [
+								{"key": "code", "value": "{{existing_product_code}}"}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /shoppingCart - Session Shopping Cart View",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/shoppingCart",
+							"host": ["{{base_url}}"],
+							"path": ["shoppingCart"]
+						}
+					}
+				},
+				{
+					"name": "POST /shoppingCart - Update Cart Item Quantity",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const randomQty = Math.floor(Math.random() * 5) + 1;",
+									"pm.variables.set('random_qty', randomQty);",
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/shoppingCart',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "code", "value": "{{existing_product_code}}"},
+								{"key": "quantity", "value": "{{random_qty}}"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/shoppingCart",
+							"host": ["{{base_url}}"],
+							"path": ["shoppingCart"]
+						}
+					}
+				},
+				{
+					"name": "GET /shoppingCartCustomer - Customer Delivery Info Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/shoppingCartCustomer",
+							"host": ["{{base_url}}"],
+							"path": ["shoppingCartCustomer"]
+						}
+					}
+				},
+				{
+					"name": "POST /shoppingCartCustomer - Submit Customer Shipping Details",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"pm.variables.set('random_customer_name', 'Customer ' + rand);",
+									"pm.variables.set('random_customer_email', 'customer' + rand + '@example.com');",
+									"pm.variables.set('random_customer_phone', '09' + Math.floor(10000000 + Math.random() * 90000000));",
+									"pm.variables.set('random_customer_address', rand + ' Main Boulevard, Suite 100');",
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/shoppingCartCustomer',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "name", "value": "{{random_customer_name}}"},
+								{"key": "email", "value": "{{random_customer_email}}"},
+								{"key": "phone", "value": "{{random_customer_phone}}"},
+								{"key": "address", "value": "{{random_customer_address}}"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/shoppingCartCustomer",
+							"host": ["{{base_url}}"],
+							"path": ["shoppingCartCustomer"]
+						}
+					}
+				},
+				{
+					"name": "POST /shoppingCartConfirmation - Confirm & Place Order",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/shoppingCartCustomer',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/shoppingCartConfirmation",
+							"host": ["{{base_url}}"],
+							"path": ["shoppingCartConfirmation"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Shipping Address REST API",
+			"item": [
+				{
+					"name": "GET /api/v1/users/addresses - Retrieve User Address List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"try {",
+									"    const jsonData = pm.response.json();",
+									"    const addrList = Array.isArray(jsonData) ? jsonData : (jsonData.data || []);",
+									"    if (addrList.length > 0 && addrList[0].id) {",
+									"        pm.collectionVariables.set('created_address_id', addrList[0].id);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/addresses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "addresses"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/users/addresses - Create New Shipping Address",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"pm.variables.set('random_recipient', 'Recipient ' + rand);",
+									"pm.variables.set('random_phone', '09' + Math.floor(10000000 + Math.random() * 90000000));",
+									"pm.variables.set('random_address', rand + ' Le Loi Street, District 1, HCMC');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 201 Created', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"try {",
+									"    const jsonData = pm.response.json();",
+									"    const addr = jsonData.address || jsonData.data || jsonData;",
+									"    const createdId = addr.id || jsonData.id;",
+									"    if (createdId) {",
+									"        pm.collectionVariables.set('created_address_id', createdId);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"receiverName\": \"{{random_recipient}}\",\n  \"phone\": \"{{random_phone}}\",\n  \"province\": \"TP.HCM\",\n  \"district\": \"Quan 1\",\n  \"ward\": \"Phuong Ben Nghe\",\n  \"streetAddress\": \"{{random_address}}\",\n  \"isDefault\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/addresses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "addresses"]
+						}
+					}
+				},
+				{
+					"name": "PUT /api/v1/users/addresses/{id} - Update Shipping Address",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"pm.variables.set('updated_recipient', 'Recipient (Updated) ' + rand);",
+									"pm.variables.set('updated_phone', '09' + Math.floor(10000000 + Math.random() * 90000000));",
+									"pm.variables.set('updated_address', rand + ' Tran Hung Dao Boulevard, HCMC');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"receiverName\": \"{{updated_recipient}}\",\n  \"phone\": \"{{updated_phone}}\",\n  \"province\": \"TP.HCM\",\n  \"district\": \"Quan 5\",\n  \"ward\": \"Phuong 1\",\n  \"streetAddress\": \"{{updated_address}}\",\n  \"isDefault\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/addresses/{{created_address_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "addresses", "{{created_address_id}}"]
+						}
+					}
+				},
+				{
+					"name": "DELETE /api/v1/users/addresses/{id} - Remove Shipping Address",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 204 No Content', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/addresses/{{created_address_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "addresses", "{{created_address_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Cart & Checkout REST API",
+			"item": [
+				{
+					"name": "GET /api/v1/cart - Get Current Cart State",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/cart/items - Add Item to Cart",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const randomQty = Math.floor(Math.random() * 4) + 1;",
+									"pm.variables.set('random_item_qty', randomQty);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{existing_product_code}}\",\n  \"quantity\": {{random_item_qty}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/cart/customer - Set Checkout Customer Information",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"pm.variables.set('random_checkout_name', 'Buyer ' + rand);",
+									"pm.variables.set('random_checkout_email', 'checkout' + rand + '@example.com');",
+									"pm.variables.set('random_checkout_phone', '09' + Math.floor(10000000 + Math.random() * 90000000));",
+									"pm.variables.set('random_checkout_address', rand + ' Corporate Drive, Suite 200');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{random_checkout_name}}\",\n  \"email\": \"{{random_checkout_email}}\",\n  \"phone\": \"{{random_checkout_phone}}\",\n  \"address\": \"{{random_checkout_address}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/customer",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "customer"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/cart/checkout - Complete Cart Checkout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 201 Created', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"try {",
+									"    const json = pm.response.json();",
+									"    const orderId = json.id || json.orderId || (json.order && json.order.id);",
+									"    if (orderId) pm.collectionVariables.set('created_order_id', orderId);",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/checkout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "checkout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. User Account REST API",
+			"item": [
+				{
+					"name": "POST /api/v1/users/register - Register New User Account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(10000 + Math.random() * 90000);",
+									"const uName = 'testuser' + rand;",
+									"const uEmail = 'testuser' + rand + '@example.com';",
+									"const uPass = 'Password' + rand;",
+									"pm.variables.set('random_reg_username', uName);",
+									"pm.variables.set('random_reg_email', uEmail);",
+									"pm.variables.set('random_reg_password', uPass);",
+									"pm.collectionVariables.set('last_registered_user', uName);",
+									"pm.collectionVariables.set('last_registered_pass', uPass);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 201 Created or 200 OK', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userName\": \"{{random_reg_username}}\",\n  \"email\": \"{{random_reg_email}}\",\n  \"password\": \"{{random_reg_password}}\",\n  \"confirmPassword\": \"{{random_reg_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "register"]
+						}
+					}
+				},
+				{
+					"name": "GET /api/v1/users/profile - Get User Account Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "PUT /api/v1/users/profile - Update User Account Profile",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"pm.variables.set('random_profile_name', 'Fullname ' + rand);",
+									"pm.variables.set('random_profile_phone', '09' + Math.floor(10000000 + Math.random() * 90000000));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"{{random_profile_name}}\",\n  \"phone\": \"{{random_profile_phone}}\",\n  \"avatarUrl\": \"https://picsum.photos/200\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/users/change-password - Change Account Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 400 Bad Request', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400, 405]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"123\",\n  \"newPassword\": \"123\",\n  \"confirmPassword\": \"123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/change-password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "change-password"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Wishlist REST API",
+			"item": [
+				{
+					"name": "GET /api/v1/wishlist - Retrieve User Favorites",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wishlist",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "wishlist"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/wishlist/toggle - Toggle Item Favorite Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 404', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productCode\": \"{{existing_product_code}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wishlist/toggle",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "wishlist", "toggle"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Product Reviews REST API",
+			"item": [
+				{
+					"name": "GET /api/v1/reviews/product/{code} - Fetch Product Reviews",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"try {",
+									"    const json = pm.response.json();",
+									"    if (Array.isArray(json) && json.length > 0 && json[0].id) {",
+									"        pm.collectionVariables.set('created_review_id', json[0].id);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews/product/{{existing_product_code}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews", "product", "{{existing_product_code}}"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/reviews - Submit Product Review & Rating",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(100 + Math.random() * 900);",
+									"const rating = Math.floor(Math.random() * 2) + 4;",
+									"pm.variables.set('random_review_rating', rating);",
+									"pm.variables.set('random_review_comment', 'Automated Review #' + rand + ': Excellent product, fast shipping!');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 201 Created or 403 Forbidden', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 403]);",
+									"});",
+									"try {",
+									"    const json = pm.response.json();",
+									"    const rev = json.review || json.data || json;",
+									"    const revId = rev.id || json.id;",
+									"    if (revId) pm.collectionVariables.set('created_review_id', revId);",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productCode\": \"{{existing_product_code}}\",\n  \"ratingValue\": {{random_review_rating}},\n  \"comment\": \"{{random_review_comment}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews"]
+						}
+					}
+				},
+				{
+					"name": "PUT /api/v1/reviews/{id} - Update Existing Product Review",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(100 + Math.random() * 900);",
+									"pm.variables.set('updated_review_comment', 'Updated Review #' + rand + ': Product is durable after 1 week.');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 400/404/405', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400, 404, 405]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ratingValue\": 5,\n  \"comment\": \"{{updated_review_comment}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews/{{created_review_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews", "{{created_review_id}}"]
+						}
+					}
+				},
+				{
+					"name": "DELETE /api/v1/reviews/{id} - Delete Product Review",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 204 No Content or 400 Bad Request', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 204, 400, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/reviews/{{created_review_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "reviews", "{{created_review_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Order Cancel & Return REST API (User)",
+			"item": [
+				{
+					"name": "POST /api/v1/orders/{orderId}/cancel - Cancel Pending Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 400 Bad Request', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{created_order_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders", "{{created_order_id}}", "cancel"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/orders/{orderId}/return - Request Order Return & Refund",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(100 + Math.random() * 900);",
+									"pm.variables.set('random_return_reason', 'Return Reason #' + rand + ': Manufacturing defect on sole seam.');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 201 Created or 400/404', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"{{random_return_reason}}\",\n  \"imageUrls\": \"https://picsum.photos/400\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{created_order_id}}/return",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders", "{{created_order_id}}", "return"]
+						}
+					}
+				},
+				{
+					"name": "GET /api/v1/orders/{orderId}/return - View Return Request Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 404', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{created_order_id}}/return",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "orders", "{{created_order_id}}", "return"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Product Catalog REST API",
+			"item": [
+				{
+					"name": "GET /api/v1/products - List All Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"try {",
+									"    const json = pm.response.json();",
+									"    const list = json.list || json.content || json;",
+									"    if (Array.isArray(list) && list.length > 0) {",
+									"        const firstCode = list[0].code || list[0].productCode;",
+									"        if (firstCode) pm.collectionVariables.set('existing_product_code', firstCode);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products?page=1&likeName=",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "likeName", "value": ""}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /api/v1/products/{code} - Get Product Details By Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{existing_product_code}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{existing_product_code}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "9. Promotional Voucher REST API (User)",
+			"item": [
+				{
+					"name": "GET /api/v1/vouchers - Get Available Vouchers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"try {",
+									"    const json = pm.response.json();",
+									"    if (Array.isArray(json) && json.length > 0 && json[0].code) {",
+									"        pm.collectionVariables.set('active_voucher_code', json[0].code);",
+									"    }",
+									"} catch(e) {}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vouchers",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vouchers"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/vouchers/apply - Apply Voucher Code to Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 400 Bad Request', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"voucherCode\": \"{{active_voucher_code}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/vouchers/apply",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vouchers", "apply"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "10. Admin Authentication (Manager Role)",
+			"item": [
+				{
+					"name": "10.1 POST /j_spring_security_check - Authenticate Administrator Account",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "manager1"},
+								{"key": "password", "value": "123"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "11. Administrative Management REST API",
+			"item": [
+				{
+					"name": "GET /admin/accountInfo - Access Admin Dashboard Overview",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/accountInfo",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "accountInfo"]
+						}
+					}
+				},
+				{
+					"name": "GET /admin/orderList - Access Admin Order Management List",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/orderList?page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orderList"],
+							"query": [
+								{"key": "page", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "GET /admin/product - Access Product Creation Interface",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/product",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "product"]
+						}
+					}
+				},
+				{
+					"name": "POST /admin/product - Create Product via Web Form",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"const prodCode = 'P' + rand;",
+									"pm.variables.set('random_mvc_prod_code', prodCode);",
+									"pm.variables.set('random_mvc_prod_name', 'Nike Air Runner ' + rand);",
+									"pm.variables.set('random_mvc_prod_price', (Math.floor(Math.random() * 15) + 5) * 100000);",
+									"pm.collectionVariables.set('created_product_code', prodCode);",
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/product',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "code", "value": "{{random_mvc_prod_code}}", "type": "text"},
+								{"key": "name", "value": "{{random_mvc_prod_name}}", "type": "text"},
+								{"key": "price", "value": "{{random_mvc_prod_price}}", "type": "text"},
+								{"key": "_csrf", "value": "{{csrf_token}}", "type": "text"},
+								{"key": "fileData", "type": "file", "src": []}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/product",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "product"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/products - Create/Update Product via REST API",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(1000 + Math.random() * 9000);",
+									"const prodCode = 'P' + rand;",
+									"pm.variables.set('random_api_prod_code', prodCode);",
+									"pm.variables.set('random_api_prod_name', 'Adidas Ultraboost ' + rand);",
+									"pm.variables.set('random_api_prod_price', (Math.floor(Math.random() * 20) + 10) * 100000);",
+									"pm.collectionVariables.set('created_product_code', prodCode);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 201 Created', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{random_api_prod_code}}\",\n  \"name\": \"{{random_api_prod_name}}\",\n  \"price\": {{random_api_prod_price}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products"]
+						}
+					}
+				},
+				{
+					"name": "DELETE /api/v1/products/{code} - Delete Product Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 204 No Content', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{created_product_code}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{created_product_code}}"]
+						}
+					}
+				},
+				{
+					"name": "PUT /api/v1/admin/orders/{orderId}/return-status - Approve/Reject Order Return Request",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(100 + Math.random() * 900);",
+									"pm.variables.set('random_admin_note', 'Admin automatic refund approval #' + rand);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 400/404', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"action\": \"APPROVE\",\n  \"adminNote\": \"{{random_admin_note}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/orders/{{created_order_id}}/return-status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "orders", "{{created_order_id}}", "return-status"]
+						}
+					}
+				},
+				{
+					"name": "GET /api/v1/admin/vouchers - Admin List All Vouchers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/vouchers",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "vouchers"]
+						}
+					}
+				},
+				{
+					"name": "POST /api/v1/admin/vouchers - Admin Create New Voucher Code",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rand = Math.floor(100 + Math.random() * 900);",
+									"const vCode = 'SALE' + rand;",
+									"const discount = Math.floor(Math.random() * 25) + 5;",
+									"pm.variables.set('random_voucher_code', vCode);",
+									"pm.variables.set('random_voucher_discount_percent', discount);",
+									"pm.collectionVariables.set('created_voucher_code', vCode);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 201 Created', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"{{random_voucher_code}}\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": {{random_voucher_discount_percent}},\n  \"maxDiscount\": 100000,\n  \"minOrderValue\": 200000,\n  \"usageLimit\": 100,\n  \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/vouchers",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "vouchers"]
+						}
+					}
+				},
+				{
+					"name": "DELETE /api/v1/admin/vouchers/{code} - Admin Deactivate Voucher Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 204 No Content', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/vouchers/{{created_voucher_code}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "vouchers", "{{created_voucher_code}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "12. AI Computer Vision Service REST API",
+			"item": [
+				{
+					"name": "POST /api/v1/analyze - YOLOv8 Inspection of Shoe Quality",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status code is 200 OK or 422 Unprocessable Entity', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 422]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "file", "type": "file", "src": []}
+							]
+						},
+						"url": {
+							"raw": "{{ai_url}}/api/v1/analyze",
+							"host": ["{{ai_url}}"],
+							"path": ["api", "v1", "analyze"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

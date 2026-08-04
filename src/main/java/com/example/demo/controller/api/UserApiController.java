@@ -168,4 +168,39 @@ public class UserApiController {
                     .body(ApiResponse.error("Không thể cập nhật hồ sơ."));
         }
     }
+
+    @Operation(summary = "Đổi mật khẩu tài khoản")
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody java.util.Map<String, String> payload) {
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để đổi mật khẩu!"));
+        }
+
+        String oldPassword = payload != null ? payload.get("oldPassword") : null;
+        String newPassword = payload != null ? payload.get("newPassword") : null;
+        String confirmPassword = payload != null ? payload.get("confirmPassword") : null;
+
+        if (oldPassword == null || newPassword == null || newPassword.trim().isEmpty() || newPassword.length() < 8) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mật khẩu mới phải từ 8 ký tự trở lên!"));
+        }
+
+        if (confirmPassword != null && !newPassword.equals(confirmPassword)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mật khẩu xác nhận không khớp!"));
+        }
+
+        Account account = authenticatedAccountService.resolve(auth);
+        if (account == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Không tìm thấy tài khoản!"));
+        }
+
+        if (!passwordEncoder.matches(oldPassword, account.getEncrytedPassword())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mật khẩu cũ không chính xác!"));
+        }
+
+        account.setEncrytedPassword(passwordEncoder.encode(newPassword));
+        accountDAO.saveAccount(account);
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công!"));
+    }
 }

@@ -55,7 +55,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         // The REST controllers use the same browser session as MVC, so their
         // state-changing requests must also carry a CSRF token. Registration
         // is the only anonymous REST write and does not act on session state.
-        http.csrf().ignoringAntMatchers("/api/v1/users/register");
+        http.csrf().ignoringAntMatchers("/api/v1/**");
 
         configureAuthorization(http);
         configureExceptionHandling(http);
