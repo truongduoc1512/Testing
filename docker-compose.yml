@@ -1,7 +1,7 @@
-
+version: '3.8'
 
 services:
-  # 1. Cơ sở dữ liệu MySQL (Chạy Local)
+  # 1. Cơ sở dữ liệu MySQL (Tối ưu RAM siêu nhẹ cho máy 12GB)
   shoeshop-mysql:
     image: mysql:8.0
     container_name: shoeshop-mysql
@@ -11,17 +11,25 @@ services:
       MYSQL_DATABASE: shoe_shopdb
     ports:
       - "3307:3306"
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    # Quan trọng: Đợi MySQL khởi tạo xong hoàn toàn
+    command: >
+      --character-set-server=utf8mb4 
+      --collation-server=utf8mb4_unicode_ci 
+      --innodb_buffer_pool_size=128M 
+      --max_connections=50 
+      --performance_schema=OFF
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - shoeshop-net
 
-  # 2. Khối AI Microservice
+  # 2. Khối AI Microservice (Python FastAPI + YOLOv8)
   ai-service:
     build: 
       context: ./ai-service
@@ -29,37 +37,49 @@ services:
     restart: always
     ports:
       - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     networks:
       - shoeshop-net
 
-  # 3. Ứng dụng Backend (Java Spring Boot)
+  # 3. Ứng dụng Backend (Java Spring Boot - Tối ưu JVM RAM)
   shoeshop-backend:
     build: .
     container_name: shoeshop-api
     restart: always
     environment:
-      # Trỏ vào container shoeshop-mysql ở trên
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:mysql://shoeshop-mysql:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true}
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-root}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-${MYSQL_ROOT_PASSWORD:-truonghoaiduoc5}}
       - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai-service:8000}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    deploy:
+      resources:
+        limits:
+          memory: 768M
     networks:
       - shoeshop-net
     depends_on:
       shoeshop-mysql:
-        condition: service_healthy # Spring chỉ chạy khi DB đã "healthy"
+        condition: service_healthy
       ai-service:
         condition: service_started
 
-  # 4. Nginx
+  # 4. Nginx Proxy
   nginx-proxy:
     image: nginx:alpine
     container_name: shoeshop-nginx
     restart: always
     ports:
       - "80:80"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     depends_on:
       - shoeshop-backend
     volumes:
@@ -79,12 +99,16 @@ services:
       PMA_ARBITRARY: 1
       PMA_ABSOLUTE_URI: http://localhost:8081/
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-truonghoaiduoc5}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     depends_on:
       - shoeshop-mysql
     networks:
       - shoeshop-net
 
-  # 6. Giao diện Swagger UI (API Documentation)
+  # 6. Giao diện Swagger UI
   swagger-ui:
     image: swaggerapi/swagger-ui
     container_name: shoeshop-swagger
@@ -93,11 +117,14 @@ services:
       - "8082:8080"
     environment:
       SWAGGER_JSON_URL: http://localhost/v3/api-docs
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     depends_on:
       - shoeshop-backend
     networks:
       - shoeshop-net
-
 
 networks:
   shoeshop-net:
