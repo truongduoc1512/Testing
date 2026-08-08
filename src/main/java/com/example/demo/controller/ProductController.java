@@ -192,9 +192,6 @@ public class ProductController {
          return "product";
       }
 
-      productForm.setCode(productForm.getCode().trim());
-      productForm.setName(productForm.getName().trim());
-
       Product existingProduct = productDAO.findProduct(productForm.getCode());
       String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
       if (existingProduct != null && !currentUsername.equals(existingProduct.getOwnerUsername())) {

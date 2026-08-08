@@ -39,7 +39,7 @@ public class Product implements Serializable {
     @Column(name = "UPDATE_DATE", nullable = true)
     private Date updateDate;
 
-    @Column(name = "OWNER_USERNAME", length = 20, nullable = false)
+    @Column(name = "OWNER_USERNAME", length = 50, nullable = false)
     private String ownerUsername = "manager1";
 
     @Column(name = "DISCOUNT_PERCENT", nullable = false)

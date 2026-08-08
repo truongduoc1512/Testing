@@ -4,8 +4,14 @@
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
-    <property name="severity" value="warning"/>
+    <property name="severity" value="error"/>
     <property name="fileExtensions" value="java, properties, xml"/>
+
+    <!-- BDD-style test names use underscores to separate condition and expected result. -->
+    <module name="SuppressionSingleFilter">
+        <property name="files" value=".*[\\/]src[\\/]test[\\/]java[\\/].*"/>
+        <property name="checks" value="MethodName"/>
+    </module>
 
     <!-- Checks for whitespace -->
     <module name="FileTabCharacter">

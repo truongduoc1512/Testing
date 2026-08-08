@@ -44,7 +44,7 @@ public class Order implements Serializable {
     @Column(name = "STATUS", length = 50, nullable = false)
     private String status = "PENDING";
 
-    @Column(name = "CUSTOMER_USERNAME", length = 20, nullable = true)
+    @Column(name = "CUSTOMER_USERNAME", length = 50, nullable = true)
     private String customerUsername;
 
     public String getId() {

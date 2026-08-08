@@ -1,6 +1,5 @@
 package com.example.demo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dao.WishlistDAO;
-import com.example.demo.entity.Wishlist;
 import com.example.demo.model.ProductInfo;
 
 @SpringBootTest

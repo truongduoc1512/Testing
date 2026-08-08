@@ -15,12 +15,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.BeanPropertyBindingResult;
 
 import com.example.demo.dao.ProductDAO;
 import com.example.demo.entity.Product;
 import com.example.demo.form.ProductForm;
 import com.example.demo.model.ProductInfo;
 import com.example.demo.pagination.PaginationResult;
+import com.example.demo.validator.ProductFormValidator;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +36,9 @@ public class ProductApiController {
 
     @Autowired
     private ProductDAO productDAO;
+
+    @Autowired
+    private ProductFormValidator productFormValidator;
 
     @Operation(summary = "Lấy danh sách sản phẩm có phân trang và bộ lọc")
     @GetMapping
@@ -49,7 +54,7 @@ public class ProductApiController {
             @RequestParam(value = "isFavored", required = false) Boolean isFavored,
             @RequestParam(value = "rating", required = false) Integer rating,
             @RequestParam(value = "category", required = false) String category) {
-        
+
         int maxResult = 12;
         int maxNavigationPage = 10;
         PaginationResult<ProductInfo> result = productDAO.queryProducts(Math.max(page, 1), maxResult, maxNavigationPage,
@@ -71,14 +76,17 @@ public class ProductApiController {
     @Operation(summary = "Tạo mới hoặc cập nhật sản phẩm (JSON Payload)")
     @PostMapping
     public ResponseEntity<?> saveProduct(@RequestBody ProductForm productForm) {
-        if (productForm == null || productForm.getCode() == null || productForm.getCode().trim().isEmpty() ||
-            productForm.getName() == null || productForm.getName().trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Mã và tên sản phẩm không được để trống!"));
+        if (productForm == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Dữ liệu sản phẩm không được để trống."));
         }
+
+        BeanPropertyBindingResult errors = new BeanPropertyBindingResult(productForm, "productForm");
+        productFormValidator.validateLocalRules(productForm, errors);
+        if (errors.hasErrors()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(errors));
+        }
+
         try {
-            productForm.setCode(productForm.getCode().trim());
-            productForm.setName(productForm.getName().trim());
             Product existingProduct = productDAO.findProduct(productForm.getCode());
             boolean isNew = existingProduct == null;
             String username = SecurityContextHolder.getContext().getAuthentication().getName();

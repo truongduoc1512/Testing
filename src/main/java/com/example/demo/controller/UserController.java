@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -97,17 +98,13 @@ public class UserController {
         }
 
         try {
-            Account account = new Account();
-            account.setUserName(registerForm.getUserName().trim());
-            account.setEmail(registerForm.getEmail().trim().toLowerCase());
-            account.setEncrytedPassword(passwordEncoder.encode(registerForm.getPassword()));
-            account.setActive(true);
-            account.setUserRole(Account.ROLE_USER);
-            account.setProvider("LOCAL");
-
-            accountDAO.saveAccount(account);
+            accountDAO.createLocalAccount(registerForm, passwordEncoder.encode(registerForm.getPassword()));
             redirectAttributes.addFlashAttribute("message", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
             return "redirect:/admin/login";
+        } catch (DataIntegrityViolationException e) {
+            LOGGER.warn("Dữ liệu đăng ký xung đột với tài khoản hiện có: {}", registerForm.getUserName());
+            model.addAttribute("errorMessage", "Tên tài khoản hoặc email đã được sử dụng.");
+            return "register";
         } catch (Exception e) {
             LOGGER.error("Không thể đăng ký tài khoản {}", registerForm.getUserName(), e);
             model.addAttribute("errorMessage", "Không thể tạo tài khoản. Vui lòng kiểm tra lại thông tin.");

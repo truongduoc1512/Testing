@@ -48,6 +48,9 @@ Các plugin sau được khai báo trong `pom.xml`:
 - Xóa import thừa trong `CartApiController`, `VoucherApiController`, `AccountDAO` và `ProductDAO`.
 - Chuẩn hóa UTF-8 khi đọc file trong `HomeController`.
 - Cấu hình SpotBugs exclude có phạm vi cho các trường hợp mutable object cần thiết với session, Spring binding và JPA.
+- Checkstyle dùng đúng `inputEncoding`, quét cả production và test source, đồng thời fail build khi có vi phạm.
+- Quy ước tên test BDD có dấu gạch dưới được giữ bằng suppression chỉ giới hạn trong `src/test/java`; production method vẫn theo camelCase.
+- Entrypoint `ai-service/main.py` được đưa vào phạm vi Flake8/Pylint; intentional re-export `main:app` có suppression cục bộ kèm lý do.
 - Cấu hình CORS wildcard trong `WebConfiguration` để Swagger UI và client bên ngoài gọi API theo yêu cầu hiện tại.
 - Thêm `flake8` và `pylint` vào dependency của `ai-service`.
 
@@ -125,13 +128,13 @@ mvn compile spotbugs:check
 ### 4.3. Flake8
 
 ```bash
-python -m flake8 --config=ai-service/.flake8 ai-service/app
+python -m flake8 --config=ai-service/.flake8 ai-service/main.py ai-service/app
 ```
 
 ### 4.4. Pylint
 
 ```bash
-python -m pylint --rcfile=ai-service/.pylintrc ai-service/app
+python -m pylint --rcfile=ai-service/.pylintrc ai-service/main.py ai-service/app
 ```
 
 ### 4.5. SonarQube
@@ -153,8 +156,8 @@ http://localhost:9000/dashboard?id=shoeshop
 ```powershell
 mvn checkstyle:check
 mvn compile spotbugs:check
-python -m flake8 --config=ai-service/.flake8 ai-service/app
-python -m pylint --rcfile=ai-service/.pylintrc ai-service/app
+python -m flake8 --config=ai-service/.flake8 ai-service/main.py ai-service/app
+python -m pylint --rcfile=ai-service/.pylintrc ai-service/main.py ai-service/app
 ```
 
 SonarQube được chạy riêng vì cần server ở trạng thái `UP` và cần analysis token.
@@ -167,10 +170,10 @@ SonarQube được chạy riêng vì cần server ở trạng thái `UP` và c�
 
 | Công cụ | Kết quả thực tế | Trạng thái |
 |---|---|---|
-| Checkstyle | Maven build thành công, 0 violation. | `PASSED` |
+| Checkstyle | Production và test source: Maven build thành công, 0 violation. | `PASSED` |
 | SpotBugs | Maven build thành công, 0 bug và 0 error. | `PASSED` |
-| Flake8 | Exit code 0, không còn lỗi PEP 8. | `PASSED` |
-| Pylint | 10,00/10. | `PASSED` |
+| Flake8 | Toàn bộ `ai-service/main.py` và `ai-service/app`: exit code 0. | `PASSED` |
+| Pylint | Toàn bộ `ai-service/main.py` và `ai-service/app`: 10,00/10. | `PASSED` |
 | SonarQube | Analysis thành công, Quality Gate `OK`. | `COMPLETED` |
 
 ### 5.2. Phạm vi kết quả SonarQube

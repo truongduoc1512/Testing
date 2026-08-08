@@ -32,7 +32,7 @@ public class Account implements Serializable {
     @JsonIgnore
     private String encrytedPassword;
 
-    @Column(name = "Email", length = 100, nullable = true)
+    @Column(name = "Email", length = 128, nullable = true, unique = true)
     private String email;
 
     @Column(name = "Phone_Number", length = 20, nullable = true)

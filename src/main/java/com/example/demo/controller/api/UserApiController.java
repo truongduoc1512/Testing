@@ -3,6 +3,7 @@ package com.example.demo.controller.api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.BeanPropertyBindingResult;
 
 import com.example.demo.dao.AccountDAO;
 import com.example.demo.entity.Account;
@@ -23,6 +25,7 @@ import com.example.demo.form.UserProfileForm;
 import com.example.demo.pagination.PaginationResult;
 import com.example.demo.service.AccountProfileService;
 import com.example.demo.service.AuthenticatedAccountService;
+import com.example.demo.validator.RegisterFormValidator;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +48,9 @@ public class UserApiController {
 
     @Autowired
     private AccountProfileService accountProfileService;
+
+    @Autowired
+    private RegisterFormValidator registerFormValidator;
 
     @Operation(summary = "Lấy danh sách người dùng có phân trang (Admin)")
     @GetMapping
@@ -70,48 +76,26 @@ public class UserApiController {
     @Operation(summary = "Đăng ký tài khoản mới (JSON Payload)")
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody RegisterForm registerForm) {
-        if (registerForm == null || registerForm.getUserName() == null || registerForm.getUserName().trim().isEmpty() ||
-            registerForm.getEmail() == null || registerForm.getEmail().trim().isEmpty() ||
-            registerForm.getPassword() == null || registerForm.getPassword().trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Vui lòng nhập đầy đủ userName, email và password!"));
-        }
-        if (registerForm.getUserName().trim().length() > 50
-                || registerForm.getPassword().length() < 8 || registerForm.getPassword().length() > 72
-                || !org.apache.commons.validator.routines.EmailValidator.getInstance()
-                        .isValid(registerForm.getEmail().trim())) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(
-                    "Username, email hoặc mật khẩu không hợp lệ; mật khẩu phải từ 8 đến 72 ký tự."));
-        }
-        if (registerForm.getConfirmPassword() != null
-                && !registerForm.getPassword().equals(registerForm.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Mật khẩu xác nhận không khớp."));
+        if (registerForm == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Dữ liệu đăng ký không được để trống."));
         }
 
-        Account existingAccount = accountDAO.findAccount(registerForm.getUserName().trim());
-        if (existingAccount != null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Tên đăng nhập đã tồn tại trong hệ thống!"));
-        }
-
-        Account existingEmail = accountDAO.findAccountByEmail(registerForm.getEmail().trim().toLowerCase());
-        if (existingEmail != null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Email đã được sử dụng bởi tài khoản khác!"));
+        BeanPropertyBindingResult errors = new BeanPropertyBindingResult(registerForm, "registerForm");
+        registerFormValidator.validate(registerForm, errors);
+        if (errors.hasErrors()) {
+            HttpStatus status = ApiResponse.containsErrorCodePrefix(errors, "Duplicate.")
+                    ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(ApiResponse.error(errors));
         }
 
         try {
-            Account account = new Account();
-            account.setUserName(registerForm.getUserName().trim());
-            account.setEmail(registerForm.getEmail().trim().toLowerCase());
-            account.setEncrytedPassword(passwordEncoder.encode(registerForm.getPassword()));
-            account.setActive(true);
-            account.setUserRole(Account.ROLE_USER);
-            account.setProvider("LOCAL");
-
-            accountDAO.saveAccount(account);
-            Account savedAccount = accountDAO.findAccount(account.getUserName());
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedAccount);
+            Account account = accountDAO.createLocalAccount(registerForm,
+                    passwordEncoder.encode(registerForm.getPassword()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(account);
+        } catch (DataIntegrityViolationException e) {
+            LOGGER.warn("Dữ liệu đăng ký REST xung đột: {}", registerForm.getUserName());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("Tên tài khoản hoặc email đã được sử dụng."));
         } catch (Exception e) {
             LOGGER.error("Không thể đăng ký tài khoản {} qua REST", registerForm.getUserName(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

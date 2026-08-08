@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
-import java.util.HexFormat;
+import java.util.Locale;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.entity.Account;
+import com.example.demo.form.RegisterForm;
 import com.example.demo.pagination.PaginationResult;
 
 @Transactional
@@ -24,19 +25,39 @@ public class AccountDAO {
     private SessionFactory sessionFactory;
 
     public Account findAccount(String userName) {
+        String normalizedUserName = normalizeUserName(userName);
+        if (normalizedUserName == null || normalizedUserName.isEmpty()) {
+            return null;
+        }
         Session session = this.sessionFactory.getCurrentSession();
-        return session.find(Account.class, userName);
+        return session.find(Account.class, normalizedUserName);
     }
 
     public Account findAccountByEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail == null || normalizedEmail.isEmpty()) {
             return null;
         }
         Session session = this.sessionFactory.getCurrentSession();
         String sql = "Select e from " + Account.class.getName() + " e Where e.email = :email";
         Query<Account> query = session.createQuery(sql, Account.class);
-        query.setParameter("email", email);
+        query.setParameter("email", normalizedEmail);
         return query.uniqueResult();
+    }
+
+    public Account createLocalAccount(RegisterForm form, String encodedPassword) {
+        if (form == null || encodedPassword == null || encodedPassword.isEmpty()) {
+            throw new IllegalArgumentException("Thông tin đăng ký không hợp lệ.");
+        }
+        Account account = new Account();
+        account.setUserName(normalizeUserName(form.getUserName()));
+        account.setEmail(normalizeEmail(form.getEmail()));
+        account.setEncrytedPassword(encodedPassword);
+        account.setActive(true);
+        account.setUserRole(Account.ROLE_USER);
+        account.setProvider("LOCAL");
+        saveAccount(account);
+        return account;
     }
 
     public Account findAccountByResetToken(String resetToken) {
@@ -82,10 +103,20 @@ public class AccountDAO {
     private String hashResetToken(String rawToken) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
+            return toHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is not available.", e);
         }
+    }
+
+    private String toHex(byte[] bytes) {
+        StringBuilder result = new StringBuilder(bytes.length * 2);
+        for (byte currentByte : bytes) {
+            int value = currentByte & 0xff;
+            result.append(Character.forDigit(value >>> 4, 16));
+            result.append(Character.forDigit(value & 0x0f, 16));
+        }
+        return result.toString();
     }
 
     public void saveAccount(Account account) {
@@ -107,5 +138,13 @@ public class AccountDAO {
                 + " a Where a.active = true and a.accountNonLocked = true"
                 + " and upper(a.userRole) in ('ADMIN', 'ROLE_ADMIN', 'MANAGER', 'ROLE_MANAGER')";
         return session.createQuery(hql, Long.class).getSingleResult();
+    }
+
+    private String normalizeUserName(String userName) {
+        return userName == null ? null : userName.trim();
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 }

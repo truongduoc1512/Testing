@@ -42,7 +42,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
@@ -64,12 +63,12 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
 		    <groupId>org.thymeleaf.extras</groupId>
 		    <artifactId>thymeleaf-extras-springsecurity5</artifactId>
 		</dependency>
- 
+
 		<!-- Commons Email validator,... -->
 		<!-- http://mvnrepository.com/artifact/commons-validator/commons-validator -->
 		<dependency>
@@ -77,20 +76,20 @@
 		    <artifactId>commons-validator</artifactId>
 		    <version>1.6</version>
 		</dependency>
-		 
+
 		<!-- https://mvnrepository.com/artifact/commons-lang/commons-lang -->
 		<dependency>
 		    <groupId>commons-lang</groupId>
 		    <artifactId>commons-lang</artifactId>
 		    <version>2.6</version>
 		</dependency>
-		 
+
 		<!-- https://mvnrepository.com/artifact/org.threeten/threetenbp -->
 		<dependency>
 		    <groupId>org.threeten</groupId>
 		    <artifactId>threetenbp</artifactId>
 		    <version>1.3.6</version>
-		</dependency>   
+		</dependency>
 
 		<!-- Thư viện lõi của Flyway -->
 		<dependency>
@@ -120,7 +119,8 @@
 				<version>3.3.1</version>
 				<configuration>
 					<configLocation>config/checkstyle/checkstyle.xml</configLocation>
-					<encoding>UTF-8</encoding>
+					<inputEncoding>UTF-8</inputEncoding>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
 					<consoleOutput>true</consoleOutput>
 					<failsOnError>false</failsOnError>
 					<linkXRef>false</linkXRef>
