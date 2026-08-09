@@ -1,5 +1,7 @@
 package com.example.demo.validator;
 
+import java.util.Locale;
+
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,8 +16,17 @@ import com.example.demo.form.RegisterForm;
 @Component
 public class RegisterFormValidator implements Validator {
 
+    private static final int MAX_USERNAME_LENGTH = 50;
+    private static final int MAX_EMAIL_LENGTH = 128;
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MAX_PASSWORD_LENGTH = 72;
+
+    private final AccountDAO accountDAO;
+
     @Autowired
-    private AccountDAO accountDAO;
+    public RegisterFormValidator(AccountDAO accountDAO) {
+        this.accountDAO = accountDAO;
+    }
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -26,6 +37,8 @@ public class RegisterFormValidator implements Validator {
     public void validate(Object target, Errors errors) {
         RegisterForm form = (RegisterForm) target;
 
+        normalize(form);
+
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "userName", "NotEmpty.registerForm.userName", "Tên tài khoản không được để trống");
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "email", "NotEmpty.registerForm.email", "Email không được để trống");
         ValidationUtils.rejectIfEmptyOrWhitespace(errors, "password", "NotEmpty.registerForm.password", "Mật khẩu không được để trống");
@@ -35,8 +48,9 @@ public class RegisterFormValidator implements Validator {
             return;
         }
 
-        // Check email format
-        if (!EmailValidator.getInstance().isValid(form.getEmail())) {
+        if (form.getEmail().length() > MAX_EMAIL_LENGTH) {
+            errors.rejectValue("email", "Length.registerForm.email", "Email tối đa 128 ký tự");
+        } else if (!EmailValidator.getInstance().isValid(form.getEmail())) {
             errors.rejectValue("email", "Pattern.registerForm.email", "Email không hợp lệ");
         }
 
@@ -44,11 +58,16 @@ public class RegisterFormValidator implements Validator {
         if (!form.getPassword().equals(form.getConfirmPassword())) {
             errors.rejectValue("confirmPassword", "Match.registerForm.confirmPassword", "Mật khẩu xác nhận không khớp");
         }
-        if (form.getUserName().trim().length() > 50) {
+        if (form.getUserName().length() > MAX_USERNAME_LENGTH) {
             errors.rejectValue("userName", "Length.registerForm.userName", "Tên tài khoản tối đa 50 ký tự");
         }
-        if (form.getPassword().length() < 8 || form.getPassword().length() > 72) {
+        if (form.getPassword().length() < MIN_PASSWORD_LENGTH
+                || form.getPassword().length() > MAX_PASSWORD_LENGTH) {
             errors.rejectValue("password", "Length.registerForm.password", "Mật khẩu phải từ 8 đến 72 ký tự");
+        }
+
+        if (errors.hasErrors()) {
+            return;
         }
 
         // Check duplicate username
@@ -62,5 +81,19 @@ public class RegisterFormValidator implements Validator {
         if (existingEmailAccount != null) {
             errors.rejectValue("email", "Duplicate.registerForm.email", "Email này đã được đăng ký tài khoản khác");
         }
+    }
+
+    private void normalize(RegisterForm form) {
+        form.setUserName(trim(form.getUserName()));
+        form.setEmail(normalizeEmail(form.getEmail()));
+    }
+
+    private String trim(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private String normalizeEmail(String value) {
+        String trimmed = trim(value);
+        return trimmed == null ? null : trimmed.toLowerCase(Locale.ROOT);
     }
 }
