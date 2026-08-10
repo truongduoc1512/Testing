@@ -31,6 +31,7 @@ services:
 
   # 2. Khối AI Microservice (Python FastAPI + YOLOv8)
   ai-service:
+    image: shoeshop-ai:${APP_VERSION:-latest}
     build: 
       context: ./ai-service
     container_name: shoeshop-ai
@@ -46,6 +47,7 @@ services:
 
   # 3. Ứng dụng Backend (Java Spring Boot - Tối ưu JVM RAM)
   shoeshop-backend:
+    image: shoeshop-backend:${APP_VERSION:-latest}
     build: .
     container_name: shoeshop-api
     restart: always
