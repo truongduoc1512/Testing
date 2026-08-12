@@ -68,7 +68,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .failureUrl("/admin/login?error=true")
                 .usernameParameter("userName")
                 .passwordParameter("password")
-                .and().logout().logoutUrl("/admin/logout").logoutSuccessUrl("/");
+                .and().logout().logoutRequestMatcher(new AntPathRequestMatcher("/admin/logout")).logoutSuccessUrl("/");
 
         // Configuration for Google OAuth2 Login
         http.oauth2Login()
