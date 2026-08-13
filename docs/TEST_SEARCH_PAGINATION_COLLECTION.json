@@ -1,0 +1,224 @@
+{
+  "info": {
+    "_postman_id": "c1f2e3d4-5678-90ab-cdef-1234567890fe",
+    "name": "TEST-20: Search & Pagination API Test Collection",
+    "description": "Postman Collection kiểm thử tự động API Tìm kiếm sản phẩm và Phân trang cho ShoeShop (Task TEST-20)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Search - Valid Keyword",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/products?name=Nike&page=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "Nike" },
+            { "key": "page", "value": "1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify totalRecords and currentPage', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('totalRecords');",
+              "    pm.expect(jsonData).to.have.property('currentPage', 1);",
+              "    pm.expect(jsonData.list).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Search - Non-existing Keyword",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/products?name=XYZ_NOT_EXIST_999",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "XYZ_NOT_EXIST_999" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200 OK with empty list', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.totalRecords).to.eql(0);",
+              "    pm.expect(jsonData.list).to.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Search - Special Characters (SQLi Test)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/products?name=%25%27OR%271%3D1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "%'OR'1=1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('System handles special characters safely without 500 server error', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Pagination - Page 2 Navigation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/products?page=2",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "2" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Current page is 2', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(2);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Pagination - Negative Page Number",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/products?page=-1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "-1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Negative page normalized to 1', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Product Detail - Non-existing Code (404)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/products/NON_EXISTENT_CODE_999",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "products", "NON_EXISTENT_CODE_999"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
