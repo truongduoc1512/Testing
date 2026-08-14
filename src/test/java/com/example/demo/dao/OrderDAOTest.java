@@ -2,7 +2,6 @@ package com.example.demo.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -40,8 +40,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.demo.entity.Order;
@@ -58,7 +60,6 @@ import com.example.demo.model.VoucherApplyResult;
 import com.example.demo.pagination.PaginationResult;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class OrderDAOTest {
 
     @Mock
@@ -81,7 +82,7 @@ class OrderDAOTest {
         ReflectionTestUtils.setField(dao, "sessionFactory", sessionFactory);
         ReflectionTestUtils.setField(dao, "productDAO", productDAO);
         ReflectionTestUtils.setField(dao, "voucherDAO", voucherDAO);
-        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @AfterEach
@@ -158,9 +159,9 @@ class OrderDAOTest {
         CartInfo cart = validCart("P001", quantity);
         Product product = product("P001", "ACTIVE", stock);
         when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
-        nativeMaxQuery(0);
 
         if (succeeds) {
+            stubMaxOrderNumberQuery(0);
             dao.saveOrder(cart);
             assertEquals(stock - quantity, product.getStockQuantity());
         } else {
@@ -174,26 +175,54 @@ class OrderDAOTest {
     }
 
     @Test
-    void saveOrder_refreshesServerPriceCreatesGuestOrderAndMutatesInventory() {
+    void saveOrder_refreshesCartLineFromServerProduct() {
         CartInfo cart = validCart("P001", 2);
         cart.getCartLines().get(0).getProductInfo().setPrice(1);
         Product product = product("P001", "ACTIVE", 5);
         product.setName("Server name");
         product.setPrice(200);
         product.setDiscountPercent(10);
-        product.setSalesCount(7);
         when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
-        nativeMaxQuery(9);
+        stubMaxOrderNumberQuery(0);
 
         dao.saveOrder(cart);
 
-        assertEquals("Server name", cart.getCartLines().get(0).getProductInfo().getName());
-        assertEquals(180, cart.getCartLines().get(0).getProductInfo().getPrice(), 0.0001);
+        ProductInfo refreshedProduct = cart.getCartLines().get(0).getProductInfo();
+        assertEquals("Server name", refreshedProduct.getName());
+        assertEquals(200, refreshedProduct.getOriginalPrice(), 0.0001);
+        assertEquals(10, refreshedProduct.getDiscountPercent());
+        assertEquals(180, refreshedProduct.getPrice(), 0.0001);
+        assertEquals(5, refreshedProduct.getStockQuantity());
+    }
+
+    @Test
+    void saveOrder_deductsInventoryAndIncreasesSalesCount() {
+        CartInfo cart = validCart("P001", 2);
+        Product product = product("P001", "ACTIVE", 5);
+        product.setSalesCount(7);
+        when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
+        stubMaxOrderNumberQuery(0);
+
+        dao.saveOrder(cart);
+
         assertEquals(3, product.getStockQuantity());
         assertEquals(9, product.getSalesCount());
+        verify(session).update(product);
+    }
+
+    @Test
+    void saveOrder_createsPendingGuestOrderWithNextNumber() {
+        CartInfo cart = validCart("P001", 2);
+        Product product = product("P001", "ACTIVE", 5);
+        when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
+        stubMaxOrderNumberQuery(9);
+
+        dao.saveOrder(cart);
+
         assertEquals(10, cart.getOrderNum());
         assertEquals(0, cart.getDiscountAmount());
         Order persistedOrder = capturePersistedOrderAndDetail();
+        assertEquals(10, persistedOrder.getOrderNum());
         assertNull(persistedOrder.getCustomerUsername());
         assertEquals(OrderStatus.PENDING, persistedOrder.getStatus());
         verify(session).flush();
@@ -205,12 +234,28 @@ class OrderDAOTest {
         CartInfo cart = validCart("P001", 1);
         Product product = product("P001", "ACTIVE", 5);
         when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
-        nativeMaxQuery(0);
+        stubMaxOrderNumberQuery(0);
 
         dao.saveOrder(cart);
 
         Order persistedOrder = capturePersistedOrderAndDetail();
         assertEquals("alice", persistedOrder.getCustomerUsername());
+    }
+
+    @Test
+    void saveOrder_treatsUnauthenticatedAuthenticationAsGuest() {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.isAuthenticated()).thenReturn(false);
+
+        assertSaveOrderTreatsAuthenticationAsGuest(authentication);
+    }
+
+    @Test
+    void saveOrder_treatsAnonymousAuthenticationAsGuest() {
+        Authentication anonymous = new AnonymousAuthenticationToken(
+                "key", "anonymous", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+
+        assertSaveOrderTreatsAuthenticationAsGuest(anonymous);
     }
 
     @Test
@@ -224,7 +269,7 @@ class OrderDAOTest {
         result.setVoucherCode("SALE10");
         result.setDiscountAmount(12);
         when(voucherDAO.validateAndApplyVoucherForCheckout(" sale10 ", 100, "alice")).thenReturn(result);
-        nativeMaxQuery(0);
+        stubMaxOrderNumberQuery(0);
 
         dao.saveOrder(cart);
 
@@ -232,6 +277,21 @@ class OrderDAOTest {
         assertEquals(12, cart.getDiscountAmount());
         verify(voucherDAO).recordVoucherUsage(org.mockito.ArgumentMatchers.eq("SALE10"),
                 org.mockito.ArgumentMatchers.eq("alice"), anyString());
+    }
+
+    @Test
+    void saveOrder_treatsBlankVoucherAsAbsent() {
+        CartInfo cart = validCart("P001", 1);
+        cart.setVoucherCode("   ");
+        Product product = product("P001", "ACTIVE", 5);
+        when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
+        stubMaxOrderNumberQuery(0);
+
+        dao.saveOrder(cart);
+
+        assertEquals(0, cart.getDiscountAmount());
+        verify(voucherDAO, never()).validateAndApplyVoucherForCheckout("   ", 100, null);
+        verify(voucherDAO, never()).recordVoucherUsage(anyString(), any(), anyString());
     }
 
     @Test
@@ -257,7 +317,7 @@ class OrderDAOTest {
         Product p2 = product("P002", "ACTIVE", 5);
         when(productDAO.findProductForUpdate("P001")).thenReturn(p1, p1);
         when(productDAO.findProductForUpdate("P002")).thenReturn(p2, p2);
-        nativeMaxQuery(0);
+        stubMaxOrderNumberQuery(0);
 
         dao.saveOrder(cart);
 
@@ -273,7 +333,7 @@ class OrderDAOTest {
         CartInfo cart = validCart("P001", 1);
         Product product = product("P001", "ACTIVE", 5);
         when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
-        nativeMaxQuery(null);
+        stubMaxOrderNumberQuery(null);
 
         dao.saveOrder(cart);
 
@@ -303,16 +363,23 @@ class OrderDAOTest {
                 Arguments.of("seller", "ROLE_ADMIN", "od.product.ownerUsername = :username", true),
                 Arguments.of("seller", "ROLE_MANAGER", "od.product.ownerUsername = :username", true),
                 Arguments.of("alice", "ROLE_UNKNOWN", "from com.example.demo.entity.Order ord", false),
-                Arguments.of(" ", "ROLE_USER", "from com.example.demo.entity.Order ord", false));
+                Arguments.of(" ", "ROLE_USER", "from com.example.demo.entity.Order ord", false),
+                Arguments.of(null, "ROLE_USER", "from com.example.demo.entity.Order ord", false),
+                Arguments.of(null, "ROLE_ADMIN", "from com.example.demo.entity.Order ord", false),
+                Arguments.of(" ", "ROLE_ADMIN", "from com.example.demo.entity.Order ord", false));
     }
 
     @Test
-    void listOrderInfo_noPrincipalOverloadReturnsUnscopedRows_characterization() {
+    void listOrderInfo_noPrincipalOverloadBuildsUnscopedQuery() {
         emptyOrderInfoQuery();
 
         PaginationResult<OrderInfo> result = dao.listOrderInfo(1, 10, 5);
 
         assertEquals(0, result.getTotalRecords());
+        ArgumentCaptor<String> hql = ArgumentCaptor.forClass(String.class);
+        verify(session).createQuery(hql.capture(), org.mockito.ArgumentMatchers.eq(OrderInfo.class));
+        assertFalse(hql.getValue().contains(":username"), hql.getValue());
+        assertFalse(hql.getValue().contains(" where "), hql.getValue());
     }
 
     @Test
@@ -436,7 +503,7 @@ class OrderDAOTest {
 
     @Test
     void listOrderDetailInfos_returnsAllLinesForOrder() {
-        Query<OrderDetailInfo> query = detailQuery();
+        Query<OrderDetailInfo> query = stubOrderDetailQuery();
 
         assertEquals(1, dao.listOrderDetailInfos("O1").size());
         verify(query).setParameter("orderId", "O1");
@@ -446,7 +513,7 @@ class OrderDAOTest {
     @Test
     void listOrderDetailInfosForPrincipal_filtersSellerWhenNotCustomer() {
         Query<Long> customerQuery = countQuery(0L);
-        Query<OrderDetailInfo> detailQuery = detailQuery();
+        Query<OrderDetailInfo> detailQuery = stubOrderDetailQuery();
 
         dao.listOrderDetailInfosForPrincipal("O1", "seller", "ROLE_MANAGER");
 
@@ -457,7 +524,7 @@ class OrderDAOTest {
     @Test
     void listOrderDetailInfosForPrincipal_returnsAllLinesForCustomerSeller() {
         countQuery(1L);
-        Query<OrderDetailInfo> detailQuery = detailQuery();
+        Query<OrderDetailInfo> detailQuery = stubOrderDetailQuery();
 
         dao.listOrderDetailInfosForPrincipal("O1", "seller", "ROLE_ADMIN");
 
@@ -466,7 +533,7 @@ class OrderDAOTest {
 
     @Test
     void listOrderDetailInfosForPrincipal_nonSellerRoleDoesNotCheckCustomer() {
-        Query<OrderDetailInfo> detailQuery = detailQuery();
+        Query<OrderDetailInfo> detailQuery = stubOrderDetailQuery();
 
         dao.listOrderDetailInfosForPrincipal("O1", "alice", "ROLE_USER");
 
@@ -535,7 +602,13 @@ class OrderDAOTest {
     static Stream<Arguments> countScopes() {
         return Stream.of(
                 Arguments.of("alice", "ROLE_USER", 2L, 2L, "o.customerUsername = :username"),
+                Arguments.of("alice", "ROLE_CUSTOMER", 2L, 2L, "o.customerUsername = :username"),
                 Arguments.of("seller", "ROLE_ADMIN", 3L, 3L, "count(distinct o.id)"),
+                Arguments.of("seller", "ROLE_MANAGER", 3L, 3L, "count(distinct o.id)"),
+                Arguments.of(null, "ROLE_USER", 1L, 1L, "Select count(o.id)"),
+                Arguments.of(" ", "ROLE_USER", 1L, 1L, "Select count(o.id)"),
+                Arguments.of(null, "ROLE_ADMIN", 1L, 1L, "Select count(o.id)"),
+                Arguments.of(" ", "ROLE_ADMIN", 1L, 1L, "Select count(o.id)"),
                 Arguments.of(null, null, null, 0L, "Select count(o.id)"),
                 Arguments.of("alice", "ROLE_UNKNOWN", 4L, 4L, "Select count(o.id)"));
     }
@@ -554,7 +627,13 @@ class OrderDAOTest {
     static Stream<Arguments> revenueScopes() {
         return Stream.of(
                 Arguments.of("alice", "ROLE_USER", 20.0, 20.0, "o.customerUsername = :username"),
+                Arguments.of("alice", "ROLE_CUSTOMER", 20.0, 20.0, "o.customerUsername = :username"),
+                Arguments.of("seller", "ROLE_ADMIN", 30.0, 30.0, "Select sum(od.amount)"),
                 Arguments.of("seller", "ROLE_MANAGER", 30.0, 30.0, "Select sum(od.amount)"),
+                Arguments.of(null, "ROLE_USER", 10.0, 10.0, "Select sum(o.amount)"),
+                Arguments.of(" ", "ROLE_USER", 10.0, 10.0, "Select sum(o.amount)"),
+                Arguments.of(null, "ROLE_ADMIN", 10.0, 10.0, "Select sum(o.amount)"),
+                Arguments.of(" ", "ROLE_ADMIN", 10.0, 10.0, "Select sum(o.amount)"),
                 Arguments.of(null, null, null, 0.0, "Select sum(o.amount)"),
                 Arguments.of("alice", "ROLE_UNKNOWN", 40.0, 40.0, "Select sum(o.amount)"));
     }
@@ -577,6 +656,18 @@ class OrderDAOTest {
                 org.mockito.ArgumentMatchers.eq(Double.class));
     }
 
+    private void assertSaveOrderTreatsAuthenticationAsGuest(Authentication authentication) {
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        CartInfo cart = validCart("P001", 1);
+        Product product = product("P001", "ACTIVE", 5);
+        when(productDAO.findProductForUpdate("P001")).thenReturn(product, product);
+        stubMaxOrderNumberQuery(0);
+
+        dao.saveOrder(cart);
+
+        assertNull(capturePersistedOrderAndDetail().getCustomerUsername());
+    }
+
     private Order capturePersistedOrderAndDetail() {
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(session, times(2)).persist(captor.capture());
@@ -587,7 +678,7 @@ class OrderDAOTest {
         return persisted.stream().filter(Order.class::isInstance).map(Order.class::cast).findFirst().get();
     }
 
-    private void nativeMaxQuery(Number value) {
+    private void stubMaxOrderNumberQuery(Number value) {
         NativeQuery<?> query = mock(NativeQuery.class);
         when(session.createNativeQuery(anyString())).thenReturn(query);
         when(query.getSingleResult()).thenReturn(value);
@@ -598,7 +689,6 @@ class OrderDAOTest {
         Query<OrderInfo> query = mock(Query.class);
         ScrollableResults scroll = mock(ScrollableResults.class);
         when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(OrderInfo.class))).thenReturn(query);
-        when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.scroll(ScrollMode.SCROLL_INSENSITIVE)).thenReturn(scroll);
         when(scroll.first()).thenReturn(false);
         when(scroll.getRowNumber()).thenReturn(-1);
@@ -630,15 +720,15 @@ class OrderDAOTest {
     private <T> Query<T> aggregateQuery(Class<T> type, T aggregate) {
         Query<T> query = mock(Query.class);
         when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(type))).thenReturn(query);
-        when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.getSingleResult()).thenReturn(aggregate);
         return query;
     }
 
     @SuppressWarnings("unchecked")
-    private Query<OrderDetailInfo> detailQuery() {
+    private Query<OrderDetailInfo> stubOrderDetailQuery() {
         Query<OrderDetailInfo> query = mock(Query.class);
-        when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(OrderDetailInfo.class))).thenReturn(query);
+        when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(OrderDetailInfo.class)))
+                .thenReturn(query);
         when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.getResultList()).thenReturn(Collections.singletonList(new OrderDetailInfo()));
         return query;
@@ -691,7 +781,7 @@ class OrderDAOTest {
         Order order = new Order();
         order.setId(id);
         order.setStatus(status);
-        order.setOrderDate(new Date());
+        order.setOrderDate(new Date(1_000L));
         order.setCustomerName("Alice");
         order.setCustomerAddress("Address");
         order.setCustomerEmail("alice@example.com");
