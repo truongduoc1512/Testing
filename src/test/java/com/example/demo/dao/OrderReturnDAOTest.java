@@ -1,13 +1,13 @@
 package com.example.demo.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,8 +30,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.demo.entity.Order;
@@ -42,7 +40,6 @@ import com.example.demo.form.OrderReturnForm;
 import com.example.demo.model.OrderStatus;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class OrderReturnDAOTest {
 
     @Mock
@@ -65,7 +62,7 @@ class OrderReturnDAOTest {
         ReflectionTestUtils.setField(dao, "sessionFactory", sessionFactory);
         ReflectionTestUtils.setField(dao, "orderDAO", orderDAO);
         ReflectionTestUtils.setField(dao, "productDAO", productDAO);
-        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @Test
@@ -76,15 +73,15 @@ class OrderReturnDAOTest {
 
     @Test
     void findReturnByOrderId_returnsNullForEmptyRows() {
-        returnQuery(Collections.emptyList());
+        stubReturnQuery(Collections.emptyList());
 
         assertNull(dao.findReturnByOrderId("O1"));
     }
 
     @Test
     void findReturnByOrderId_returnsFirstRow() {
-        OrderReturn first = orderReturn("PENDING");
-        returnQuery(java.util.Arrays.asList(first, orderReturn("PENDING")));
+        OrderReturn first = returnRequestInStatus("PENDING");
+        stubReturnQuery(java.util.Arrays.asList(first, returnRequestInStatus("PENDING")));
 
         assertSame(first, dao.findReturnByOrderId("O1"));
     }
@@ -99,7 +96,7 @@ class OrderReturnDAOTest {
     @ParameterizedTest
     @MethodSource("unauthorizedCustomers")
     void cancelOrder_rejectsMissingOrDifferentCustomer(String username) {
-        when(orderDAO.findOrderForUpdate("O1")).thenReturn(order(OrderStatus.PENDING));
+        when(orderDAO.findOrderForUpdate("O1")).thenReturn(orderInStatus(OrderStatus.PENDING));
 
         assertThrows(IllegalStateException.class, () -> dao.cancelOrder(username, "O1"));
         verify(session, never()).update(any());
@@ -112,7 +109,7 @@ class OrderReturnDAOTest {
     @ParameterizedTest
     @MethodSource("nonPendingStatuses")
     void cancelOrder_rejectsEveryNonPendingStatus(String status) {
-        when(orderDAO.findOrderForUpdate("O1")).thenReturn(order(status));
+        when(orderDAO.findOrderForUpdate("O1")).thenReturn(orderInStatus(status));
 
         assertThrows(IllegalStateException.class, () -> dao.cancelOrder("alice", "O1"));
     }
@@ -123,10 +120,10 @@ class OrderReturnDAOTest {
     }
 
     @Test
-    void cancelOrder_acceptsNormalizedPendingAndHandlesNoDetails() {
-        Order order = order(" pending ");
+    void cancelOrder_acceptsNormalizedPendingAndCancelsOrderWithoutDetails() {
+        Order order = orderInStatus(" pending ");
         when(orderDAO.findOrderForUpdate("O1")).thenReturn(order);
-        detailQuery(Collections.emptyList());
+        stubDetailQuery(Collections.emptyList());
 
         assertTrue(dao.cancelOrder("alice", "O1"));
         assertEquals(OrderStatus.CANCELLED, order.getStatus());
@@ -135,23 +132,26 @@ class OrderReturnDAOTest {
     }
 
     @Test
-    void cancelOrder_skipsDeletedProductWhileRestoringOtherState() {
-        Order order = order(OrderStatus.PENDING);
+    void cancelOrder_stillCancelsOrderWhenProductWasDeleted() {
+        Order order = orderInStatus(OrderStatus.PENDING);
         when(orderDAO.findOrderForUpdate("O1")).thenReturn(order);
-        detailQuery(Collections.singletonList(detail("P001", 2)));
+        stubDetailQuery(Collections.singletonList(detail("P001", 2)));
         when(productDAO.findProductForUpdate("P001")).thenReturn(null);
 
         assertTrue(dao.cancelOrder("alice", "O1"));
+
+        assertEquals(OrderStatus.CANCELLED, order.getStatus());
         verify(session).update(order);
+        verify(session).flush();
     }
 
     @ParameterizedTest
     @MethodSource("salesRestoreBoundaries")
     void cancelOrder_restoresStockAndNeverMakesSalesNegative(int sales, int expectedSales) {
-        Order order = order(OrderStatus.PENDING);
+        Order order = orderInStatus(OrderStatus.PENDING);
         Product product = product("P001", 5, sales);
         when(orderDAO.findOrderForUpdate("O1")).thenReturn(order);
-        detailQuery(Collections.singletonList(detail("P001", 2)));
+        stubDetailQuery(Collections.singletonList(detail("P001", 2)));
         when(productDAO.findProductForUpdate("P001")).thenReturn(product);
 
         dao.cancelOrder("alice", "O1");
@@ -168,8 +168,8 @@ class OrderReturnDAOTest {
     static Stream<OrderReturnForm> invalidReturnForms() {
         OrderReturnForm nullReason = new OrderReturnForm(null, null);
         OrderReturnForm blankReason = new OrderReturnForm(" ", null);
-        OrderReturnForm longReason = new OrderReturnForm(repeat('r', 2001), null);
-        OrderReturnForm longImages = new OrderReturnForm("reason", repeat('i', 501));
+        OrderReturnForm longReason = new OrderReturnForm(textOfLength('r', 2001), null);
+        OrderReturnForm longImages = new OrderReturnForm("reason", textOfLength('i', 501));
         return Stream.of(null, nullReason, blankReason, longReason, longImages);
     }
 
@@ -192,7 +192,7 @@ class OrderReturnDAOTest {
     @ParameterizedTest
     @MethodSource("unauthorizedCustomers")
     void createReturnRequest_rejectsMissingOrDifferentOwner(String username) {
-        when(orderDAO.findOrderForUpdate("O1")).thenReturn(order(OrderStatus.COMPLETED));
+        when(orderDAO.findOrderForUpdate("O1")).thenReturn(orderInStatus(OrderStatus.COMPLETED));
 
         assertThrows(IllegalStateException.class,
                 () -> dao.createReturnRequest(username, "O1", validReturnForm()));
@@ -201,7 +201,7 @@ class OrderReturnDAOTest {
     @ParameterizedTest
     @MethodSource("notCompletedStatuses")
     void createReturnRequest_rejectsNonCompletedOrder(String status) {
-        when(orderDAO.findOrderForUpdate("O1")).thenReturn(order(status));
+        when(orderDAO.findOrderForUpdate("O1")).thenReturn(orderInStatus(status));
 
         assertThrows(IllegalStateException.class,
                 () -> dao.createReturnRequest("alice", "O1", validReturnForm()));
@@ -214,8 +214,8 @@ class OrderReturnDAOTest {
 
     @Test
     void createReturnRequest_rejectsDuplicateRequest() {
-        when(orderDAO.findOrderForUpdate("O1")).thenReturn(order(OrderStatus.COMPLETED));
-        returnQuery(Collections.singletonList(orderReturn("PENDING")));
+        when(orderDAO.findOrderForUpdate("O1")).thenReturn(orderInStatus(OrderStatus.COMPLETED));
+        stubReturnQuery(Collections.singletonList(returnRequestInStatus("PENDING")));
 
         assertThrows(IllegalStateException.class,
                 () -> dao.createReturnRequest("alice", "O1", validReturnForm()));
@@ -225,9 +225,9 @@ class OrderReturnDAOTest {
     @ParameterizedTest
     @MethodSource("optionalImages")
     void createReturnRequest_trimsFieldsPersistsAndTagsOrder(String imageUrls, String expectedImages) {
-        Order order = order(" completed ");
+        Order order = orderInStatus(" completed ");
         when(orderDAO.findOrderForUpdate("O1")).thenReturn(order);
-        returnQuery(Collections.emptyList());
+        stubReturnQuery(Collections.emptyList());
         OrderReturnForm form = new OrderReturnForm(" reason ", imageUrls);
 
         OrderReturn created = dao.createReturnRequest("alice", "O1", form);
@@ -247,7 +247,7 @@ class OrderReturnDAOTest {
 
     static Stream<Arguments> invalidStatusUpdates() {
         return Stream.of(Arguments.of(null, null), Arguments.of("", null),
-                Arguments.of("UNKNOWN", null), Arguments.of("APPROVE", repeat('n', 256)));
+                Arguments.of("UNKNOWN", null), Arguments.of("APPROVE", textOfLength('n', 256)));
     }
 
     @ParameterizedTest
@@ -268,7 +268,7 @@ class OrderReturnDAOTest {
 
     @Test
     void updateReturnStatus_rejectsSellerWithoutWholeOrderOwnership() {
-        when(orderDAO.findOrderForUpdate("O1")).thenReturn(order(OrderStatus.RETURN_PENDING));
+        when(orderDAO.findOrderForUpdate("O1")).thenReturn(orderInStatus(OrderStatus.RETURN_PENDING));
         when(orderDAO.canManageOrder("O1", "seller")).thenReturn(false);
 
         assertThrows(IllegalStateException.class,
@@ -277,8 +277,8 @@ class OrderReturnDAOTest {
 
     @Test
     void updateReturnStatus_rejectsMissingReturnRequest() {
-        stubManageableOrder(order(OrderStatus.RETURN_PENDING));
-        lockedReturnQuery(Collections.emptyList());
+        stubManageableOrder(orderInStatus(OrderStatus.RETURN_PENDING));
+        stubLockedReturnQuery(Collections.emptyList());
 
         assertThrows(IllegalArgumentException.class,
                 () -> dao.updateReturnStatus("seller", "O1", "APPROVE", null));
@@ -287,8 +287,8 @@ class OrderReturnDAOTest {
     @ParameterizedTest
     @MethodSource("processedReturnStatuses")
     void updateReturnStatus_rejectsAlreadyProcessedRequest(String status) {
-        stubManageableOrder(order(OrderStatus.RETURN_PENDING));
-        lockedReturnQuery(Collections.singletonList(orderReturn(status)));
+        stubManageableOrder(orderInStatus(OrderStatus.RETURN_PENDING));
+        stubLockedReturnQuery(Collections.singletonList(returnRequestInStatus(status)));
 
         assertThrows(IllegalStateException.class,
                 () -> dao.updateReturnStatus("seller", "O1", "APPROVE", null));
@@ -300,8 +300,8 @@ class OrderReturnDAOTest {
 
     @Test
     void updateReturnStatus_rejectsOrderOutsideReturnPendingState() {
-        stubManageableOrder(order(OrderStatus.COMPLETED));
-        lockedReturnQuery(Collections.singletonList(orderReturn("PENDING")));
+        stubManageableOrder(orderInStatus(OrderStatus.COMPLETED));
+        stubLockedReturnQuery(Collections.singletonList(returnRequestInStatus("PENDING")));
 
         assertThrows(IllegalStateException.class,
                 () -> dao.updateReturnStatus("seller", "O1", "APPROVE", null));
@@ -309,15 +309,15 @@ class OrderReturnDAOTest {
 
     @Test
     void updateReturnStatus_approveRestoresStockAndMarksReturned() {
-        Order order = order(OrderStatus.RETURN_PENDING);
-        OrderReturn request = orderReturn("PENDING");
+        Order order = orderInStatus(OrderStatus.RETURN_PENDING);
+        OrderReturn request = returnRequestInStatus("PENDING");
         Product product = product("P001", 5, 1);
         stubManageableOrder(order);
-        lockedReturnQuery(Collections.singletonList(request));
-        detailQuery(Collections.singletonList(detail("P001", 2)));
+        stubLockedReturnQuery(Collections.singletonList(request));
+        stubDetailQuery(Collections.singletonList(detail("P001", 2)));
         when(productDAO.findProductForUpdate("P001")).thenReturn(product);
 
-        OrderReturn updated = dao.updateReturnStatus("seller", "O1", " approve ".trim(), " note ");
+        OrderReturn updated = dao.updateReturnStatus("seller", "O1", "approve", " note ");
 
         assertSame(request, updated);
         assertEquals("APPROVED", request.getStatus());
@@ -330,10 +330,10 @@ class OrderReturnDAOTest {
 
     @Test
     void updateReturnStatus_approveSkipsDeletedProduct() {
-        Order order = order(OrderStatus.RETURN_PENDING);
+        Order order = orderInStatus(OrderStatus.RETURN_PENDING);
         stubManageableOrder(order);
-        lockedReturnQuery(Collections.singletonList(orderReturn("PENDING")));
-        detailQuery(Collections.singletonList(detail("P001", 2)));
+        stubLockedReturnQuery(Collections.singletonList(returnRequestInStatus("PENDING")));
+        stubDetailQuery(Collections.singletonList(detail("P001", 2)));
         when(productDAO.findProductForUpdate("P001")).thenReturn(null);
 
         dao.updateReturnStatus("seller", "O1", "APPROVE", null);
@@ -343,10 +343,10 @@ class OrderReturnDAOTest {
 
     @Test
     void updateReturnStatus_rejectReturnsOrderToCompletedWithoutStockMutation() {
-        Order order = order(OrderStatus.RETURN_PENDING);
-        OrderReturn request = orderReturn("PENDING");
+        Order order = orderInStatus(OrderStatus.RETURN_PENDING);
+        OrderReturn request = returnRequestInStatus("PENDING");
         stubManageableOrder(order);
-        lockedReturnQuery(Collections.singletonList(request));
+        stubLockedReturnQuery(Collections.singletonList(request));
 
         dao.updateReturnStatus("seller", "O1", "reject", " no evidence ");
 
@@ -357,8 +357,22 @@ class OrderReturnDAOTest {
         verify(session).flush();
     }
 
+    @Test
+    void updateReturnStatus_rejectAllowsMissingAdminNote() {
+        Order order = orderInStatus(OrderStatus.RETURN_PENDING);
+        OrderReturn request = returnRequestInStatus("PENDING");
+        stubManageableOrder(order);
+        stubLockedReturnQuery(Collections.singletonList(request));
+
+        dao.updateReturnStatus("seller", "O1", "REJECT", null);
+
+        assertEquals("REJECTED", request.getStatus());
+        assertNull(request.getAdminNote());
+        assertEquals(OrderStatus.COMPLETED, order.getStatus());
+    }
+
     @SuppressWarnings("unchecked")
-    private Query<OrderReturn> returnQuery(List<OrderReturn> rows) {
+    private Query<OrderReturn> stubReturnQuery(List<OrderReturn> rows) {
         Query<OrderReturn> query = mock(Query.class);
         when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(OrderReturn.class))).thenReturn(query);
         when(query.setParameter(anyString(), any())).thenReturn(query);
@@ -366,14 +380,14 @@ class OrderReturnDAOTest {
         return query;
     }
 
-    private Query<OrderReturn> lockedReturnQuery(List<OrderReturn> rows) {
-        Query<OrderReturn> query = returnQuery(rows);
+    private Query<OrderReturn> stubLockedReturnQuery(List<OrderReturn> rows) {
+        Query<OrderReturn> query = stubReturnQuery(rows);
         when(query.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(query);
         return query;
     }
 
     @SuppressWarnings("unchecked")
-    private void detailQuery(List<OrderDetail> rows) {
+    private void stubDetailQuery(List<OrderDetail> rows) {
         Query<OrderDetail> query = mock(Query.class);
         when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(OrderDetail.class))).thenReturn(query);
         when(query.setParameter(anyString(), any())).thenReturn(query);
@@ -389,7 +403,7 @@ class OrderReturnDAOTest {
         return new OrderReturnForm("reason", null);
     }
 
-    private static Order order(String status) {
+    private static Order orderInStatus(String status) {
         Order order = new Order();
         order.setId("O1");
         order.setCustomerUsername("alice");
@@ -397,7 +411,7 @@ class OrderReturnDAOTest {
         return order;
     }
 
-    private static OrderReturn orderReturn(String status) {
+    private static OrderReturn returnRequestInStatus(String status) {
         OrderReturn request = new OrderReturn();
         request.setOrderId("O1");
         request.setStatus(status);
@@ -421,7 +435,7 @@ class OrderReturnDAOTest {
         return product;
     }
 
-    private static String repeat(char value, int count) {
+    private static String textOfLength(char value, int count) {
         StringBuilder text = new StringBuilder(count);
         for (int i = 0; i < count; i++) {
             text.append(value);

@@ -2,19 +2,23 @@ package com.example.demo.dao;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.persistence.LockModeType;
@@ -34,8 +38,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -50,8 +52,9 @@ import com.example.demo.model.ProductInfo;
 import com.example.demo.pagination.PaginationResult;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class ProductDAOTest {
+
+    private static final int RANDOM_METADATA_SAMPLE_LIMIT = 1_000;
 
     @Mock
     private SessionFactory sessionFactory;
@@ -65,7 +68,7 @@ class ProductDAOTest {
     void setUp() {
         dao = new ProductDAO();
         ReflectionTestUtils.setField(dao, "sessionFactory", sessionFactory);
-        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @AfterEach
@@ -134,13 +137,13 @@ class ProductDAOTest {
         ProductForm blankCode = validForm();
         blankCode.setCode(" ");
         ProductForm longCode = validForm();
-        longCode.setCode(repeat('P', 21));
+        longCode.setCode(textOfLength('P', 21));
         ProductForm nullName = validForm();
         nullName.setName(null);
         ProductForm blankName = validForm();
         blankName.setName(" ");
         ProductForm longName = validForm();
-        longName.setName(repeat('N', 256));
+        longName.setName(textOfLength('N', 256));
         ProductForm zeroPrice = validForm();
         zeroPrice.setPrice(0);
         ProductForm negativePrice = validForm();
@@ -208,7 +211,7 @@ class ProductDAOTest {
         assertEquals("Shoes", created.getName());
         assertEquals("manager1", created.getOwnerUsername());
         assertEquals("ACTIVE", created.getStatus());
-        assertNotNullDate(created.getCreateDate());
+        assertNotNull(created.getCreateDate());
         assertTrue(created.getSalesCount() >= 0 && created.getSalesCount() < 210000);
         assertTrue(created.getRating() >= 3 && created.getRating() <= 5);
         verify(session).flush();
@@ -288,6 +291,33 @@ class ProductDAOTest {
     }
 
     @Test
+    void save_samplesBothRandomBooleanMetadataOutcomesWithinSafetyLimit() {
+        DaoTestSupport.authenticate("manager1", "ROLE_MANAGER");
+        Set<Boolean> mallOutcomes = new HashSet<>();
+        Set<Boolean> favoredOutcomes = new HashSet<>();
+        doAnswer(invocation -> {
+            Product saved = invocation.getArgument(0);
+            mallOutcomes.add(saved.isMall());
+            favoredOutcomes.add(saved.isFavored());
+            return null;
+        }).when(session).persist(any(Product.class));
+
+        // Production owns ThreadLocalRandom directly, so the sample is bounded to keep
+        // branch coverage without introducing a production-only injection seam.
+        int attempts = 0;
+        while ((mallOutcomes.size() < 2 || favoredOutcomes.size() < 2)
+                && attempts < RANDOM_METADATA_SAMPLE_LIMIT) {
+            ProductForm form = validForm();
+            form.setCode("P" + attempts);
+            dao.save(form);
+            attempts++;
+        }
+
+        assertEquals(2, mallOutcomes.size());
+        assertEquals(2, favoredOutcomes.size());
+    }
+
+    @Test
     void queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort() {
         Query<ProductInfo> query = emptyProductQuery();
 
@@ -353,6 +383,20 @@ class ProductDAOTest {
     }
 
     @Test
+    void queryProducts_treatsEmptyOrBlankOptionalTextAsAbsent() {
+        Query<ProductInfo> query = emptyProductQuery();
+
+        dao.queryProducts(1, 10, 5, "", "", null, null, null,
+                "   ", "   ", null, null, null, "   ");
+
+        verify(query).setParameter("activeStatus", "ACTIVE");
+        verify(query, never()).setParameter("likeName", "%%");
+        verify(query, never()).setParameter("ownerUsername", "");
+        verify(query, never()).setParameter("category", "%%");
+        verify(query, never()).setParameterList(anyString(), any(java.util.Collection.class));
+    }
+
+    @Test
     void queryProducts_bindsEachNonEmptyLocationToken() {
         Query<ProductInfo> query = emptyProductQuery();
 
@@ -375,6 +419,23 @@ class ProductDAOTest {
     }
 
     @Test
+    void queryProducts_normalizesEverySupportedLocationAlias() {
+        Query<ProductInfo> query = emptyProductQuery();
+
+        dao.queryProducts(1, 10, 5, null, null, null, null, null,
+                "Hồ Chí Minh,HCM,Hà Nội,HN,An Giang,Cà Mau,Đà Nẵng",
+                null, null, null, null, null);
+
+        verify(query).setParameter("loc_0", "%hồ chí minh%");
+        verify(query).setParameter("loc_1", "%hồ chí minh%");
+        verify(query).setParameter("loc_2", "%hà nội%");
+        verify(query).setParameter("loc_3", "%hà nội%");
+        verify(query).setParameter("loc_4", "%an giang%");
+        verify(query).setParameter("loc_5", "%cà mau%");
+        verify(query).setParameter("loc_6", "%đà nẵng%");
+    }
+
+    @Test
     void queryProducts_bindsSingleBrandAsScalar() {
         Query<ProductInfo> query = emptyProductQuery();
 
@@ -392,6 +453,17 @@ class ProductDAOTest {
                 null, "Brand A, Brand B", null, null, null, null);
 
         verify(query).setParameterList("brandList", java.util.Arrays.asList("Brand A", "Brand B"));
+    }
+
+    @Test
+    void queryProducts_ignoresBrandContainingOnlySeparators() {
+        Query<ProductInfo> query = emptyProductQuery();
+
+        dao.queryProducts(1, 10, 5, null, null, null, null, null,
+                null, ", ,", null, null, null, null);
+
+        verify(query, never()).setParameter("brand", "");
+        verify(query, never()).setParameterList(anyString(), any(java.util.Collection.class));
     }
 
     @ParameterizedTest
@@ -441,8 +513,6 @@ class ProductDAOTest {
         Query<ProductInfo> query = mock(Query.class);
         ScrollableResults scroll = mock(ScrollableResults.class);
         when(session.createQuery(anyString(), org.mockito.ArgumentMatchers.eq(ProductInfo.class))).thenReturn(query);
-        when(query.setParameter(anyString(), any())).thenReturn(query);
-        when(query.setParameterList(anyString(), any(java.util.Collection.class))).thenReturn(query);
         when(query.scroll(ScrollMode.SCROLL_INSENSITIVE)).thenReturn(scroll);
         when(scroll.first()).thenReturn(false);
         when(scroll.getRowNumber()).thenReturn(-1);
@@ -474,15 +544,11 @@ class ProductDAOTest {
         return product;
     }
 
-    private static String repeat(char value, int count) {
+    private static String textOfLength(char value, int count) {
         StringBuilder text = new StringBuilder(count);
         for (int i = 0; i < count; i++) {
             text.append(value);
         }
         return text.toString();
-    }
-
-    private void assertNotNullDate(Date value) {
-        assertTrue(value != null);
     }
 }

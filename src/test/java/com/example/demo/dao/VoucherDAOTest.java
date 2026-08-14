@@ -2,10 +2,14 @@ package com.example.demo.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,10 +32,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.demo.entity.Voucher;
@@ -40,8 +43,10 @@ import com.example.demo.form.VoucherForm;
 import com.example.demo.model.VoucherApplyResult;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class VoucherDAOTest {
+
+    private static final long EXPIRED_TIMESTAMP_MILLIS = 0L;
+    private static final long FUTURE_TIMESTAMP_MILLIS = Long.MAX_VALUE;
 
     @Mock
     private SessionFactory sessionFactory;
@@ -55,14 +60,14 @@ class VoucherDAOTest {
     void setUp() {
         dao = new VoucherDAO();
         ReflectionTestUtils.setField(dao, "sessionFactory", sessionFactory);
-        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = { "   " })
     void findVoucher_rejectsMissingCode(String code) {
-        assertEquals(null, dao.findVoucher(code));
+        assertNull(dao.findVoucher(code));
         verify(session, never()).find(any(Class.class), any());
     }
 
@@ -79,13 +84,11 @@ class VoucherDAOTest {
         @SuppressWarnings("unchecked")
         Query<Voucher> query = mock(Query.class);
         when(session.createQuery(anyString(), any(Class.class))).thenReturn(query);
-        when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.getResultList()).thenReturn(Collections.singletonList(voucher("A")));
 
         assertEquals(1, dao.listActiveVouchers().size());
-        verify(query).setParameter(org.mockito.ArgumentMatchers.eq("now"), any(Date.class));
-        verify(session).createQuery(org.mockito.ArgumentMatchers.contains("v.usedCount < v.usageLimit"),
-                org.mockito.ArgumentMatchers.eq(Voucher.class));
+        verify(query).setParameter(eq("now"), any(Date.class));
+        verify(session).createQuery(contains("v.usedCount < v.usageLimit"), eq(Voucher.class));
     }
 
     @Test
@@ -96,14 +99,13 @@ class VoucherDAOTest {
         when(query.getResultList()).thenReturn(Collections.singletonList(voucher("A")));
 
         assertEquals(1, dao.listAllVouchers().size());
-        verify(session).createQuery(org.mockito.ArgumentMatchers.contains("Order by v.createdAt desc"),
-                org.mockito.ArgumentMatchers.eq(Voucher.class));
+        verify(session).createQuery(contains("Order by v.createdAt desc"), eq(Voucher.class));
     }
 
     @Test
     void saveVoucher_createsAndCopiesEveryFormField() {
-        VoucherForm form = form(" sale10 ");
-        Date expiry = new Date(System.currentTimeMillis() + 86_400_000);
+        VoucherForm form = voucherForm(" sale10 ");
+        Date expiry = new Date(FUTURE_TIMESTAMP_MILLIS);
         form.setDiscountType(Voucher.TYPE_FIXED);
         form.setDiscountValue(25);
         form.setMaxDiscount(20.0);
@@ -116,7 +118,7 @@ class VoucherDAOTest {
 
         dao.saveVoucher(form);
 
-        org.mockito.ArgumentCaptor<Voucher> captor = org.mockito.ArgumentCaptor.forClass(Voucher.class);
+        ArgumentCaptor<Voucher> captor = ArgumentCaptor.forClass(Voucher.class);
         verify(session).saveOrUpdate(captor.capture());
         Voucher saved = captor.getValue();
         assertEquals("SALE10", saved.getCode());
@@ -133,7 +135,7 @@ class VoucherDAOTest {
     @Test
     void saveVoucher_updatesExistingEntity() {
         Voucher existing = voucher("SALE10");
-        VoucherForm form = form("sale10");
+        VoucherForm form = voucherForm("sale10");
         form.setDiscountValue(15);
         when(session.find(Voucher.class, "SALE10")).thenReturn(existing);
 
@@ -175,7 +177,7 @@ class VoucherDAOTest {
     @ParameterizedTest
     @MethodSource("usageCounts")
     void getUserVoucherUsageCount_mapsNullableAggregate(Long aggregate, int expected) {
-        usageCountQuery(aggregate);
+        stubUsageCountQuery(aggregate);
 
         assertEquals(expected, dao.getUserVoucherUsageCount("alice", " sale10 "));
     }
@@ -239,10 +241,19 @@ class VoucherDAOTest {
     @Test
     void validateAndApplyVoucher_rejectsExpiredVoucher() {
         Voucher voucher = voucher("SALE10");
-        voucher.setExpiryDate(new Date(System.currentTimeMillis() - 1_000));
+        voucher.setExpiryDate(new Date(EXPIRED_TIMESTAMP_MILLIS));
         stubVoucher(voucher);
 
         assertFalse(dao.validateAndApplyVoucher("SALE10", 100, "alice").isSuccess());
+    }
+
+    @Test
+    void validateAndApplyVoucher_acceptsVoucherWithFutureExpiry() {
+        Voucher voucher = voucher("SALE10");
+        voucher.setExpiryDate(new Date(FUTURE_TIMESTAMP_MILLIS));
+        stubVoucher(voucher);
+
+        assertTrue(dao.validateAndApplyVoucher("SALE10", 100, null).isSuccess());
     }
 
     @Test
@@ -284,7 +295,7 @@ class VoucherDAOTest {
         Voucher voucher = voucher("SALE10");
         voucher.setPerUserLimit(2);
         stubVoucher(voucher);
-        usageCountQuery((long) userUsed);
+        stubUsageCountQuery((long) userUsed);
 
         assertEquals(expected, dao.validateAndApplyVoucher("SALE10", 100, "alice").isSuccess());
     }
@@ -345,7 +356,7 @@ class VoucherDAOTest {
     }
 
     @Test
-    void validateAndApplyVoucher_unknownDiscountTypeCurrentlySucceedsWithZeroDiscount_characterization() {
+    void validateAndApplyVoucher_unknownDiscountTypeSucceedsWithZeroDiscount() {
         Voucher voucher = voucher("UNKNOWN");
         voucher.setDiscountType("BOGUS");
         voucher.setDiscountValue(50);
@@ -388,7 +399,7 @@ class VoucherDAOTest {
         return voucher;
     }
 
-    private VoucherForm form(String code) {
+    private VoucherForm voucherForm(String code) {
         VoucherForm form = new VoucherForm();
         form.setCode(code);
         return form;
@@ -399,10 +410,9 @@ class VoucherDAOTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void usageCountQuery(Long count) {
+    private void stubUsageCountQuery(Long count) {
         Query<Long> query = mock(Query.class);
         when(session.createQuery(anyString(), any(Class.class))).thenReturn(query);
-        when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.uniqueResult()).thenReturn(count);
     }
 }
