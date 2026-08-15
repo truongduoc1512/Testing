@@ -93,7 +93,7 @@ class ProductFormValidatorTest {
 
     @ParameterizedTest(name = "{0} with value [{1}] is required")
     @MethodSource("requiredFieldValues")
-    void validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao(String field, String value) {
+    void validate_blankRequiredField_rejectsThatFieldAndSkipsDao(String field, String value) {
         ProductForm form = validNewProduct();
         setField(form, field, value);
         BeanPropertyBindingResult errors = errorsFor(form);
@@ -122,7 +122,7 @@ class ProductFormValidatorTest {
     @Test
     void validate_codeAtMaximumLength_hasNoCodeError() {
         ProductForm form = validNewProduct();
-        form.setCode(repeat('c', 20));
+        form.setCode(textOfLength('c', 20));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
@@ -134,7 +134,7 @@ class ProductFormValidatorTest {
     @Test
     void validate_codeOverMaximumLength_rejectsLengthAndSkipsDao() {
         ProductForm form = validNewProduct();
-        form.setCode(repeat('c', 21));
+        form.setCode(textOfLength('c', 21));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
@@ -146,7 +146,7 @@ class ProductFormValidatorTest {
     @Test
     void validate_nameAtMaximumLength_hasNoNameError() {
         ProductForm form = validNewProduct();
-        form.setName(repeat('n', 255));
+        form.setName(textOfLength('n', 255));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
@@ -158,7 +158,7 @@ class ProductFormValidatorTest {
     @Test
     void validate_nameOverMaximumLength_rejectsLengthAndSkipsDao() {
         ProductForm form = validNewProduct();
-        form.setName(repeat('n', 256));
+        form.setName(textOfLength('n', 256));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
@@ -169,7 +169,7 @@ class ProductFormValidatorTest {
 
     @ParameterizedTest(name = "price {0} is invalid")
     @MethodSource("invalidPrices")
-    void validate_invalidPrice_rejectsMinimumAndSkipsDao(double price) {
+    void validate_invalidPrice_rejectsValueAndSkipsDao(double price) {
         ProductForm form = validNewProduct();
         form.setPrice(price);
         BeanPropertyBindingResult errors = errorsFor(form);
@@ -240,16 +240,18 @@ class ProductFormValidatorTest {
         assertThat(errors.hasFieldErrors("discountPercent")).isFalse();
     }
 
-    @Test
-    void validateLocalRules_existingBindingError_doesNotAddAnotherFieldError() {
+    @ParameterizedTest(name = "existing {0} binding error remains the only error")
+    @MethodSource("existingBindingErrors")
+    void validateLocalRules_existingFieldErrorShortCircuitsThatRule(
+            String field, double invalidValue) {
         ProductForm form = validNewProduct();
-        form.setPrice(0);
+        setNumericField(form, field, invalidValue);
         BeanPropertyBindingResult errors = errorsFor(form);
-        errors.rejectValue("price", "typeMismatch");
+        errors.rejectValue(field, "typeMismatch");
 
         validator.validateLocalRules(form, errors);
 
-        assertThat(errors.getFieldErrors("price"))
+        assertThat(errors.getFieldErrors(field))
                 .extracting(FieldError::getCode)
                 .containsExactly("typeMismatch");
         verifyNoInteractions(productDAO);
@@ -265,6 +267,13 @@ class ProductFormValidatorTest {
 
     private static Stream<Double> invalidPrices() {
         return Stream.of(0.0, -0.01, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
+    }
+
+    private static Stream<Arguments> existingBindingErrors() {
+        return Stream.of(
+                arguments("price", 0.0),
+                arguments("stockQuantity", -1.0),
+                arguments("discountPercent", -1.0));
     }
 
     private ProductForm validNewProduct() {
@@ -292,13 +301,25 @@ class ProductFormValidatorTest {
         }
     }
 
+    private void setNumericField(ProductForm form, String field, double value) {
+        if ("price".equals(field)) {
+            form.setPrice(value);
+        } else if ("stockQuantity".equals(field)) {
+            form.setStockQuantity((int) value);
+        } else if ("discountPercent".equals(field)) {
+            form.setDiscountPercent((int) value);
+        } else {
+            throw new IllegalArgumentException("Unsupported numeric field: " + field);
+        }
+    }
+
     private void assertFieldHasCode(BeanPropertyBindingResult errors, String field, String code) {
         assertThat(errors.getFieldErrors(field))
                 .extracting(FieldError::getCode)
                 .contains(code);
     }
 
-    private String repeat(char character, int count) {
+    private static String textOfLength(char character, int count) {
         return String.join("", Collections.nCopies(count, String.valueOf(character)));
     }
 }
