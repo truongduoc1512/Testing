@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.dao.OrderDAO;
 import com.example.demo.dao.ProductDAO;
 import com.example.demo.entity.Product;
 import com.example.demo.form.CustomerForm;
 import com.example.demo.model.CartInfo;
 import com.example.demo.model.CustomerInfo;
 import com.example.demo.model.ProductInfo;
+import com.example.demo.service.OrderCheckoutService;
 import com.example.demo.utils.Utils;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +42,7 @@ public class CartApiController {
     private ProductDAO productDAO;
 
     @Autowired
-    private OrderDAO orderDAO;
+    private OrderCheckoutService orderCheckoutService;
 
     private Integer readQuantity(Map<String, Object> payload, int defaultValue) {
         if (payload == null) {
@@ -214,7 +214,7 @@ public class CartApiController {
         }
 
         try {
-            orderDAO.saveOrder(cartInfo);
+            orderCheckoutService.checkout(cartInfo);
             Utils.removeCartInSession(request);
             Utils.storeLastOrderedCartInSession(request, cartInfo);
 
