@@ -1,0 +1,57 @@
+{
+  "total_retested": 4,
+  "closed_count": 3,
+  "reopened_count": 1,
+  "pass_rate": "75.0%",
+  "timestamp": "2026-08-13T04:00:34.422606+00:00",
+  "bugs": [
+    {
+      "bug_id": "BUG-101",
+      "jira_key": "TEST-101",
+      "summary": "[AI-Service] API /api/v1/analyze ném lỗi 500 khi nhận file ảnh PNG trong suốt",
+      "category": "Logic & AI",
+      "initial_status": "Resolved",
+      "fix_commit": "#a1b2c3d",
+      "retest_passed": true,
+      "final_status": "Closed",
+      "notes": "Xác minh thành công trên Staging env build #102. OpenCV decode mượt mà, trả về approved=true.",
+      "retested_at": "2026-08-13T04:00:34.418024+00:00"
+    },
+    {
+      "bug_id": "BUG-102",
+      "jira_key": "TEST-102",
+      "summary": "[Backend] API /api/cart/add không kiểm tra tồn kho khiến số lượng tồn kho âm",
+      "category": "Backend/API",
+      "initial_status": "Resolved",
+      "fix_commit": "#e5f6g7h",
+      "retest_passed": true,
+      "final_status": "Closed",
+      "notes": "Xác minh thành công với JMeter. 1 request thành công, 19 requests nhận lỗi 400 'Sản phẩm hết hàng'.",
+      "retested_at": "2026-08-13T04:00:34.418095+00:00"
+    },
+    {
+      "bug_id": "BUG-103",
+      "jira_key": "TEST-103",
+      "summary": "[UI/UX] Nút 'Thanh toán' trên giao diện Mobile Safari bị đè bởi Footer menu",
+      "category": "UI/UX",
+      "initial_status": "Resolved",
+      "fix_commit": "#i8j9k0l",
+      "retest_passed": true,
+      "final_status": "Closed",
+      "notes": "Giao diện hiển thị nút Thanh toán chuẩn z-index, không bị Footer che khuất.",
+      "retested_at": "2026-08-13T04:00:34.418116+00:00"
+    },
+    {
+      "bug_id": "BUG-104",
+      "jira_key": "TEST-104",
+      "summary": "[Backend] Mã giảm giá hết hạn nhưng vẫn áp dụng được thành công",
+      "category": "Backend/API",
+      "initial_status": "Resolved",
+      "fix_commit": "#m1n2o3p",
+      "retest_passed": false,
+      "final_status": "Re-open",
+      "notes": "Xác minh thất bại. Hệ thống vẫn cho phép áp dụng voucher giảm 50k dù mã đã hết hạn ngày 2025-12-31.",
+      "retested_at": "2026-08-13T04:00:34.418135+00:00"
+    }
+  ]
+}
