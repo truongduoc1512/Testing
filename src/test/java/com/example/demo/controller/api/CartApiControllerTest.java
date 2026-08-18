@@ -26,28 +26,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.example.demo.dao.OrderDAO;
 import com.example.demo.dao.ProductDAO;
 import com.example.demo.entity.Product;
 import com.example.demo.form.CustomerForm;
 import com.example.demo.model.CartInfo;
 import com.example.demo.model.CustomerInfo;
 import com.example.demo.model.ProductInfo;
+import com.example.demo.service.OrderCheckoutService;
 import com.example.demo.utils.Utils;
 
 class CartApiControllerTest {
 
     private ProductDAO productDAO;
-    private OrderDAO orderDAO;
+    private OrderCheckoutService orderCheckoutService;
     private CartApiController controller;
 
     @BeforeEach
     void setUp() {
         productDAO = mock(ProductDAO.class);
-        orderDAO = mock(OrderDAO.class);
+        orderCheckoutService = mock(OrderCheckoutService.class);
         controller = new CartApiController();
         ReflectionTestUtils.setField(controller, "productDAO", productDAO);
-        ReflectionTestUtils.setField(controller, "orderDAO", orderDAO);
+        ReflectionTestUtils.setField(controller, "orderCheckoutService", orderCheckoutService);
     }
 
     @Test
@@ -228,7 +228,7 @@ class CartApiControllerTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
 
         assertBadRequest(controller.checkoutOrder(request));
-        verify(orderDAO, never()).saveOrder(any(CartInfo.class));
+        verify(orderCheckoutService, never()).checkout(any(CartInfo.class));
     }
 
     @Test
@@ -236,14 +236,14 @@ class CartApiControllerTest {
         MockHttpServletRequest request = requestWithProduct(product("P1", 5), 1);
 
         assertBadRequest(controller.checkoutOrder(request));
-        verify(orderDAO, never()).saveOrder(any(CartInfo.class));
+        verify(orderCheckoutService, never()).checkout(any(CartInfo.class));
     }
 
     @Test
     void checkout_preservesCartWhenOrderSaveFails() {
         MockHttpServletRequest request = validCheckoutRequest("P2");
         CartInfo cart = Utils.getCartInSession(request);
-        doThrow(new IllegalStateException("stock changed")).when(orderDAO).saveOrder(cart);
+        doThrow(new IllegalStateException("stock changed")).when(orderCheckoutService).checkout(cart);
 
         assertBadRequest(controller.checkoutOrder(request));
         assertSame(cart, request.getSession().getAttribute("myCart"));
@@ -264,7 +264,7 @@ class CartApiControllerTest {
         assertSame(orderedCart, body.get("orderedCart"));
         assertNull(request.getSession().getAttribute("myCart"));
         assertSame(orderedCart, request.getSession().getAttribute("lastOrderedCart"));
-        verify(orderDAO).saveOrder(orderedCart);
+        verify(orderCheckoutService).checkout(orderedCart);
     }
 
     @SuppressWarnings("unchecked")
