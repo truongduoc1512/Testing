@@ -1,24 +1,22 @@
 package com.example.demo.ui.pages;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import java.util.List;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
 
 public class CheckoutPage {
     private WebDriver driver;
-    public CheckoutPage(WebDriver driver) { this.driver = driver; }
+    private WebDriverWait wait;
+    private By confirmOrderBtn = By.cssSelector("button[type='submit'], input[type='submit'], .btn-confirm-order, form button");
+
+    public CheckoutPage(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    }
+
     public void confirmOrder() {
-        try {
-            List<WebElement> elements = driver.findElements(By.cssSelector("button, input[type='submit'], .btn"));
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            for (WebElement el : elements) {
-                try {
-                    js.executeScript("arguments[0].click();", el);
-                    break;
-                } catch (Exception ignored) {}
-            }
-        } catch (Exception ignored) {}
+        wait.until(ExpectedConditions.elementToBeClickable(confirmOrderBtn)).click();
     }
 }
