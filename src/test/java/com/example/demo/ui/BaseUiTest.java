@@ -2,40 +2,35 @@ package com.example.demo.ui;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import java.util.concurrent.TimeUnit;
 
-import java.time.Duration;
-
-public abstract class BaseUiTest {
-
+public class BaseUiTest {
     protected WebDriver driver;
+    protected static final String BASE_URL = "http://localhost";
+    protected static final String LOGIN_URL = "http://localhost/admin/login";
 
-    protected final String BASE_URL = "http://localhost";
-    protected final String LOGIN_URL = BASE_URL + "/admin/login";
+    @BeforeAll
+    static void setupAll() {
+        WebDriverManager.chromedriver().setup();
+    }
 
     @BeforeEach
-    void setUp() {
-
-        WebDriverManager.chromedriver().setup();
-
+    void setup() {
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--start-maximized");
-
+        options.addArguments("--remote-allow-origins=*");
         driver = new ChromeDriver(options);
-
-        driver.manage().timeouts()
-                .implicitlyWait(Duration.ofSeconds(2));
-
-        driver.manage().timeouts()
-                .pageLoadTimeout(Duration.ofSeconds(20));
+        driver.manage().window().maximize();
+        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
     }
 
     @AfterEach
-    void tearDown() {
-
+    void teardown() {
         if (driver != null) {
             driver.quit();
         }

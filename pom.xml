@@ -1,260 +1,197 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.2.5.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.example</groupId>
+	<artifactId>shoe-ShoppingCart</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>shoe-ShopingCart</name>
+	<description>shoe Shopping Cart</description>
 
-    <modelVersion>4.0.0</modelVersion>
-
-    <!-- ==================== PARENT ==================== -->
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.5.RELEASE</version>
-        <relativePath/>
-    </parent>
-
-
-    <!-- ==================== PROJECT INFO ==================== -->
-
-    <groupId>com.example</groupId>
-    <artifactId>shoe-ShoppingCart</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-
-    <name>shoe-ShopingCart</name>
-    <description>shoe Shopping Cart</description>
+	<properties>
+		<java.version>1.8</java.version>
+		<sonar.projectKey>shoeshop</sonar.projectKey>
+		<sonar.projectName>ShoeShop</sonar.projectName>
+		<testcontainers.version>1.17.6</testcontainers.version>
+	</properties>
 
 
-    <!-- ==================== PROPERTIES ==================== -->
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 
-    <properties>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mysql</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.thymeleaf.extras</groupId>
+		    <artifactId>thymeleaf-extras-springsecurity5</artifactId>
+		</dependency>
+ 
+		<!-- Commons Email validator,... -->
+		<!-- http://mvnrepository.com/artifact/commons-validator/commons-validator -->
+		<dependency>
+		    <groupId>commons-validator</groupId>
+		    <artifactId>commons-validator</artifactId>
+		    <version>1.6</version>
+		</dependency>
+		 
+		<!-- https://mvnrepository.com/artifact/commons-lang/commons-lang -->
+		<dependency>
+		    <groupId>commons-lang</groupId>
+		    <artifactId>commons-lang</artifactId>
+		    <version>2.6</version>
+		</dependency>
+		 
+		<!-- https://mvnrepository.com/artifact/org.threeten/threetenbp -->
+		<dependency>
+		    <groupId>org.threeten</groupId>
+		    <artifactId>threetenbp</artifactId>
+		    <version>1.3.6</version>
+		</dependency>   
 
-        <!-- Java -->
-        <java.version>1.8</java.version>
+		<!-- Thư viện lõi của Flyway -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
 
-        <!-- Selenium -->
-        <selenium.version>4.25.0</selenium.version>
-
-        <!-- WebDriverManager -->
-        <webdrivermanager.version>5.9.2</webdrivermanager.version>
-
-        <!-- SonarQube -->
-        <sonar.projectKey>shoeshop</sonar.projectKey>
-        <sonar.projectName>ShoeShop</sonar.projectName>
-
-    </properties>
-
-
-    <!-- ==================== DEPENDENCIES ==================== -->
-
-    <dependencies>
-
-        <!-- ==================== SPRING BOOT ==================== -->
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-
-        <!-- ==================== DATABASE ==================== -->
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-
-        <!-- ==================== TESTING ==================== -->
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-
-        <!-- ==================== SELENIUM ==================== -->
-
+		<!-- Springdoc OpenAPI Swagger UI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.6.14</version>
+		</dependency>
+	        <!-- Selenium & WebDriverManager for UI Automation -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
-            <version>${selenium.version}</version>
+            <version>4.25.0</version>
             <scope>test</scope>
         </dependency>
-
-
-        <!-- ==================== WEBDRIVER MANAGER ==================== -->
-
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
-            <version>${webdrivermanager.version}</version>
+            <version>5.9.2</version>
             <scope>test</scope>
         </dependency>
-
-
-        <!-- ==================== THYMELEAF ==================== -->
-
-        <dependency>
-            <groupId>org.thymeleaf.extras</groupId>
-            <artifactId>thymeleaf-extras-springsecurity5</artifactId>
-        </dependency>
-
-
-        <!-- ==================== VALIDATION ==================== -->
-
-        <dependency>
-            <groupId>commons-validator</groupId>
-            <artifactId>commons-validator</artifactId>
-            <version>1.6</version>
-        </dependency>
-
-
-        <!-- ==================== COMMONS LANG ==================== -->
-
-        <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
-        </dependency>
-
-
-        <!-- ==================== THREETEN ==================== -->
-
-        <dependency>
-            <groupId>org.threeten</groupId>
-            <artifactId>threetenbp</artifactId>
-            <version>1.3.6</version>
-        </dependency>
-
-
-        <!-- ==================== FLYWAY ==================== -->
-
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
-
-
-        <!-- ==================== SWAGGER ==================== -->
-
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.14</version>
-        </dependency>
-
     </dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
 
-    <!-- ==================== BUILD ==================== -->
+			<!-- Checkstyle Plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<configLocation>config/checkstyle/checkstyle.xml</configLocation>
+					<encoding>UTF-8</encoding>
+					<consoleOutput>true</consoleOutput>
+					<failsOnError>false</failsOnError>
+					<linkXRef>false</linkXRef>
+				</configuration>
+			</plugin>
 
-    <build>
+			<!-- SpotBugs Plugin -->
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>4.9.2.0</version>
+				<configuration>
+					<effort>Max</effort>
+					<threshold>Medium</threshold>
+					<failOnError>false</failOnError>
+					<excludeFilterFile>config/spotbugs/spotbugs-exclude.xml</excludeFilterFile>
+				</configuration>
+			</plugin>
 
-        <plugins>
+			<!-- SonarQube Scanner Plugin -->
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>3.10.0.2594</version>
+			</plugin>
+		</plugins>
+	</build>
 
-            <!-- ==================== SPRING BOOT ==================== -->
-
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-
-            <!-- ==================== CHECKSTYLE ==================== -->
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.3.1</version>
-
-                <configuration>
-
-                    <configLocation>
-                        config/checkstyle/checkstyle.xml
-                    </configLocation>
-
-                    <encoding>UTF-8</encoding>
-
-                    <consoleOutput>true</consoleOutput>
-
-                    <failsOnError>false</failsOnError>
-
-                    <linkXRef>false</linkXRef>
-
-                </configuration>
-            </plugin>
-
-
-            <!-- ==================== SPOTBUGS ==================== -->
-
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.9.2.0</version>
-
-                <configuration>
-
-                    <effort>Max</effort>
-
-                    <threshold>Medium</threshold>
-
-                    <failOnError>false</failOnError>
-
-                    <excludeFilterFile>
-                        config/spotbugs/spotbugs-exclude.xml
-                    </excludeFilterFile>
-
-                </configuration>
-            </plugin>
-
-
-            <!-- ==================== SONARQUBE ==================== -->
-
-            <plugin>
-                <groupId>org.sonarsource.scanner.maven</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
-                <version>3.10.0.2594</version>
-            </plugin>
-
-        </plugins>
-
-    </build>
+	<profiles>
+		<profile>
+			<id>test24</id>
+			<properties>
+				<test24.actual-ai.url>http://localhost:8000</test24.actual-ai.url>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<includes>
+								<include>**/integration/*IntegrationTest.java</include>
+							</includes>
+							<systemPropertyVariables>
+								<test24.actual-ai.url>${test24.actual-ai.url}</test24.actual-ai.url>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
