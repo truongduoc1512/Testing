@@ -38,13 +38,20 @@ def mock_api_response(url: str) -> Dict[str, Any]:
     params = urllib.parse.parse_qs(parsed.query)
     name = params.get("name", [""])[0]
     raw_page = params.get("page", ["1"])[0]
+    raw_size = params.get("size", ["12"])[0]
 
     try:
         page = int(raw_page)
     except ValueError:
         page = 1
 
+    try:
+        size = int(raw_size)
+    except ValueError:
+        size = 12
+
     current_page = max(page, 1)
+    max_result = max(size, 1) if size > 0 else 12
 
     # Kịch bản 1: Không tìm thấy
     if "XYZ_NOT_EXIST" in name:
@@ -52,7 +59,7 @@ def mock_api_response(url: str) -> Dict[str, Any]:
             "totalRecords": 0,
             "currentPage": current_page,
             "list": [],
-            "maxResult": 12,
+            "maxResult": max_result,
             "totalPages": 0,
             "maxNavigationPage": 10,
             "navigationPages": [],
@@ -68,7 +75,7 @@ def mock_api_response(url: str) -> Dict[str, Any]:
             "totalRecords": len(sample_items),
             "currentPage": current_page,
             "list": sample_items if current_page == 1 else [],
-            "maxResult": 12,
+            "maxResult": max_result,
             "totalPages": 1,
             "maxNavigationPage": 10,
             "navigationPages": [1],
@@ -80,7 +87,7 @@ def mock_api_response(url: str) -> Dict[str, Any]:
             "totalRecords": 36,
             "currentPage": current_page,
             "list": [],
-            "maxResult": 12,
+            "maxResult": max_result,
             "totalPages": 3,
             "maxNavigationPage": 10,
             "navigationPages": [1, 2, 3],
@@ -92,11 +99,11 @@ def mock_api_response(url: str) -> Dict[str, Any]:
         "currentPage": current_page,
         "list": [
             {"code": f"P00{i}", "name": f"Shoe Model {i}", "price": 99.9, "createDate": "2026-01-01"}
-            for i in range(1, 13)
+            for i in range(1, max_result + 1)
         ]
         if current_page <= 3
         else [],
-        "maxResult": 12,
+        "maxResult": max_result,
         "totalPages": 3,
         "maxNavigationPage": 10,
         "navigationPages": [1, 2, 3],
@@ -218,6 +225,35 @@ class TestSearchAndPaginationAPI(unittest.TestCase):
         ]
         for key in required_keys:
             self.assertIn(key, body, f"Thiếu trường {key} trong JSON response")
+
+    # -------------------------------------------------------------
+    # 4. WORST-CASE BOUNDARY TESTING (5^n)
+    # -------------------------------------------------------------
+
+    def test_worst_case_boundaries(self):
+        """Kỹ thuật Worst-Case Testing (5^n với n=2 biến: page và size -> 5^2 = 25 test cases)."""
+        page_boundaries = [-1, 1, 5, 999, 999999]
+        size_boundaries = [-1, 0, 12, 100, 999999]
+
+        test_count = 0
+        for p in page_boundaries:
+            for s in size_boundaries:
+                query_url = f"{BASE_URL}?page={p}&size={s}"
+                status, body = make_api_request(query_url)
+
+                # Server không bị crash HTTP 500
+                self.assertNotEqual(
+                    status, 500, f"Server bị crash HTTP 500 với tổ hợp page={p}, size={s}"
+                )
+                self.assertIn(
+                    status,
+                    [200, 400, 422],
+                    f"HTTP Status code không nằm trong phạm vi cho phép ({status}) cho page={p}, size={s}",
+                )
+                self.assertIsNotNone(body, f"Phản hồi body bị None cho page={p}, size={s}")
+                test_count += 1
+
+        self.assertEqual(test_count, 25, "Số lượng test case tổ hợp 5^2 phải bằng 25")
 
 
 if __name__ == "__main__":
