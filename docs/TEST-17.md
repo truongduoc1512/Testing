@@ -158,3 +158,83 @@ Test bị skip duy nhất là `ProductDAOIntegrationTest` vì system property `d
 - Task document: [`docs/TEST-17.md`](./TEST-17.md)
 - Wrapper: [`scripts/test-coverage.ps1`](../scripts/test-coverage.ps1)
 - JaCoCo HTML: [`target/site/jacoco/index.html`](../target/site/jacoco/index.html)
+
+## 10. Phân tích CFG và độ phức tạp Cyclomatic V(G)
+
+### 10.1. Hàm được chọn và quy ước
+
+Phân tích hàm `validate(Object target, Errors errors)` trong
+[`CustomerFormValidator.java`](../src/main/java/com/example/demo/validator/CustomerFormValidator.java).
+Các câu lệnh tuần tự được gom thành basic block; mỗi `if`/`else if` là một node quyết định.
+Biểu thức ghép bằng `&&` nằm trong cùng node và luồng nội bộ của hàm được gọi không được mở rộng.
+
+### 10.2. Đồ thị luồng điều khiển (Control Flow Graph)
+
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+---
+flowchart TD
+    N1(("1")) --> N2(("2"))
+    N2 --> N3(("3"))
+    N2 --> N4(("4"))
+    N3 --> N6(("6"))
+    N4 --> N5(("5"))
+    N4 --> N6
+    N5 --> N6
+    N6 --> N7(("7"))
+    N6 --> N8(("8"))
+    N7 --> N8
+    N8 --> N9(("9"))
+    N8 --> N10(("10"))
+    N9 --> N10
+    N10 --> N11(("11"))
+    N10 --> N12(("12"))
+    N11 --> N12
+
+    classDef cfgNode fill:#ffffff,stroke:#1597a5,stroke-width:2px,color:#111111;
+    class N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N11,N12 cfgNode;
+```
+
+| Node | Câu lệnh/basic block | Luồng kế tiếp |
+|---|---|---|
+| 1 | Ép kiểu `target`, gọi `normalize()` và kiểm tra bốn trường bắt buộc | 2 |
+| 2 | Email không rỗng và dài hơn 128 ký tự? | T → 3; F → 4 |
+| 3 | Reject `Length.customerForm.email` | 6 |
+| 4 | Email không rỗng và sai định dạng? | T → 5; F → 6 |
+| 5 | Reject `Pattern.customerForm.email` | 6 |
+| 6 | Name khác `null` và dài hơn 255 ký tự? | T → 7; F → 8 |
+| 7 | Reject `Length.customerForm.name` | 8 |
+| 8 | Address khác `null` và dài hơn 255 ký tự? | T → 9; F → 10 |
+| 9 | Reject `Length.customerForm.address` | 10 |
+| 10 | Phone khác `null` và dài hơn 128 ký tự? | T → 11; F → 12 |
+| 11 | Reject `Length.customerForm.phone` | 12 |
+| 12 | Kết thúc hàm | — |
+
+`T` = True, `F` = False. Đồ thị có **N = 12** node, **E = 16** cạnh và **P = 5** node
+quyết định (`2`, `4`, `6`, `8`, `10`).
+
+### 10.3. Tính thủ công độ phức tạp Cyclomatic
+
+```text
+V(G) = E - N + 2 = 16 - 12 + 2 = 6
+V(G) = P + 1     = 5 + 1         = 6
+```
+
+Hai công thức cùng cho **V(G) = 6**, tương ứng sáu independent basis paths.
+
+### 10.4. Basis Path Coverage và Test Cases
+
+| Path | Chuỗi node trên CFG | Test case đi qua path |
+|---|---|---|
+| B1 | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(F) → 12 | `validate_validCustomer_normalizesInputAndHasNoErrors` |
+| B2 | 1 → 2(T) → 3 → 6(F) → 8(F) → 10(F) → 12 | `validate_emailOverMaximumLength_rejectsOnlyLengthCode` |
+| B3 | 1 → 2(F) → 4(T) → 5 → 6(F) → 8(F) → 10(F) → 12 | `validate_invalidEmail_rejectsPatternCode` |
+| B4 | 1 → 2(F) → 4(F) → 6(T) → 7 → 8(F) → 10(F) → 12 | `validate_nameOutsideBoundary_rejectsExpectedCode` với độ dài `256` |
+| B5 | 1 → 2(F) → 4(F) → 6(F) → 8(T) → 9 → 10(F) → 12 | `validate_addressOverMaximumLength_rejectsLengthCode` với độ dài `256` |
+| B6 | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(T) → 11 → 12 | `validate_phoneOverMaximumLength_rejectsLengthCode` với độ dài `129` |
+
+B1–B6 tạo thành sáu independent basis paths đúng bằng `V(G)` và đi qua cả hai hướng của năm
+node quyết định, chứng minh basis path coverage cho hàm `validate()`.
