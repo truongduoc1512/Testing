@@ -10,7 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 
@@ -79,10 +81,12 @@ class CustomerFormValidatorTest {
         assertFieldHasCode(errors, "email", "Pattern.customerForm.email");
     }
 
-    @Test
-    void validate_nameAtMaximumLength_hasNoNameError() {
+    // Standard BVA (4n+1)
+    @ParameterizedTest(name = "name length {0} is valid")
+    @ValueSource(ints = { 1, 2, 50, 254, 255 })
+    void validate_nameAtStandardBoundary_hasNoNameError(int length) {
         CustomerForm form = validForm();
-        form.setName(repeat('n', 255));
+        form.setName(repeat('n', length));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
@@ -90,15 +94,20 @@ class CustomerFormValidatorTest {
         assertThat(errors.hasFieldErrors("name")).isFalse();
     }
 
-    @Test
-    void validate_nameOverMaximumLength_rejectsLengthCode() {
+    // Robustness BVA (6n+1)
+    @ParameterizedTest(name = "name length {0} is rejected with {1}")
+    @CsvSource({
+            "0, NotEmpty.customerForm.name",
+            "256, Length.customerForm.name"
+    })
+    void validate_nameOutsideBoundary_rejectsExpectedCode(int length, String expectedCode) {
         CustomerForm form = validForm();
-        form.setName(repeat('n', 256));
+        form.setName(repeat('n', length));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
 
-        assertFieldHasCode(errors, "name", "Length.customerForm.name");
+        assertFieldHasCode(errors, "name", expectedCode);
     }
 
     @Test
