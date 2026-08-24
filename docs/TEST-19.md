@@ -45,6 +45,21 @@ flowchart TD
 | **6** | `Closed` | Kết quả re-test thành công, bug đã được sửa hoàn toàn và không phát sinh lỗi phụ. Ticket chính thức hoàn tất. | QA / Tester |
 | **7** | `Re-open` | Kết quả re-test thất bại (vẫn bị lỗi hoặc fix chưa triệt để). Ticket được đẩy lại cho Developer xử lý tiếp. | QA / Tester |
 
+### 2.3. Bảng chuyển đổi trạng thái (State Transition Table)
+
+Bảng chuyển đổi trạng thái mô tả các bước chuyển đổi hợp lệ trong cỗ máy trạng thái (State Machine) quản lý vòng đời Bug theo 3 cột tiêu chuẩn:
+
+| Trạng thái bắt đầu (Start State) | Đầu vào / Sự kiện (Input / Event) | Trạng thái kết thúc (End State) |
+| :--- | :--- | :--- |
+| `NEW` | QA Lead / Tech Lead xác nhận lỗi hợp lệ và phê duyệt | `OPEN` |
+| `NEW` | Dev xác nhận lỗi và bắt đầu sửa trực tiếp | `IN PROGRESS` |
+| `OPEN` | Developer nhận ticket và tiến hành kiểm tra, xử lý mã nguồn | `IN PROGRESS` |
+| `IN PROGRESS` | Developer sửa xong lỗi, commit code & push bản fix lên môi trường Test | `RESOLVED` |
+| `RESOLVED` | Tester tiếp nhận bản fix và chuyển sang thực thi kiểm thử lại | `RE-TESTING` |
+| `RE-TESTING` | Kiểm thử lại thành công (Test Pass 100%, không phát sinh lỗi phụ) | `CLOSED` |
+| `RE-TESTING` | Kiểm thử lại thất bại (Test Fail, lỗi chưa được fix triệt để) | `RE-OPEN` |
+| `RE-OPEN` | Developer tiếp nhận lại ticket bị Re-open để debug và sửa tiếp | `IN PROGRESS` |
+
 ---
 
 ## 📊 3. BẢNG TIÊU CHÍ PHÂN LOẠI BUG (BUG CLASSIFICATION)
