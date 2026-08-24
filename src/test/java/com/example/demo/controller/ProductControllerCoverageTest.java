@@ -49,6 +49,7 @@ import com.example.demo.entity.Product;
 import com.example.demo.form.ProductForm;
 import com.example.demo.model.ProductInfo;
 import com.example.demo.pagination.PaginationResult;
+import com.example.demo.service.ProductImageAnalysisService;
 import com.example.demo.validator.ProductFormValidator;
 
 class ProductControllerCoverageTest {
@@ -57,6 +58,7 @@ class ProductControllerCoverageTest {
     private ProductReviewDAO reviewDAO;
     private ProductFormValidator validator;
     private ProductController controller;
+    private ProductImageAnalysisService productImageAnalysisService;
     private RestTemplate restTemplate;
 
     @BeforeEach
@@ -69,8 +71,10 @@ class ProductControllerCoverageTest {
         ReflectionTestUtils.setField(controller, "productDAO", productDAO);
         ReflectionTestUtils.setField(controller, "productReviewDAO", reviewDAO);
         ReflectionTestUtils.setField(controller, "productFormValidator", validator);
-        ReflectionTestUtils.setField(controller, "aiServiceUrl", "http://ai.test");
-        restTemplate = (RestTemplate) ReflectionTestUtils.getField(controller, "restTemplate");
+        productImageAnalysisService = new ProductImageAnalysisService();
+        ReflectionTestUtils.setField(productImageAnalysisService, "aiServiceUrl", "http://ai.test");
+        ReflectionTestUtils.setField(controller, "productImageAnalysisService", productImageAnalysisService);
+        restTemplate = (RestTemplate) ReflectionTestUtils.getField(productImageAnalysisService, "restTemplate");
     }
 
     @AfterEach

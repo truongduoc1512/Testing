@@ -11,18 +11,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
@@ -31,7 +24,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.demo.dao.ProductDAO;
@@ -42,6 +34,7 @@ import com.example.demo.form.ProductForm;
 import com.example.demo.form.ProductReviewForm;
 import com.example.demo.model.ProductInfo;
 import com.example.demo.pagination.PaginationResult;
+import com.example.demo.service.ProductImageAnalysisService;
 import com.example.demo.validator.ProductFormValidator;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -52,10 +45,8 @@ public class ProductController {
 
    private static final Logger LOGGER = LoggerFactory.getLogger(ProductController.class);
 
-   @Value("${ai.service.url:http://localhost:8000}")
-   private String aiServiceUrl;
-
-   private final RestTemplate restTemplate = new RestTemplate();
+   @Autowired
+   private ProductImageAnalysisService productImageAnalysisService;
 
    @Autowired
    private ProductDAO productDAO;
@@ -205,28 +196,7 @@ public class ProductController {
       // ── AI Quality Gate: Kiểm duyệt ảnh trước khi lưu ──────────────────────
       if (productForm.getFileData() != null && !productForm.getFileData().isEmpty()) {
          try {
-            byte[] imageBytes = productForm.getFileData().getBytes();
-            String originalFilename = productForm.getFileData().getOriginalFilename();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            ByteArrayResource imageResource = new ByteArrayResource(imageBytes) {
-               @Override
-               public String getFilename() {
-                  return originalFilename != null ? originalFilename : "product.jpg";
-               }
-            };
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", imageResource);
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            String analyzeUrl = aiServiceUrl + "/api/v1/analyze";
-            ResponseEntity<Map> response = restTemplate.postForEntity(analyzeUrl, requestEntity, Map.class);
-
-            Map<?, ?> aiResult = response.getBody();
+            Map<?, ?> aiResult = productImageAnalysisService.analyze(productForm.getFileData());
             if (aiResult != null) {
                Boolean approved = (Boolean) aiResult.get("approved");
                String reason = (String) aiResult.get("reason");

@@ -18,6 +18,7 @@
 		<java.version>1.8</java.version>
 		<sonar.projectKey>shoeshop</sonar.projectKey>
 		<sonar.projectName>ShoeShop</sonar.projectName>
+		<testcontainers.version>1.17.6</testcontainers.version>
 	</properties>
 
 
@@ -64,6 +65,12 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mysql</artifactId>
+			<version>${testcontainers.version}</version>
+			<scope>test</scope>
+		</dependency>
 		
 		<dependency>
 		    <groupId>org.thymeleaf.extras</groupId>
@@ -104,7 +111,20 @@
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.6.14</version>
 		</dependency>
-	</dependencies>
+	        <!-- Selenium & WebDriverManager for UI Automation -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>4.25.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>5.9.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>
@@ -148,5 +168,30 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>test24</id>
+			<properties>
+				<test24.actual-ai.url>http://localhost:8000</test24.actual-ai.url>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<includes>
+								<include>**/integration/*IntegrationTest.java</include>
+							</includes>
+							<systemPropertyVariables>
+								<test24.actual-ai.url>${test24.actual-ai.url}</test24.actual-ai.url>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
