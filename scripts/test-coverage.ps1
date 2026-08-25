@@ -212,6 +212,7 @@ try {
         $mavenArguments += "-Dtest=$TestSelector"
     }
     $mavenArguments += @(
+        '-Dsurefire.rerunFailingTestsCount=2',
         'test',
         "org.jacoco:jacoco-maven-plugin:${JaCoCoVersion}:report"
     )

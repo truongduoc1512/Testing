@@ -1527,7 +1527,7 @@
 								{"key": "name", "value": "{{random_mvc_prod_name}}", "type": "text"},
 								{"key": "price", "value": "{{random_mvc_prod_price}}", "type": "text"},
 								{"key": "_csrf", "value": "{{csrf_token}}", "type": "text"},
-								{"key": "fileData", "type": "file", "src": []}
+								{"key": "fileData", "type": "file", "src": "src/main/resources/static/img/about.jpg"}
 							]
 						},
 						"url": {
@@ -1769,7 +1769,7 @@
 						"body": {
 							"mode": "formdata",
 							"formdata": [
-								{"key": "file", "type": "file", "src": []}
+								{"key": "file", "type": "file", "src": "src/main/resources/static/img/about.jpg"}
 							]
 						},
 						"url": {

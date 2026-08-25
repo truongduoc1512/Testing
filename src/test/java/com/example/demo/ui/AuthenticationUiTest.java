@@ -12,7 +12,7 @@ public class AuthenticationUiTest extends BaseUiTest {
     void TC01_customerLoginWithValidCredentials() {
         driver.get(LOGIN_URL);
         LoginPage loginPage = new LoginPage(driver);
-        loginPage.login("employee1", "123456");
+        loginPage.login("employee1", "123");
 
         assertFalse(
                 loginPage.getCurrentUrl().contains("/admin/login?error"),
@@ -24,7 +24,7 @@ public class AuthenticationUiTest extends BaseUiTest {
     void TC02_adminLoginWithValidCredentials() {
         driver.get(LOGIN_URL);
         LoginPage loginPage = new LoginPage(driver);
-        loginPage.login("manager1", "123456");
+        loginPage.login("manager1", "123");
 
         assertFalse(
                 loginPage.getCurrentUrl().contains("/admin/login?error"),
@@ -36,7 +36,7 @@ public class AuthenticationUiTest extends BaseUiTest {
     void TC03_invalidLoginShouldDisplayError() {
         driver.get(LOGIN_URL);
         LoginPage loginPage = new LoginPage(driver);
-        loginPage.login("employee1", "wrongpassword");
+        loginPage.login("invalid_user_123", "wrongpassword");
 
         assertTrue(
                 loginPage.isErrorDisplayed(),
@@ -48,7 +48,7 @@ public class AuthenticationUiTest extends BaseUiTest {
     void TC04_loginWithEmptyUsername() {
         driver.get(LOGIN_URL);
         LoginPage loginPage = new LoginPage(driver);
-        loginPage.enterPassword("123456");
+        loginPage.enterPassword("123");
         loginPage.clickLogin();
 
         assertTrue(
@@ -61,7 +61,7 @@ public class AuthenticationUiTest extends BaseUiTest {
     void TC05_loginWithEmptyPassword() {
         driver.get(LOGIN_URL);
         LoginPage loginPage = new LoginPage(driver);
-        loginPage.enterUsername("employee1");
+        loginPage.enterUsername("invalid_user_123");
         loginPage.clickLogin();
 
         assertTrue(

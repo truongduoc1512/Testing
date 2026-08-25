@@ -3,7 +3,7 @@
   "closed_count": 3,
   "reopened_count": 1,
   "pass_rate": "75.0%",
-  "timestamp": "2026-08-13T04:00:34.422606+00:00",
+  "timestamp": "2026-08-25T04:53:37.329307+00:00",
   "bugs": [
     {
       "bug_id": "BUG-101",
@@ -15,7 +15,7 @@
       "retest_passed": true,
       "final_status": "Closed",
       "notes": "Xác minh thành công trên Staging env build #102. OpenCV decode mượt mà, trả về approved=true.",
-      "retested_at": "2026-08-13T04:00:34.418024+00:00"
+      "retested_at": "2026-08-25T04:53:37.323306+00:00"
     },
     {
       "bug_id": "BUG-102",
@@ -27,7 +27,7 @@
       "retest_passed": true,
       "final_status": "Closed",
       "notes": "Xác minh thành công với JMeter. 1 request thành công, 19 requests nhận lỗi 400 'Sản phẩm hết hàng'.",
-      "retested_at": "2026-08-13T04:00:34.418095+00:00"
+      "retested_at": "2026-08-25T04:53:37.323306+00:00"
     },
     {
       "bug_id": "BUG-103",
@@ -39,7 +39,7 @@
       "retest_passed": true,
       "final_status": "Closed",
       "notes": "Giao diện hiển thị nút Thanh toán chuẩn z-index, không bị Footer che khuất.",
-      "retested_at": "2026-08-13T04:00:34.418116+00:00"
+      "retested_at": "2026-08-25T04:53:37.323306+00:00"
     },
     {
       "bug_id": "BUG-104",
@@ -51,7 +51,7 @@
       "retest_passed": false,
       "final_status": "Re-open",
       "notes": "Xác minh thất bại. Hệ thống vẫn cho phép áp dụng voucher giảm 50k dù mã đã hết hạn ngày 2025-12-31.",
-      "retested_at": "2026-08-13T04:00:34.418135+00:00"
+      "retested_at": "2026-08-25T04:53:37.323306+00:00"
     }
   ]
 }
