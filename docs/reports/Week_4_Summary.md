@@ -2,7 +2,7 @@
 > **Dự án:** ShoeShop Testing & Development  
 > **Sprint Jira:** Sprint 4 - UI Automation & Integration Testing  
 > **Thời gian:** 17/08/2026 - 24/08/2026  
-> **Người tổng hợp (Leader):** Trương Hoài Dược  
+> **Người tổng hợp (Leader):** Trương Hoài Được  
 
 ---
 
@@ -25,7 +25,7 @@
 | `TEST-26` | Retest resolved bugs | Thịnh | ✅ Done | `feat/w4-TEST-26-retest-resolved-bugs` | `test` |
 | `TEST-22` | Develop UI automation for authentication | Lĩnh | ✅ Done | `test/w4-TEST-22-ui-automation-auth` | `test` |
 | `TEST-23` | Develop checkout automation | Lĩnh | ✅ Done | `test/w4-TEST-23-ui-automation-checkout` | `test` |
-| `TEST-27` | Package Newman scripts | Trương Hoài Dược | ✅ Done | `feat/w4-TEST-27-package-newman-scripts` | `feat` |
+| `TEST-27` | Package Newman scripts | Hoài Được | ✅ Done | `feat/w4-TEST-27-package-newman-scripts` | `feat` |
 
 ---
 
@@ -43,7 +43,7 @@
 
 ## 🔍 4. MINH CHỨNG NGHỆM THU THEO THÀNH VIÊN
 
-### Leader (Trương Hoài Dược) — Task: `TEST-27`
+### Hoài Được — Task: `TEST-27`
 - **Sản phẩm bàn giao:** 
   * Cấu hình biến môi trường Postman tự động thông qua `docs/Shoeshop_Postman_Environment.json`.
   * Script Wrapper PowerShell `scripts/run-api-tests.ps1` tự động tải `newman` và `newman-reporter-htmlextra` qua npx.
@@ -75,3 +75,14 @@
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | Merge Conflict toàn bộ file `pom.xml` khi tích hợp TEST-22 vào Week-4 | Chỉnh sửa và format lại toàn bộ cấu trúc file `pom.xml` gốc làm ghi đè các cấu hình cũ của nhánh khác | Revert file `pom.xml` về định dạng gốc, chỉ nối tiếp thêm các dependencies của Selenium xuống cuối file | ✅ Resolved |
 | 2 | Kịch bản UI Test của chức năng Checkout (TEST-23) báo "Pass" sai sự thật (Fake Pass) | Sử dụng `try-catch(ignored)` bọc quanh code lỗi và ép lệnh `assertTrue(true)` ở cuối, đồng thời lạm dụng vòng lặp tìm bấm bừa Element | Áp dụng Explicit `WebDriverWait` kết hợp với CSS Selector chính xác để đợi và bấm vào đúng nút đích. Xóa bỏ hoàn toàn code ép Pass | ✅ Resolved |
+
+---
+
+## 🚀 6. KẾ HOẠCH TUẦN TIẾP THEO (WEEK 5 - Theory Alignment & Documentation)
+
+Trong Tuần 5 (Sprint 5) - cũng là tuần cuối cùng của dự án, nhóm sẽ dừng việc code thêm tính năng kiểm thử mới để tập trung toàn lực vào việc **chuẩn hóa học thuật** và **nghiệm thu cuối kỳ**:
+
+- **Chuẩn hóa Lý thuyết Hộp đen (Black-box Testing):** Bổ sung và ánh xạ chính xác các kỹ thuật Phân hoạch lớp tương đương (EP), Phân tích giá trị biên (BVA $4n+1$, $6n+1$, $5^n$), Bảng quyết định và Chuyển đổi trạng thái vào hệ thống tài liệu và code hiện có.
+- **Chuẩn hóa Lý thuyết Hộp trắng (White-box Testing):** Xây dựng Đồ thị luồng điều khiển (CFG) và tính toán thủ công độ phức tạp Cyclomatic $V(G)$ để đối chiếu chéo với công cụ JaCoCo.
+- **Áp dụng Kiểm thử theo Kinh nghiệm (Experience-Based):** Phân tích các kỹ thuật Error Guessing và Exploratory Testing áp dụng thực tế trên Module AI Computer Vision.
+- **Đóng gói & Nghiệm thu:** Hoàn thiện báo cáo tổng kết, hợp nhất nhánh (merge) lên `develop` và đánh tag phiên bản Release cuối cùng (`v4.0.0`) để bàn giao cho Giảng viên.

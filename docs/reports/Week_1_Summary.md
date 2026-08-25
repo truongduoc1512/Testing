@@ -2,7 +2,7 @@
 > **Dự án:** ShoeShop Testing & Development  
 > **Sprint Jira:** Sprint 1 - Test Planning & Static Testing  
 > **Thời gian:** 27/07/2026 - 03/08/2026  
-> **Người tổng hợp (Leader):** Trương Hoài Dược  
+> **Người tổng hợp (Leader):** Trương Hoài Được  
 
 ---
 
@@ -20,12 +20,12 @@
 
 | Mã Task Jira | Tên công việc | Người thực hiện | Trạng thái Jira | Pull Request (PR) | Loại Task |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `TEST-1` | Setup Jira project, Scrum board, and team permissions | Trương Hoài Dược | ✅ Done | Nhánh `main` | `infra` |
-| `TEST-2` | Create Test Plan Document | Trương Hoài Dược | ✅ Done | [PR docs/w1-TEST-2-create-test-plan](https://github.com/truongduoc1512/Testing/tree/docs/w1-TEST-2-create-test-plan) | `docs` |
-| `TEST-3` | Configure SonarQube, Checkstyle/SpotBugs, Flake8 | Hoàng Phương Nguyễn | ✅ Done | [PR test/w1-TEST-3-config-sonarqube-checkstyle](https://github.com/truongduoc1512/Testing/tree/test/w1-TEST-3-config-sonarqube-checkstyle) | `test` |
-| `TEST-4` | Perform manual code review | Hoàng Phương Nguyễn | ✅ Done | [PR feature/w1-TEST-4-review-controllers](https://github.com/truongduoc1512/Testing/tree/feature/w1-TEST-4-review-controllers) | `feature` |
-| `TEST-5` | Prepare Docker test environment | Bạn Lĩnh | ✅ Done | [PR feature/w1-TEST-5-prepare-docker-test-environment](https://github.com/truongduoc1512/Testing/tree/feature/w1-TEST-5-prepare-docker-test-environment) | `infra` |
-| `TEST-6` | Build Requirement Traceability Matrix | Nguyễn Hoài Thịnh | ✅ Done | [PR docs/w1-TEST-6-build-requirement-traceability-matrix](https://github.com/truongduoc1512/Testing/tree/docs/w1-TEST-6-build-requirement-traceability-matrix) | `docs` |
+| `TEST-1` | Setup Jira project, Scrum board, and team permissions | Hoài Được | ✅ Done | Nhánh `main` | `infra` |
+| `TEST-2` | Create Test Plan Document | Hoài Được | ✅ Done | [PR docs/w1-TEST-2-create-test-plan](https://github.com/truongduoc1512/Testing/tree/docs/w1-TEST-2-create-test-plan) | `docs` |
+| `TEST-3` | Configure SonarQube, Checkstyle/SpotBugs, Flake8 | Hoàng Phương | ✅ Done | [PR test/w1-TEST-3-config-sonarqube-checkstyle](https://github.com/truongduoc1512/Testing/tree/test/w1-TEST-3-config-sonarqube-checkstyle) | `test` |
+| `TEST-4` | Perform manual code review | Hoàng Phương | ✅ Done | [PR feature/w1-TEST-4-review-controllers](https://github.com/truongduoc1512/Testing/tree/feature/w1-TEST-4-review-controllers) | `feature` |
+| `TEST-5` | Prepare Docker test environment | Lĩnh | ✅ Done | [PR feature/w1-TEST-5-prepare-docker-test-environment](https://github.com/truongduoc1512/Testing/tree/feature/w1-TEST-5-prepare-docker-test-environment) | `infra` |
+| `TEST-6` | Build Requirement Traceability Matrix | Ngọc Thịnh | ✅ Done | [PR docs/w1-TEST-6-build-requirement-traceability-matrix](https://github.com/truongduoc1512/Testing/tree/docs/w1-TEST-6-build-requirement-traceability-matrix) | `docs` |
 | `TEST-7` | Submit Week 1 report and merge PR | Tất cả thành viên | ✅ Done | [PR week/week-1-test-planning](https://github.com/truongduoc1512/Testing/tree/week/week-1-test-planning) | `docs` |
 
 ---
@@ -41,23 +41,23 @@
 
 ## 🔍 4. MINH CHỨNG NGHỆM THU THEO THÀNH VIÊN
 
-### Leader (Trương Hoài Dược) - Task: `TEST-1`, `TEST-2`
+### Được - Task: `TEST-1`, `TEST-2`
 - **Sản phẩm bàn giao:** 
   * Dự án Jira Scrum Board `ShoeShop Testing & Development` phân quyền đủ 4 thành viên.
   * File tài liệu [docs/TEST_PLAN.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST_PLAN.md) chuẩn IEEE 829 định nghĩa đầy đủ 6 tuần kiểm thử.
 
-### Phương (Hoàng Phương Nguyễn) - Task: `TEST-3`, `TEST-4`
+### Phương - Task: `TEST-3`, `TEST-4`
 - **Sản phẩm bàn giao:** 
   * File [pom.xml](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/pom.xml) gắn plugin Checkstyle, SpotBugs, SonarQube; cấu hình `.flake8`, `.pylintrc` cho Python.
   * File [config/README.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/config/README.md) báo cáo 294 Sonar issues; file `src/main/README.md`, `src/test/README.md`.
   * Tái cấu trúc Controller, bổ sung `ApiResponse`, `CsrfTokenControllerAdvice` và 8 file Unit Test mới.
 
-### Lĩnh (Bạn Lĩnh) - Task: `TEST-5`
+### Lĩnh - Task: `TEST-5`
 - **Sản phẩm bàn giao:** 
   * File [docker-compose.yml](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docker-compose.yml) chạy 6 container (MySQL, App, AI Service, Nginx, phpMyAdmin, Swagger).
   * File tài liệu [docs/DOCKER_TEST_ENV.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/DOCKER_TEST_ENV.md) và script tiện ích [scripts/start-test-env.ps1](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/start-test-env.ps1).
 
-### Thịnh (Nguyễn Hoài Thịnh) - Task: `TEST-6`
+### Thịnh - Task: `TEST-6`
 - **Sản phẩm bàn giao:** 
   * File tài liệu [docs/REQUIREMENT_TRACEABILITY_MATRIX.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/REQUIREMENT_TRACEABILITY_MATRIX.md) chứa ma trận bao phủ 100% (10 phân hệ nghiệp vụ lớn).
 

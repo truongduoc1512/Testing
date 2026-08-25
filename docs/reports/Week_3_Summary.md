@@ -2,7 +2,7 @@
 > **Dự án:** ShoeShop Testing & Development  
 > **Sprint Jira:** Sprint 3 - API Automation, JaCoCo Coverage & Bug Lifecycle  
 > **Thời gian:** 10/08/2026 - 17/08/2026  
-> **Người tổng hợp (Leader):** Trương Hoài Dược  
+> **Người tổng hợp (Leader):** Trương Hoài Được  
 
 ---
 
@@ -21,8 +21,8 @@
 
 | Mã Task Jira | Tên công việc | Người thực hiện | Trạng thái Jira | Nhánh Git (Branch Name) | Loại Task |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `TEST-15` | Automate User & Product APIs | Trương Hoài Dược | ✅ Done | `feat/w3-TEST-15-automate-user-product-apis` | `feat` |
-| `TEST-16` | Automate Cart & Order APIs | Trương Hoài Dược | ✅ Done | `feat/w3-TEST-15-automate-user-product-apis` | `feat` |
+| `TEST-15` | Automate User & Product APIs | Hoài Được | ✅ Done | `feat/w3-TEST-15-automate-user-product-apis` | `feat` |
+| `TEST-16` | Automate Cart & Order APIs | Hoài Được | ✅ Done | `feat/w3-TEST-15-automate-user-product-apis` | `feat` |
 | `TEST-17` | Measure white-box coverage | Phương | ✅ Done | `test/w3-TEST-17-measure-white-box-coverage` | `test` |
 | `TEST-18` | Manual AI upload testing | Lĩnh | ✅ Done | `test/w3-TEST-18-manual-ai-upload-testing` | `test` |
 | `TEST-19` | Manage bug lifecycle | Thịnh | ✅ Done | `feat/w3-TEST-19-manage-bug-lifecycle` | `feat` |
@@ -48,7 +48,7 @@
 
 ## 🔍 4. MINH CHỨNG NGHỆM THU THEO THÀNH VIÊN
 
-### Leader (Trương Hoài Dược) — Task: `TEST-15`, `TEST-16`, `TEST-21`
+### Hoài Được — Task: `TEST-15`, `TEST-16`, `TEST-21`
 - **Sản phẩm bàn giao:** 
   * Bộ Master E2E Postman Collection `Shoeshop_API_Collection.json` (1,786 dòng JSON, 46 API Test Cases).
   * Tài liệu báo cáo tự động hóa API [docs/TEST-15.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-15.md).
@@ -81,3 +81,15 @@
 | 1 | Lỗi Whitelabel Error Page (404) khi người dùng bấm "Đăng xuất" trên giao diện | Spring Security bật CSRF bắt buộc `/admin/logout` phải dùng phương thức HTTP POST, trong khi menu HTML gửi HTTP GET | Cập nhật [WebSecurityConfig.java](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/src/main/java/com/example/demo/config/WebSecurityConfig.java) dùng `logoutRequestMatcher(new AntPathRequestMatcher("/admin/logout"))` hỗ trợ cả GET & POST | ✅ Resolved |
 | 2 | Container `shoeshop-api` bị lặp Crash Loop vô hạn (hiện logo SPRING liên tục) mỗi khi mở Docker Desktop | Do đặt `restart: always` và Spring Boot khởi chạy trước khi MySQL đạt trạng thái Healthy hoàn toàn | Đổi thành `restart: unless-stopped`, thêm timeout JDBC và bổ sung tự động nạp `seed_data.sql` vào script [scripts/start-test-env.ps1](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/start-test-env.ps1) | ✅ Resolved |
 | 3 | Postman Runner báo 3 kịch bản FAILED liên quan đến sản phẩm mẫu `P5593` | CSDL chưa được nạp tập dữ liệu mẫu `seed_data.sql` khiến sản phẩm không tồn tại và giỏ hàng bị trống khi checkout | Nạp `seed_data.sql` vào CSDL Docker và tích hợp nạp dữ liệu tự động ngay khi CSDL vừa bật | ✅ Resolved |
+
+---
+
+## 🚀 6. KẾ HOẠCH TUẦN TIẾP THEO (WEEK 4 - UI Automation & Integration Testing)
+
+Trong Tuần 4 (Sprint 4), toàn bộ đội ngũ sẽ chuyển trọng tâm sang Kiểm thử tự động Giao diện (UI) và Kiểm thử tích hợp hệ thống (Integration Testing). Các mục tiêu trọng điểm bao gồm:
+
+- **Thiết lập nền tảng Automation Test UI:** Áp dụng mô hình **Page Object Model (POM)** bằng Selenium WebDriver cho các phân hệ cốt lõi (Authentication & Checkout) (`TEST-22`, `TEST-23`).
+- **Kiểm thử chéo đa trình duyệt (Cross-browser Testing):** Viết script Python tự động kiểm thử UI trên 5 profile trình duyệt khác nhau (Chrome, Firefox, Edge, Brave, Chromium) (`TEST-25`).
+- **Integration Testing & Testcontainers:** Kiểm chứng độ toàn vẹn giao dịch (Transaction Rollback) với CSDL thật độc lập (`TEST-24`).
+- **Kiểm thử Hồi quy (Regression/Retest):** Xây dựng quy trình tự động xác thực trạng thái vòng đời Bug để đảm bảo không tái phát các lỗi đã đóng (`TEST-26`).
+- **Đóng gói API Automation:** Viết script Wrapper chạy Postman Collection bằng Newman CLI và tự động xuất HTML Report (`TEST-27`).
