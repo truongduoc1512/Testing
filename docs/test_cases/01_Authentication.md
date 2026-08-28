@@ -1,5 +1,5 @@
 # Bảng Test Case: Chức năng 1 - Đăng nhập & Xác thực (Authentication)
-**Người thực hiện:** Cả nhóm
+**Người thực hiện:** Lĩnh
 
 ## 1. Thông tin Kỹ thuật & Thực thi
 - **Kỹ thuật Thiết kế (Test Design):**
