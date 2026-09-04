@@ -25,6 +25,7 @@ public class VoucherTests {
     @Autowired
     private VoucherDAO voucherDAO;
 
+    // Hàm test tính toán phần trăm (%) và mức giảm tối đa
     @Test
     public void testPercentageDiscountWithMaxDiscountCap() {
         VoucherForm form = new VoucherForm();
@@ -45,6 +46,7 @@ public class VoucherTests {
         assertEquals(450.0, result.getFinalAmount());
     }
 
+    // Hàm test tính toán số tiền cố định (Fixed)
     @Test
     public void testFixedDiscountCalculation() {
         VoucherForm form = new VoucherForm();
@@ -64,6 +66,7 @@ public class VoucherTests {
         assertEquals(170.0, result.getFinalAmount());
     }
 
+    // Hàm test kiểm tra điều kiện giá trị đơn hàng tối thiểu
     @Test
     public void testMinimumOrderValueRejection() {
         VoucherForm form = new VoucherForm();
@@ -80,6 +83,7 @@ public class VoucherTests {
         assertTrue(result.getMessage().contains("tối thiểu"));
     }
 
+    // Hàm test kiểm tra điều kiện mã hết hạn
     @Test
     public void testExpiredVoucherRejection() {
         Calendar cal = Calendar.getInstance();
@@ -99,6 +103,7 @@ public class VoucherTests {
         assertTrue(result.getMessage().contains("hết hạn"));
     }
 
+    // Hàm test kiểm tra điều kiện số lần sử dụng tối đa
     @Test
     public void testUsageLimitRejection() {
         VoucherForm form = new VoucherForm();
