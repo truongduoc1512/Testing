@@ -82,3 +82,61 @@ jobs:
           name: surefire-test-results
           path: target/surefire-reports/
           retention-days: 14
+
+  api-test:
+    name: Automated API Integration Tests (Newman)
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for Newman CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build and Launch Dockerized Services
+        run: |
+          docker compose up -d --build shoeshop-mysql ai-service shoeshop-backend nginx-proxy
+
+      - name: Wait for Services Health and Readiness
+        run: |
+          echo "Waiting for services to become healthy..."
+          docker compose exec -T shoeshop-mysql mysqladmin ping -h localhost --silent --wait=60
+          
+          echo "Waiting for Backend (via Nginx proxy on port 80)..."
+          timeout 120s bash -c 'until curl -s -f http://localhost/admin/login > /dev/null || curl -s http://localhost/ > /dev/null; do echo "Backend warming up..."; sleep 3; done'
+          
+          echo "Waiting for AI Microservice (port 8000)..."
+          timeout 60s bash -c 'until curl -s -f http://localhost:8000/docs > /dev/null; do echo "AI service warming up..."; sleep 2; done'
+          
+          echo "All services are up and responding successfully!"
+
+      - name: Execute Newman API Test Collection
+        run: |
+          mkdir -p target
+          npx --yes newman run docs/Shoeshop_API_Collection.json \
+            -e docs/Shoeshop_Postman_Environment.json \
+            -r cli,htmlextra \
+            --reporter-htmlextra-export target/newman-report.html \
+            --insecure
+
+      - name: Upload Newman HTML Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-api-test-report
+          path: target/newman-report.html
+          retention-days: 14
+
+      - name: Teardown Services and Dump Logs on Failure
+        if: always()
+        run: |
+          if [ "${{ job.status }}" != "success" ]; then
+            echo "Pipeline failed, dumping docker compose logs:"
+            docker compose logs
+          fi
+          docker compose down
+
