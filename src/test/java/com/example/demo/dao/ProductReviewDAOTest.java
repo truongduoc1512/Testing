@@ -211,9 +211,10 @@ class ProductReviewDAOTest {
     }
 
     @Test
-    void updateReview_returnsFalseOutsideFiveMinuteWindow() {
+    void updateReview_boundary_24h01m_rejected() {
         ProductReview review = validReview();
-        review.setCreatedAt(new Date(System.currentTimeMillis() - 301_000));
+        // 24h 01m = (24 * 60 + 1) * 60 * 1000L = 86,460,000 ms ago
+        review.setCreatedAt(new Date(System.currentTimeMillis() - 86_460_000L));
         when(session.find(ProductReview.class, 1L)).thenReturn(review);
 
         assertFalse(dao.updateReview(1L, "ALICE", 3, "ok"));
@@ -221,9 +222,10 @@ class ProductReviewDAOTest {
     }
 
     @Test
-    void updateReview_updatesWithinWindowAndRefreshesCache() {
+    void updateReview_boundary_23h59m_allowed() {
         ProductReview review = validReview();
-        review.setCreatedAt(new Date(System.currentTimeMillis() - 299_000));
+        // 23h 59m = (23 * 60 + 59) * 60 * 1000L = 86,340,000 ms ago
+        review.setCreatedAt(new Date(System.currentTimeMillis() - 86_340_000L));
         Product product = product("ACTIVE");
         when(session.find(ProductReview.class, 1L)).thenReturn(review);
         when(session.find(Product.class, "P001", LockModeType.PESSIMISTIC_WRITE)).thenReturn(product);

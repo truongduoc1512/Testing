@@ -179,6 +179,43 @@ class ReviewApiControllerTest {
         assertBadRequest(controller.updateReview(2L, updatePayload(4, "valid")));
     }
 
+    @Test
+    void updateReview_boundary_23h59m_allowed() {
+        authenticate("buyer", "ROLE_USER");
+        ProductReview existing = new ProductReview();
+        existing.setReviewId(1L);
+        existing.setUsername("buyer");
+        existing.setCreatedAt(new java.util.Date(System.currentTimeMillis() - 86_340_000L)); // 23h59m ago
+
+        ProductReview updated = new ProductReview();
+        when(productReviewDAO.findReview(1L)).thenReturn(existing).thenReturn(updated);
+        when(productReviewDAO.updateReview(1L, "buyer", 5, "updated")).thenReturn(true);
+
+        ResponseEntity<?> response = controller.updateReview(1L, updatePayload(5, "updated"));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertSame(updated, response.getBody());
+    }
+
+    @Test
+    void updateReview_boundary_24h01m_forbidden() {
+        authenticate("buyer", "ROLE_USER");
+        ProductReview existing = new ProductReview();
+        existing.setReviewId(1L);
+        existing.setUsername("buyer");
+        existing.setCreatedAt(new java.util.Date(System.currentTimeMillis() - 86_460_000L)); // 24h01m ago
+
+        when(productReviewDAO.findReview(1L)).thenReturn(existing);
+
+        ResponseEntity<?> response = controller.updateReview(1L, updatePayload(5, "updated"));
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        Map<String, Object> body = body(response);
+        assertEquals(Boolean.FALSE, body.get("success"));
+        assertEquals("Chỉ có thể chỉnh sửa đánh giá trong vòng 24 giờ", body.get("message"));
+        verify(productReviewDAO, never()).updateReview(anyLong(), anyString(), anyInt(), anyString());
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("loginRequiredAuthentications")
     void deleteReview_rejectsLoginRequiredAuthentication(String authenticationCase,

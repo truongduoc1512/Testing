@@ -82,7 +82,7 @@ public class ReviewApiController {
         }
     }
 
-    @Operation(summary = "Chỉnh sửa nội dung đánh giá (trong vòng 5 phút sau khi đăng)")
+    @Operation(summary = "Chỉnh sửa nội dung đánh giá (trong vòng 24 giờ sau khi đăng)")
     @PutMapping("/{reviewId}")
     public ResponseEntity<?> updateReview(
             @PathVariable("reviewId") Long reviewId,
@@ -107,13 +107,30 @@ public class ReviewApiController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Số sao đánh giá phải từ 1 đến 5!"));
         }
 
+        ProductReview existingReview = productReviewDAO.findReview(reviewId);
+        if (existingReview != null && existingReview.getCreatedAt() != null
+                && existingReview.getUsername() != null && existingReview.getUsername().equalsIgnoreCase(username)) {
+            long diff = System.currentTimeMillis() - existingReview.getCreatedAt().getTime();
+            if (diff > 24 * 60 * 60 * 1000L) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("Chỉ có thể chỉnh sửa đánh giá trong vòng 24 giờ"));
+            }
+        }
+
         boolean success = productReviewDAO.updateReview(reviewId, username, ratingValue, comment.trim());
         if (success) {
             ProductReview updatedReview = productReviewDAO.findReview(reviewId);
             return ResponseEntity.ok(updatedReview);
         } else {
+            if (existingReview != null && existingReview.getCreatedAt() != null) {
+                long diff = System.currentTimeMillis() - existingReview.getCreatedAt().getTime();
+                if (diff > 24 * 60 * 60 * 1000L) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(ApiResponse.error("Chỉ có thể chỉnh sửa đánh giá trong vòng 24 giờ"));
+                }
+            }
             return ResponseEntity.badRequest().body(ApiResponse.error(
-                    "Không thể sửa bài đánh giá (đã quá 5 phút kể từ lúc đăng hoặc không có quyền sửa)."));
+                    "Không thể sửa bài đánh giá (đã quá 24 giờ kể từ lúc đăng hoặc không có quyền sửa)."));
         }
     }
 

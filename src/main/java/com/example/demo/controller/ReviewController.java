@@ -66,7 +66,7 @@ public class ReviewController {
       return "redirect:/productDetail?code=" + reviewForm.getProductCode();
    }
 
-   // POST: Edit Product Review (within 5-minute time window)
+   // POST: Edit Product Review (within 24-hour time window)
    @RequestMapping(value = { "/product/review/edit" }, method = RequestMethod.POST)
    public String editReview(@RequestParam("reviewId") Long reviewId,
          @RequestParam("productCode") String productCode,
@@ -88,7 +88,7 @@ public class ReviewController {
       if (success) {
          redirectAttributes.addFlashAttribute("reviewMessage", "Đã cập nhật bài đánh giá thành công!");
       } else {
-         redirectAttributes.addFlashAttribute("errorMessage", "Không thể sửa bài đánh giá (đã quá 5 phút kể từ lúc đăng hoặc bạn không có quyền sửa).");
+         redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể chỉnh sửa đánh giá trong vòng 24 giờ.");
       }
 
       return "redirect:/productDetail?code=" + productCode;

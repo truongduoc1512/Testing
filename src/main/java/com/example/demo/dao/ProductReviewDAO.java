@@ -54,9 +54,9 @@ public class ProductReviewDAO {
             return false;
         }
 
-        // Check 5 minutes time window (5 * 60 * 1000 ms = 300,000 ms)
+        // Check 24 hours time window (24 * 60 * 60 * 1000L ms = 86,400,000 ms)
         long diff = System.currentTimeMillis() - review.getCreatedAt().getTime();
-        if (diff > 5 * 60 * 1000) {
+        if (diff > 24 * 60 * 60 * 1000L) {
             return false;
         }
 
@@ -83,6 +83,12 @@ public class ProductReviewDAO {
         ProductReview review = session.find(ProductReview.class, reviewId);
 
         if (review == null || !review.getUsername().equalsIgnoreCase(username)) {
+            return false;
+        }
+
+        // Check 24 hours time window (24 * 60 * 60 * 1000L ms = 86,400,000 ms)
+        long diff = System.currentTimeMillis() - review.getCreatedAt().getTime();
+        if (diff > 24 * 60 * 60 * 1000L) {
             return false;
         }
 
