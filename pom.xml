@@ -226,6 +226,18 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- OWASP Dependency-Check Plugin for Software Composition Analysis (SCA) -->
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<version>9.0.9</version>
+				<configuration>
+					<format>ALL</format>
+					<skipTestScope>true</skipTestScope>
+					<failBuildOnCVSS>8</failBuildOnCVSS>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
