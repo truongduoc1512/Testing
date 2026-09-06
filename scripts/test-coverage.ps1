@@ -201,8 +201,7 @@ try {
     $mavenArguments = @(
         '-B',
         '-ntp',
-        'clean',
-        "org.jacoco:jacoco-maven-plugin:${JaCoCoVersion}:prepare-agent"
+        'clean'
     )
     if ([string]::IsNullOrWhiteSpace($TestSelector)) {
         Write-Host 'Running the complete test suite and generating the JaCoCo report...'
@@ -210,11 +209,11 @@ try {
     else {
         Write-Host "Running selected tests ($TestSelector) and generating the JaCoCo report..."
         $mavenArguments += "-Dtest=$TestSelector"
+        $mavenArguments += "-Djacoco.haltOnFailure=false"
     }
     $mavenArguments += @(
         '-Dsurefire.rerunFailingTestsCount=2',
-        'test',
-        "org.jacoco:jacoco-maven-plugin:${JaCoCoVersion}:report"
+        'test'
     )
     & mvn @mavenArguments
     Assert-NativeCommandSucceeded $LASTEXITCODE 'Maven test/coverage failed.'

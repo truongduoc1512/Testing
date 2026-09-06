@@ -20,7 +20,10 @@
 		<sonar.projectName>ShoeShop</sonar.projectName>
 		<testcontainers.version>1.17.6</testcontainers.version>
 		<selenium.version>4.25.0</selenium.version>
-		<jacoco.version>0.8.12</jacoco.version>
+		<jacoco.version>0.8.15</jacoco.version>
+		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<failBuildOnCVSS>8</failBuildOnCVSS>
+		<nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
 	</properties>
 
 
@@ -205,6 +208,7 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
+							<haltOnFailure>${jacoco.haltOnFailure}</haltOnFailure>
 							<rules>
 								<rule>
 									<element>BUNDLE</element>
@@ -231,11 +235,15 @@
 			<plugin>
 				<groupId>org.owasp</groupId>
 				<artifactId>dependency-check-maven</artifactId>
-				<version>9.0.9</version>
+				<version>10.0.4</version>
 				<configuration>
 					<format>ALL</format>
 					<skipTestScope>true</skipTestScope>
-					<failBuildOnCVSS>8</failBuildOnCVSS>
+					<failBuildOnCVSS>${failBuildOnCVSS}</failBuildOnCVSS>
+					<nvdApiKey>${nvdApiKey}</nvdApiKey>
+					<nvdApiDelay>2000</nvdApiDelay>
+					<nvdMaxRetryCount>5</nvdMaxRetryCount>
+					<ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
 				</configuration>
 			</plugin>
 		</plugins>
