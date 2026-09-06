@@ -29,11 +29,10 @@ Write-Host "Environment: $EnvironmentPath"
 Write-Host "Report output: $ReportPath"
 Write-Host "---------------------------------------------" -ForegroundColor Cyan
 
-# Execute newman via npx. npx will download the required packages dynamically if not installed.
-# We use --yes to automatically confirm the download prompt.
-npx --yes newman run $CollectionPath `
+# Execute newman via npx with both newman and htmlextra reporter packages.
+npx --yes -p newman -p newman-reporter-htmlextra newman run $CollectionPath `
     -e $EnvironmentPath `
-    -r cli,htmlextra `
+    -r "cli,htmlextra" `
     --reporter-htmlextra-export $ReportPath `
     --insecure
 
