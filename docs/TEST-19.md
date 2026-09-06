@@ -47,18 +47,35 @@ flowchart TD
 
 ### 2.3. Bảng chuyển đổi trạng thái (State Transition Table)
 
-Bảng chuyển đổi trạng thái mô tả các bước chuyển đổi hợp lệ trong cỗ máy trạng thái (State Machine) quản lý vòng đời Bug theo 3 cột tiêu chuẩn:
+Kỹ thuật **Chuyển đổi trạng thái (State Transition Testing)** áp dụng cho quy trình quản lý vòng đời Bug (Bug Lifecycle Framework) – một Cỗ máy trạng thái (State Machine) gồm các trạng thái và sự kiện chuyển tiếp. Bảng chuyển đổi trạng thái bên dưới tuân thủ 3 cột tiêu chuẩn theo tài liệu giảng dạy kiểm thử phần mềm:
 
-| Trạng thái bắt đầu (Start State) | Đầu vào / Sự kiện (Input / Event) | Trạng thái kết thúc (End State) |
+| Trạng thái bắt đầu (Start State) | Đầu vào/Sự kiện (Input/Event) | Trạng thái kết thúc (End State) |
 | :--- | :--- | :--- |
+| `NEW` | Dev xác nhận lỗi và fix | `IN PROGRESS` |
 | `NEW` | QA Lead / Tech Lead xác nhận lỗi hợp lệ và phê duyệt | `OPEN` |
-| `NEW` | Dev xác nhận lỗi và bắt đầu sửa trực tiếp | `IN PROGRESS` |
 | `OPEN` | Developer nhận ticket và tiến hành kiểm tra, xử lý mã nguồn | `IN PROGRESS` |
-| `IN PROGRESS` | Developer sửa xong lỗi, commit code & push bản fix lên môi trường Test | `RESOLVED` |
+| `IN PROGRESS` | Fix xong, commit code | `RESOLVED` |
 | `RESOLVED` | Tester tiếp nhận bản fix và chuyển sang thực thi kiểm thử lại | `RE-TESTING` |
 | `RE-TESTING` | Kiểm thử lại thành công (Test Pass 100%, không phát sinh lỗi phụ) | `CLOSED` |
 | `RE-TESTING` | Kiểm thử lại thất bại (Test Fail, lỗi chưa được fix triệt để) | `RE-OPEN` |
 | `RE-OPEN` | Developer tiếp nhận lại ticket bị Re-open để debug và sửa tiếp | `IN PROGRESS` |
+
+### 2.4. Thiết kế Test Cases theo Kỹ thuật State Transition Testing
+
+Dựa trên Bảng chuyển đổi trạng thái ở trên, các Test Cases được xây dựng để kiểm thử tính toàn vẹn của State Machine (bao gồm chuyển đổi hợp lệ - Positive Tests và chuyển đổi không hợp lệ - Negative Tests):
+
+| Test Case ID | Trạng thái bắt đầu (Start State) | Đầu vào/Sự kiện (Input/Event) | Kết quả kỳ vọng / Trạng thái kết thúc (Expected End State) | Loại Test |
+| :---: | :--- | :--- | :--- | :---: |
+| `ST-TC01` | `NEW` | Dev xác nhận lỗi và bắt đầu sửa | Chuyển trạng thái sang `IN PROGRESS` thành công | Positive |
+| `ST-TC02` | `NEW` | QA Lead phê duyệt ticket hợp lệ | Chuyển trạng thái sang `OPEN` thành công | Positive |
+| `ST-TC03` | `OPEN` | Developer nhận ticket và tiến hành code | Chuyển trạng thái sang `IN PROGRESS` thành công | Positive |
+| `ST-TC04` | `IN PROGRESS` | Developer commit code & push bản fix | Chuyển trạng thái sang `RESOLVED` thành công | Positive |
+| `ST-TC05` | `RESOLVED` | Tester nhận thông báo và re-test | Chuyển trạng thái sang `RE-TESTING` thành công | Positive |
+| `ST-TC06` | `RE-TESTING` | Re-test thành công (Pass 100%) | Chuyển trạng thái sang `CLOSED` thành công | Positive |
+| `ST-TC07` | `RE-TESTING` | Re-test thất bại (Test Fail) | Chuyển trạng thái sang `RE-OPEN` thành công | Positive |
+| `ST-TC08` | `RE-OPEN` | Dev tiếp nhận ticket bị Re-open | Chuyển trạng thái sang `IN PROGRESS` thành công | Positive |
+| `ST-TC09` | `NEW` | Cố tình chuyển thẳng sang `CLOSED` khi chưa fix/test | Hệ thống từ chối chuyển đổi (Invalid Transition) | Negative |
+| `ST-TC10` | `RESOLVED` | Cố tình chuyển sang `IN PROGRESS` bỏ qua `RE-TESTING` | Hệ thống báo lỗi quy trình không hợp lệ | Negative |
 
 ---
 
