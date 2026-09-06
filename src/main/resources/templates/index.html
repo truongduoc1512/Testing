@@ -298,9 +298,9 @@
                <div class="admin-hero-pattern-2"></div>
 
                <div class="admin-hero-left">
-                  <div class="admin-hero-avatar" th:utext="${#strings.substring(#request.userPrincipal.name, 0, 1).toUpperCase()}">U</div>
+                  <div class="admin-hero-avatar" th:text="${#strings.substring(#request.userPrincipal.name, 0, 1).toUpperCase()}">U</div>
                   <div>
-                     <h2 class="admin-hero-welcome">Chào mừng trở lại, <span th:utext="${#request.userPrincipal.name}">Chủ Shop</span>!</h2>
+                     <h2 class="admin-hero-welcome">Chào mừng trở lại, <span th:text="${#request.userPrincipal.name}">Chủ Shop</span>!</h2>
                      <p class="admin-hero-desc">Hệ thống quản trị cửa hàng giày Shoe Shop E-Commerce Platform.</p>
                   </div>
                </div>
@@ -386,7 +386,7 @@
       <th:block sec:authorize="!hasRole('ROLE_ADMIN')">
        <div th:if="${not #strings.isEmpty(keyword)}" style="text-align: center; padding: 20px; background-color: #f8d7da; border: 2px dashed red;">
           <h2 style="color: red;">Kết quả tìm kiếm của bạn:</h2>
-          <h1 th:utext="${keyword}"></h1> 
+          <h1 th:text="${keyword}"></h1>
       </div>
       <section id="spring1">
 <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">

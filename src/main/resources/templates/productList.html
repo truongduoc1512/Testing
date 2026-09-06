@@ -1165,14 +1165,13 @@
                                  <i class="fas fa-eye"></i>
                               </a>
                               
-                              <a sec:authorize="hasRole('ROLE_CUSTOMER')" 
-                                 th:if="${prod.stockQuantity > 0}"
-                                 th:href="@{|/addToCart?code=${prod.code}|}" 
-                                 class="btn-quick-circle" 
-                                 title="Thêm vào giỏ" 
-                                 onclick="event.stopPropagation();">
-                                 <i class="fas fa-shopping-cart"></i>
-                              </a>
+                              <form sec:authorize="hasRole('ROLE_USER')" th:if="${prod.stockQuantity > 0}"
+                                    th:action="@{/addToCart}" method="post" onclick="event.stopPropagation();">
+                                 <input type="hidden" name="code" th:value="${prod.code}" />
+                                 <button type="submit" class="btn-quick-circle" title="Thêm vào giỏ">
+                                    <i class="fas fa-shopping-cart"></i>
+                                 </button>
+                              </form>
                            </div>
 
                            <!-- Product Main Image -->
@@ -1234,12 +1233,14 @@
                               <a th:href="@{|/admin/product?code=${prod.code}|}" class="btn btn-sm btn-outline-primary font-weight-bold flex-grow-1" style="border-radius: var(--radius-sm); font-size: 11px;">
                                  <i class="fas fa-edit mr-1"></i> Sửa
                               </a>
-                              <a th:href="@{|/admin/deleteProduct?code=${prod.code}|}" 
-                                 class="btn btn-sm btn-outline-danger font-weight-bold" 
-                                 style="border-radius: var(--radius-sm); font-size: 11px;"
-                                 onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
-                                 <i class="fas fa-trash-alt"></i>
-                              </a>
+                              <form th:action="@{/admin/deleteProduct}" method="post" style="margin: 0;"
+                                    onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
+                                 <input type="hidden" name="code" th:value="${prod.code}" />
+                                 <button type="submit" class="btn btn-sm btn-outline-danger font-weight-bold"
+                                         style="border-radius: var(--radius-sm); font-size: 11px;">
+                                    <i class="fas fa-trash-alt"></i>
+                                 </button>
+                              </form>
                            </div>
 
                         </div>
@@ -1329,12 +1330,18 @@
 
                         <div id="modalBuyerActions" class="d-flex flex-column gap-2">
                            <div class="d-flex gap-2">
-                              <a id="modalBuyNowBtn" href="#" class="btn btn-primary font-weight-bold flex-grow-1 py-2.5" style="border-radius: var(--radius-md); font-size: 14px;">
-                                 <i class="fas fa-bolt mr-1"></i> Mua Ngay
-                              </a>
-                              <a id="modalAddToCartBtn" href="#" class="btn btn-outline-primary font-weight-bold flex-grow-1 py-2.5" style="border-radius: var(--radius-md); font-size: 14px;">
-                                 <i class="fas fa-cart-plus mr-1"></i> Thêm Vào Giỏ
-                              </a>
+                              <form th:action="@{/buyProduct}" method="post" class="flex-grow-1">
+                                 <input id="modalBuyNowCode" type="hidden" name="code" />
+                                 <button id="modalBuyNowBtn" type="submit" class="btn btn-primary font-weight-bold py-2.5 w-100" style="border-radius: var(--radius-md); font-size: 14px;">
+                                    <i class="fas fa-bolt mr-1"></i> Mua Ngay
+                                 </button>
+                              </form>
+                              <form th:action="@{/addToCart}" method="post" class="flex-grow-1">
+                                 <input id="modalAddToCartCode" type="hidden" name="code" />
+                                 <button id="modalAddToCartBtn" type="submit" class="btn btn-outline-primary font-weight-bold py-2.5 w-100" style="border-radius: var(--radius-md); font-size: 14px;">
+                                    <i class="fas fa-cart-plus mr-1"></i> Thêm Vào Giỏ
+                                 </button>
+                              </form>
                            </div>
                            
                            <!-- Prominent View Full Details & Write Review Button in Modal -->
@@ -1501,8 +1508,8 @@
                  starsContainer.appendChild(star);
              }
              
-             document.getElementById('modalBuyNowBtn').href = '/buyProduct?code=' + code;
-             document.getElementById('modalAddToCartBtn').href = '/addToCart?code=' + code;
+             document.getElementById('modalBuyNowCode').value = code;
+             document.getElementById('modalAddToCartCode').value = code;
              
              var viewFullDetailBtn = document.getElementById('modalViewFullDetailBtn');
              if (viewFullDetailBtn) {
@@ -1533,7 +1540,7 @@
               var method = isFav ? 'DELETE' : 'POST';
 
               btn.disabled = true;
-              fetch('/api/v1/wishlist/' + code, { method: method })
+              fetch('/api/v1/wishlist/' + code, { method: method, headers: csrfHeaders() })
                  .then(res => {
                      if (res.status === 401) {
                          window.location.href = '/admin/login';

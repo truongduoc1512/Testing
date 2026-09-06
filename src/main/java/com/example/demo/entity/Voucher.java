@@ -64,7 +64,7 @@ public class Voucher implements Serializable {
         this.discountValue = discountValue;
         this.maxDiscount = maxDiscount;
         this.minOrderValue = minOrderValue;
-        this.expiryDate = expiryDate;
+        this.expiryDate = copyOf(expiryDate);
         this.active = active;
         this.usageLimit = usageLimit;
         this.perUserLimit = perUserLimit;
@@ -112,11 +112,11 @@ public class Voucher implements Serializable {
     }
 
     public Date getExpiryDate() {
-        return expiryDate;
+        return copyOf(expiryDate);
     }
 
     public void setExpiryDate(Date expiryDate) {
-        this.expiryDate = expiryDate;
+        this.expiryDate = copyOf(expiryDate);
     }
 
     public boolean isActive() {
@@ -152,10 +152,14 @@ public class Voucher implements Serializable {
     }
 
     public Date getCreatedAt() {
-        return createdAt;
+        return copyOf(createdAt);
     }
 
     public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = copyOf(createdAt);
+    }
+
+    private static Date copyOf(Date value) {
+        return value == null ? null : new Date(value.getTime());
     }
 }

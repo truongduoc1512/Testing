@@ -224,6 +224,14 @@
          margin-top: 8px;
       }
 
+      .btn-buy-now:link,
+      .btn-buy-now:visited,
+      .btn-buy-now:hover,
+      .btn-buy-now:active {
+         color: #FFFFFF;
+         text-decoration: none;
+      }
+
       .btn-buy-now:hover {
          background-color: var(--color-primary-hover);
          transform: translateY(-2px);
@@ -284,8 +292,72 @@
          color: #CBD5E1;
       }
 
-      .star-rating-select i.active {
+      .star-rating-select button {
+         min-width: 44px;
+         min-height: 44px;
+         padding: 0;
+         border: 0;
+         background: transparent;
+         color: #CBD5E1;
+         cursor: pointer;
+         font-size: 24px;
+      }
+
+      .star-rating-select button.active {
          color: var(--color-accent);
+      }
+
+      .btn-buy-now:focus-visible,
+      .btn-wishlist-detail:focus-visible,
+      .star-rating-select button:focus-visible,
+      .btn-submit-review:focus-visible,
+      .btn-action-sm:focus-visible {
+         outline: 3px solid #0F172A;
+         outline-offset: 3px;
+      }
+
+      .product-actions {
+         display: flex;
+         gap: 12px;
+         align-items: stretch;
+      }
+
+      @media (max-width: 575.98px) {
+         .detail-container {
+            margin: 20px auto;
+            padding: 0 12px;
+         }
+
+         .product-card-hero,
+         .reviews-section {
+            padding: 20px;
+         }
+
+         .product-card-hero {
+            gap: 24px;
+         }
+
+         .product-img-wrapper {
+            min-height: 260px;
+         }
+
+         .product-title {
+            font-size: 22px;
+         }
+
+         .meta-info-grid {
+            grid-template-columns: 1fr;
+         }
+
+         .product-actions {
+            flex-direction: column;
+         }
+
+         .btn-buy-now,
+         .btn-wishlist-detail {
+            width: 100%;
+            min-height: 48px;
+         }
       }
 
       .review-textarea {
@@ -446,23 +518,24 @@
          <div class="product-details">
             <h1 class="product-title" th:text="${productInfo.name}">Tên sản phẩm</h1>
 
-            <!-- Denormalized Cache Counter Indicator -->
+            <!-- Product rating summary -->
             <div class="rating-cache-counter">
-               <span class="rating-score" th:text="${#numbers.formatDecimal(productInfo.rating, 1, 1)}">4.8</span>
+               <span class="rating-score"
+                  th:text="${#numbers.formatDecimal(productInfo.reviewCount > 0 ? productInfo.rating : 0.0, 1, 1)}">0.0</span>
                <div class="stars-icon">
                   <i class="fas fa-star"></i>
                </div>
-               <span class="review-count-badge" th:text="${productInfo.reviewCount} + ' Đánh giá (Cache Counter)'">152
+               <span class="review-count-badge" th:text="${productInfo.reviewCount} + ' đánh giá'">152
                   Đánh giá</span>
             </div>
 
             <!-- Price -->
             <div class="price-row">
                <span class="current-price"
-                  th:text="${#numbers.formatDecimal(productInfo.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">1,200,000
+                  th:text="${#numbers.formatDecimal(productInfo.price * 1000, 0, 'COMMA', 0, 'POINT')} + ' ₫'">1,200,000
                   ₫</span>
                <span th:if="${productInfo.discountPercent > 0}" class="original-price"
-                  th:text="${#numbers.formatDecimal(productInfo.originalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">1,500,000
+                  th:text="${#numbers.formatDecimal(productInfo.originalPrice * 1000, 0, 'COMMA', 0, 'POINT')} + ' ₫'">1,500,000
                   ₫</span>
                <span th:if="${productInfo.discountPercent > 0}" class="discount-chip"
                   th:text="'-' + ${productInfo.discountPercent} + '%'">-20%</span>
@@ -492,15 +565,18 @@
 
             <!-- Add to cart & Wishlist (Customers / Users only) -->
             <th:block sec:authorize="!hasAnyRole('ROLE_MANAGER', 'ROLE_ADMIN')">
-               <div style="display: flex; gap: 12px; align-items: center;">
-                  <a th:if="${productInfo.stockQuantity > 0}" th:href="@{|/buyProduct?code=${productInfo.code}|}" class="btn-buy-now" style="flex: 1;">
-                     <i class="fas fa-cart-plus"></i> Thêm vào Giỏ Hàng
-                  </a>
+               <div class="product-actions">
+                  <form th:if="${productInfo.stockQuantity > 0}" th:action="@{/buyProduct}" method="post" style="flex: 1;">
+                     <input type="hidden" name="code" th:value="${productInfo.code}" />
+                     <button type="submit" class="btn-buy-now" style="width: 100%;">
+                        <i class="fas fa-cart-plus"></i> Thêm vào Giỏ Hàng
+                     </button>
+                  </form>
                   <button th:if="${productInfo.stockQuantity <= 0}" disabled class="btn-buy-now" style="flex: 1; background-color: #94A3B8; cursor: not-allowed; opacity: 0.8; border: none;">
                      <i class="fas fa-times-circle"></i> Sản Phẩm Hết Hàng
                   </button>
-                  <button type="button" class="btn-wishlist-detail" th:data-code="${productInfo.code}" onclick="toggleWishlistDetail(this)" style="padding: 12px 20px; border-radius: var(--radius-md); border: 2px solid #E2E8F0; background: #fff; cursor: pointer; font-size: 15px; font-weight: 700; color: #64748B; transition: all 0.2s; display: inline-flex; align-items: center;">
-                     <i class="far fa-heart" id="detail-wishlist-icon" style="font-size: 18px; margin-right: 6px;"></i> <span id="detail-wishlist-text">Yêu thích</span>
+                  <button type="button" class="btn-wishlist-detail" th:data-code="${productInfo.code}" onclick="toggleWishlistDetail(this)" aria-pressed="false" style="padding: 12px 20px; border-radius: var(--radius-md); border: 2px solid #E2E8F0; background: #fff; cursor: pointer; font-size: 15px; font-weight: 700; color: #64748B; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;">
+                     <i class="far fa-heart" id="detail-wishlist-icon" aria-hidden="true" style="font-size: 18px; margin-right: 6px;"></i> <span id="detail-wishlist-text">Yêu thích</span>
                   </button>
                </div>
             </th:block>
@@ -553,19 +629,19 @@
                   <input type="hidden" id="ratingValueInput" th:field="*{ratingValue}" value="5" />
 
                   <div class="form-group">
-                     <label class="form-label">Chọn số sao đánh giá</label>
-                     <div class="star-rating-select" id="starRatingSelect">
-                        <i class="fas fa-star active" data-rating="1"></i>
-                        <i class="fas fa-star active" data-rating="2"></i>
-                        <i class="fas fa-star active" data-rating="3"></i>
-                        <i class="fas fa-star active" data-rating="4"></i>
-                        <i class="fas fa-star active" data-rating="5"></i>
+                     <span class="form-label" id="ratingLabel">Chọn số sao đánh giá</span>
+                     <div class="star-rating-select" id="starRatingSelect" role="radiogroup" aria-labelledby="ratingLabel">
+                        <button type="button" class="active" data-rating="1" role="radio" aria-checked="false" aria-label="1 sao"><i class="fas fa-star" aria-hidden="true"></i></button>
+                        <button type="button" class="active" data-rating="2" role="radio" aria-checked="false" aria-label="2 sao"><i class="fas fa-star" aria-hidden="true"></i></button>
+                        <button type="button" class="active" data-rating="3" role="radio" aria-checked="false" aria-label="3 sao"><i class="fas fa-star" aria-hidden="true"></i></button>
+                        <button type="button" class="active" data-rating="4" role="radio" aria-checked="false" aria-label="4 sao"><i class="fas fa-star" aria-hidden="true"></i></button>
+                        <button type="button" class="active" data-rating="5" role="radio" aria-checked="true" aria-label="5 sao"><i class="fas fa-star" aria-hidden="true"></i></button>
                      </div>
                   </div>
 
                   <div class="form-group">
-                     <label class="form-label">Nội dung nhận xét</label>
-                     <textarea th:field="*{comment}" class="review-textarea"
+                     <label class="form-label" for="comment">Nội dung nhận xét</label>
+                     <textarea th:field="*{comment}" id="comment" class="review-textarea"
                         placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..." required></textarea>
                   </div>
 
@@ -675,21 +751,22 @@
 
    <script>
       // Interactive Star Rating Selector Script
-      const stars = document.querySelectorAll('#starRatingSelect i');
+       const stars = document.querySelectorAll('#starRatingSelect button');
       const ratingInput = document.getElementById('ratingValueInput');
 
       if (stars && ratingInput) {
          stars.forEach(star => {
             star.addEventListener('click', function () {
                const val = parseInt(this.getAttribute('data-rating'));
-               ratingInput.value = val;
-               stars.forEach((s, idx) => {
-                  if (idx < val) {
-                     s.classList.add('active');
+                ratingInput.value = val;
+                stars.forEach((s, idx) => {
+                   if (idx < val) {
+                      s.classList.add('active');
                   } else {
-                     s.classList.remove('active');
-                  }
-               });
+                      s.classList.remove('active');
+                   }
+                   s.setAttribute('aria-checked', idx + 1 === val ? 'true' : 'false');
+                });
             });
          });
       }
@@ -714,7 +791,7 @@
          var method = isFav ? 'DELETE' : 'POST';
 
          btn.disabled = true;
-         fetch('/api/v1/wishlist/' + code, { method: method })
+         fetch('/api/v1/wishlist/' + code, { method: method, headers: csrfHeaders() })
             .then(res => {
                if (res.status === 401) {
                   window.location.href = '/admin/login';
@@ -725,7 +802,8 @@
             .then(data => {
                btn.disabled = false;
                if (data && data.success) {
-                  if (isFav) {
+                   if (isFav) {
+                      btn.setAttribute('aria-pressed', 'false');
                      icon.className = 'far fa-heart';
                      icon.style.color = '#64748B';
                      text.textContent = 'Yêu thích';
@@ -734,7 +812,8 @@
                      if (typeof showToastNotification === 'function') {
                         showToastNotification('Đã xóa sản phẩm khỏi danh sách yêu thích!', 'success');
                      }
-                  } else {
+                   } else {
+                      btn.setAttribute('aria-pressed', 'true');
                      icon.className = 'fas fa-heart';
                      icon.style.color = '#EF4444';
                      text.textContent = 'Đã thích';

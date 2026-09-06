@@ -3,7 +3,6 @@ package com.example.demo.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "Review Controller", description = "Các API đánh giá và nhận xét sản phẩm")
 @Controller
-@Transactional
 public class ReviewController {
 
    @Autowired
@@ -44,14 +42,25 @@ public class ReviewController {
          return "redirect:/productDetail?code=" + reviewForm.getProductCode();
       }
 
-      if (reviewForm.getProductCode() == null || reviewForm.getComment() == null || reviewForm.getComment().trim().isEmpty()) {
+      if (reviewForm.getProductCode() == null || reviewForm.getProductCode().trim().isEmpty()
+            || reviewForm.getProductCode().trim().length() > 20 || reviewForm.getComment() == null
+            || reviewForm.getComment().trim().isEmpty() || reviewForm.getComment().trim().length() > 2000) {
          redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng nhập nội dung đánh giá.");
+         return "redirect:/productDetail?code=" + reviewForm.getProductCode();
+      }
+      if (reviewForm.getRatingValue() < 1 || reviewForm.getRatingValue() > 5) {
+         redirectAttributes.addFlashAttribute("errorMessage", "Số sao đánh giá phải từ 1 đến 5.");
          return "redirect:/productDetail?code=" + reviewForm.getProductCode();
       }
 
       String username = auth.getName();
       ProductReview review = new ProductReview(reviewForm.getProductCode(), username, reviewForm.getRatingValue(), reviewForm.getComment().trim());
-      productReviewDAO.saveReview(review);
+      try {
+         productReviewDAO.saveReview(review);
+      } catch (IllegalArgumentException e) {
+         redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+         return "redirect:/productList";
+      }
 
       redirectAttributes.addFlashAttribute("reviewMessage", "Cảm ơn bạn đã gửi đánh giá cho sản phẩm!");
       return "redirect:/productDetail?code=" + reviewForm.getProductCode();
@@ -68,6 +77,11 @@ public class ReviewController {
       org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
       if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
          return "redirect:/admin/login";
+      }
+      if (comment == null || comment.trim().isEmpty() || comment.trim().length() > 2000
+            || ratingValue < 1 || ratingValue > 5) {
+         redirectAttributes.addFlashAttribute("errorMessage", "Nội dung không được để trống và số sao phải từ 1 đến 5.");
+         return "redirect:/productDetail?code=" + productCode;
       }
 
       boolean success = productReviewDAO.updateReview(reviewId, auth.getName(), ratingValue, comment.trim());

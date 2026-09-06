@@ -55,14 +55,10 @@ public class WishlistDAO {
             return true; // Already in wishlist
         }
 
-        try {
-            Session session = this.sessionFactory.getCurrentSession();
-            Wishlist item = new Wishlist(username, productCode);
-            session.save(item);
-            return true;
-        } catch (Exception e) {
-            return true; // Handle potential race condition or duplicate key gracefully
-        }
+        Session session = this.sessionFactory.getCurrentSession();
+        Wishlist item = new Wishlist(username, productCode);
+        session.save(item);
+        return true;
     }
 
     public boolean removeWishlist(String username, String productCode) {

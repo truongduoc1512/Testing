@@ -1,12 +1,11 @@
 package com.example.demo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
+import javax.persistence.EntityManager;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,87 +18,74 @@ import com.example.demo.form.UserAddressForm;
 
 @SpringBootTest
 @Transactional
-public class AddressBookTests {
+class AddressBookTests {
 
     @Autowired
     private UserAddressDAO userAddressDAO;
 
+    @Autowired
+    private EntityManager entityManager;
+
     @Test
-    public void testFirstAddressIsAutoDefault() {
-        String testUser = "unit_user_1";
+    void saveAddress_marksFirstAddressAsDefault() {
+        UserAddressForm form = addressForm("Nguyễn Văn A", false);
 
-        UserAddressForm form = new UserAddressForm();
-        form.setReceiverName("Nguyễn Văn A");
-        form.setPhone("0988111222");
-        form.setProvince("Hà Nội");
-        form.setDistrict("Quận Ba Đình");
-        form.setWard("Phường Kim Mã");
-        form.setStreetAddress("100 Kim Mã");
-        form.setDefault(false); // Even if false, first address becomes default
+        UserAddress saved = userAddressDAO.saveAddress("unit_user_1", form);
 
-        UserAddress saved = userAddressDAO.saveAddress(testUser, form);
         assertNotNull(saved);
         assertTrue(saved.isDefault());
     }
 
     @Test
-    public void testUnsetPreviousDefaultAddress() {
-        String testUser = "unit_user_2";
+    void saveAddress_unsetsPreviousDefaultAddress() {
+        String username = "unit_user_2";
+        UserAddress firstAddress = userAddressDAO.saveAddress(
+                username, addressForm("Địa chỉ 1", true));
+        UserAddress secondAddress = userAddressDAO.saveAddress(
+                username, addressForm("Địa chỉ 2", true));
 
-        // Address 1
-        UserAddressForm form1 = new UserAddressForm();
-        form1.setReceiverName("Địa chỉ 1");
-        form1.setPhone("0900000001");
-        form1.setProvince("Hồ Chí Minh");
-        form1.setDistrict("Quận 1");
-        form1.setWard("Phường Bến Nghé");
-        form1.setStreetAddress("1 Lê Lợi");
-        form1.setDefault(true);
-        UserAddress addr1 = userAddressDAO.saveAddress(testUser, form1);
+        entityManager.flush();
+        entityManager.clear();
 
-        // Address 2 (set default = true)
-        UserAddressForm form2 = new UserAddressForm();
-        form2.setReceiverName("Địa chỉ 2");
-        form2.setPhone("0900000002");
-        form2.setProvince("Hồ Chí Minh");
-        form2.setDistrict("Quận 3");
-        form2.setWard("Phường 6");
-        form2.setStreetAddress("200 Võ Văn Tần");
-        form2.setDefault(true);
-        UserAddress addr2 = userAddressDAO.saveAddress(testUser, form2);
+        UserAddress reloadedFirstAddress = userAddressDAO.getAddressById(firstAddress.getId());
+        UserAddress reloadedSecondAddress = userAddressDAO.getAddressById(secondAddress.getId());
 
-        // Verify addr1 is now NOT default, addr2 IS default
-        UserAddress updatedAddr1 = userAddressDAO.getAddressById(addr1.getId());
-        UserAddress updatedAddr2 = userAddressDAO.getAddressById(addr2.getId());
-
-        assertFalse(updatedAddr1.isDefault());
-        assertTrue(updatedAddr2.isDefault());
+        assertFalse(reloadedFirstAddress.isDefault());
+        assertTrue(reloadedSecondAddress.isDefault());
     }
 
     @Test
-    public void testOwnershipEnforcementOnDelete() {
-        String ownerUser = "owner_user";
-        String intruderUser = "intruder_user";
+    void deleteAddress_rejectsNonOwnerAndPreservesAddress() {
+        UserAddress address = userAddressDAO.saveAddress(
+                "owner_user", addressForm("Chính chủ", false));
 
+        boolean deleted = userAddressDAO.deleteAddress("intruder_user", address.getId());
+
+        assertFalse(deleted);
+        assertNotNull(userAddressDAO.getAddressById(address.getId()));
+    }
+
+    @Test
+    void deleteAddress_allowsOwnerAndRemovesAddress() {
+        String owner = "owner_user";
+        UserAddress address = userAddressDAO.saveAddress(
+                owner, addressForm("Chính chủ", false));
+
+        boolean deleted = userAddressDAO.deleteAddress(owner, address.getId());
+
+        assertTrue(deleted);
+        assertNull(userAddressDAO.getAddressById(address.getId()));
+    }
+
+    private UserAddressForm addressForm(String receiverName, boolean defaultAddress) {
         UserAddressForm form = new UserAddressForm();
-        form.setReceiverName("Chính chủ");
-        form.setPhone("0912345678");
-        form.setProvince("Đà Nẵng");
-        form.setDistrict("Quận Hải Châu");
-        form.setWard("Phường Hòa Cường");
-        form.setStreetAddress("50 Nguyễn Văn Linh");
-        UserAddress addr = userAddressDAO.saveAddress(ownerUser, form);
-
-        // Intruder tries to delete owner's address -> Should fail
-        boolean deleteResult = userAddressDAO.deleteAddress(intruderUser, addr.getId());
-        assertFalse(deleteResult);
-
-        // Address should still exist in database
-        assertNotNull(userAddressDAO.getAddressById(addr.getId()));
-
-        // Owner deletes -> Should succeed
-        boolean ownerDeleteResult = userAddressDAO.deleteAddress(ownerUser, addr.getId());
-        assertTrue(ownerDeleteResult);
-        assertNull(userAddressDAO.getAddressById(addr.getId()));
+        form.setReceiverName(receiverName);
+        form.setPhone("0900000000");
+        form.setProvince("Hồ Chí Minh");
+        form.setDistrict("Quận 1");
+        form.setWard("Phường Bến Nghé");
+        form.setStreetAddress("1 Lê Lợi");
+        form.setDefault(defaultAddress);
+        return form;
     }
 }

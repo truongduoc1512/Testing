@@ -35,3 +35,12 @@ build/
 shoeshop-key-v2*
 
 .env
+.claude
+RULE_REFERENCE.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/

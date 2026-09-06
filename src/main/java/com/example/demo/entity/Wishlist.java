@@ -70,10 +70,10 @@ public class Wishlist implements Serializable {
     }
 
     public Date getCreatedAt() {
-        return createdAt;
+        return createdAt == null ? null : new Date(createdAt.getTime());
     }
 
     public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = createdAt == null ? null : new Date(createdAt.getTime());
     }
 }

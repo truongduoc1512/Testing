@@ -73,13 +73,13 @@ public class UserAddressDAO {
             address.setCreatedAt(new Date());
         }
 
-        address.setReceiverName(form.getReceiverName());
-        address.setPhone(form.getPhone());
-        address.setProvince(form.getProvince());
-        address.setDistrict(form.getDistrict());
-        address.setWard(form.getWard());
-        address.setStreetAddress(form.getStreetAddress());
-        address.setNote(form.getNote());
+        address.setReceiverName(form.getReceiverName().trim());
+        address.setPhone(form.getPhone().trim());
+        address.setProvince(form.getProvince().trim());
+        address.setDistrict(form.getDistrict().trim());
+        address.setWard(form.getWard().trim());
+        address.setStreetAddress(form.getStreetAddress().trim());
+        address.setNote(form.getNote() == null ? null : form.getNote().trim());
         address.setDefault(shouldBeDefault);
         address.setUpdatedAt(new Date());
 

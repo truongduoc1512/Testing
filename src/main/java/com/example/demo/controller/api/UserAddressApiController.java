@@ -1,6 +1,5 @@
 package com.example.demo.controller.api;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,10 +44,8 @@ public class UserAddressApiController {
     public ResponseEntity<?> getUserAddresses() {
         String username = getCurrentUsername();
         if (username == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng đăng nhập để xem sổ địa chỉ!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để xem sổ địa chỉ!"));
         }
         List<UserAddress> addresses = userAddressDAO.getUserAddresses(username);
         return ResponseEntity.ok(addresses);
@@ -59,27 +56,19 @@ public class UserAddressApiController {
     public ResponseEntity<?> createAddress(@RequestBody UserAddressForm form) {
         String username = getCurrentUsername();
         if (username == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng đăng nhập để thêm địa chỉ!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để thêm địa chỉ!"));
         }
 
-        if (form.getReceiverName() == null || form.getReceiverName().trim().isEmpty() ||
-            form.getPhone() == null || form.getPhone().trim().isEmpty() ||
-            form.getStreetAddress() == null || form.getStreetAddress().trim().isEmpty()) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng điền đầy đủ Tên người nhận, Số điện thoại và Địa chỉ chi tiết!");
-            return ResponseEntity.badRequest().body(error);
+        String validationError = validateAddress(form);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(validationError));
         }
 
         form.setId(null); // Ensure creation
         UserAddress address = userAddressDAO.saveAddress(username, form);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Thêm địa chỉ giao hàng mới thành công!");
+        Map<String, Object> response = ApiResponse.success("Thêm địa chỉ giao hàng mới thành công!");
         response.put("address", address);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -90,26 +79,25 @@ public class UserAddressApiController {
     public ResponseEntity<?> updateAddress(@PathVariable("id") Long id, @RequestBody UserAddressForm form) {
         String username = getCurrentUsername();
         if (username == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng đăng nhập!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập!"));
         }
 
         UserAddress existing = userAddressDAO.getAddressById(id);
         if (existing == null || !existing.getUsername().equals(username)) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Không tìm thấy địa chỉ hoặc bạn không có quyền chỉnh sửa!");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Không tìm thấy địa chỉ hoặc bạn không có quyền chỉnh sửa!"));
+        }
+
+        String validationError = validateAddress(form);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(validationError));
         }
 
         form.setId(id);
         UserAddress updated = userAddressDAO.saveAddress(username, form);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Cập nhật địa chỉ thành công!");
+        Map<String, Object> response = ApiResponse.success("Cập nhật địa chỉ thành công!");
         response.put("address", updated);
 
         return ResponseEntity.ok(response);
@@ -120,23 +108,16 @@ public class UserAddressApiController {
     public ResponseEntity<?> deleteAddress(@PathVariable("id") Long id) {
         String username = getCurrentUsername();
         if (username == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng đăng nhập!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập!"));
         }
 
         boolean deleted = userAddressDAO.deleteAddress(username, id);
-        Map<String, Object> response = new HashMap<>();
         if (!deleted) {
-            response.put("success", false);
-            response.put("message", "Không tìm thấy địa chỉ hoặc bạn không có quyền xóa!");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Không tìm thấy địa chỉ hoặc bạn không có quyền xóa!"));
         }
-
-        response.put("success", true);
-        response.put("message", "Đã xóa địa chỉ giao hàng thành công!");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa địa chỉ giao hàng thành công!"));
     }
 
     @Operation(summary = "Đặt một địa chỉ làm địa chỉ mặc định")
@@ -144,22 +125,34 @@ public class UserAddressApiController {
     public ResponseEntity<?> setDefaultAddress(@PathVariable("id") Long id) {
         String username = getCurrentUsername();
         if (username == null) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng đăng nhập!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập!"));
         }
 
         boolean updated = userAddressDAO.setDefaultAddress(username, id);
-        Map<String, Object> response = new HashMap<>();
         if (!updated) {
-            response.put("success", false);
-            response.put("message", "Không tìm thấy địa chỉ!");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Không tìm thấy địa chỉ!"));
         }
+        return ResponseEntity.ok(ApiResponse.success("Đã đặt làm địa chỉ mặc định!"));
+    }
 
-        response.put("success", true);
-        response.put("message", "Đã đặt làm địa chỉ mặc định!");
-        return ResponseEntity.ok(response);
+    private String validateAddress(UserAddressForm form) {
+        if (form == null || isBlank(form.getReceiverName()) || isBlank(form.getPhone())
+                || isBlank(form.getProvince()) || isBlank(form.getDistrict())
+                || isBlank(form.getWard()) || isBlank(form.getStreetAddress())) {
+            return "Vui lòng điền đầy đủ thông tin địa chỉ giao hàng!";
+        }
+        if (form.getReceiverName().trim().length() > 100 || form.getPhone().trim().length() > 20
+                || form.getProvince().trim().length() > 100 || form.getDistrict().trim().length() > 100
+                || form.getWard().trim().length() > 100 || form.getStreetAddress().trim().length() > 255
+                || (form.getNote() != null && form.getNote().trim().length() > 255)) {
+            return "Thông tin địa chỉ vượt quá độ dài cho phép!";
+        }
+        return null;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

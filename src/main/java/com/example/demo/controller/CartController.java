@@ -6,8 +6,9 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -36,8 +37,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "Cart Controller", description = "Các API giỏ hàng, cập nhật số lượng và thanh toán")
 @Controller
-@Transactional
 public class CartController {
+
+   private static final Logger LOGGER = LoggerFactory.getLogger(CartController.class);
 
    @Autowired
    private OrderDAO orderDAO;
@@ -55,21 +57,19 @@ public class CartController {
          return;
       }
 
-      if (target.getClass() == CartInfo.class) {
-
-      } else if (target.getClass() == CustomerForm.class) {
+      if (target.getClass() == CustomerForm.class) {
          dataBinder.setValidator(customerFormValidator);
       }
    }
 
-   @RequestMapping({ "/buyProduct" })
+   @RequestMapping(value = { "/buyProduct" }, method = RequestMethod.POST)
    public String listProductHandler(HttpServletRequest request, Model model,
          @RequestParam(value = "code", defaultValue = "") String code,
          final RedirectAttributes redirectAttributes) {
 
       Product product = null;
       if (code != null && code.length() > 0) {
-         product = productDAO.findProduct(code);
+         product = productDAO.findActiveProduct(code);
       }
       if (product != null) {
          if (product.getStockQuantity() <= 0) {
@@ -79,19 +79,21 @@ public class CartController {
          CartInfo cartInfo = Utils.getCartInSession(request);
          ProductInfo productInfo = new ProductInfo(product);
          cartInfo.addProduct(productInfo, 1);
+      } else {
+         redirectAttributes.addFlashAttribute("errorMessage", "Sản phẩm không tồn tại hoặc đã ngừng bán!");
       }
 
       return "redirect:/shoppingCart";
    }
 
-   @RequestMapping({ "/addToCart" })
+   @RequestMapping(value = { "/addToCart" }, method = RequestMethod.POST)
    public String addToCartHandler(HttpServletRequest request, Model model,
          @RequestParam(value = "code", defaultValue = "") String code,
          final RedirectAttributes redirectAttributes) {
 
       Product product = null;
       if (code != null && code.length() > 0) {
-         product = productDAO.findProduct(code);
+         product = productDAO.findActiveProduct(code);
       }
       if (product != null) {
          if (product.getStockQuantity() <= 0) {
@@ -102,14 +104,17 @@ public class CartController {
          ProductInfo productInfo = new ProductInfo(product);
          cartInfo.addProduct(productInfo, 1);
          redirectAttributes.addFlashAttribute("message", "Đã thêm sản phẩm \"" + product.getName() + "\" vào giỏ hàng!");
+      } else {
+         redirectAttributes.addFlashAttribute("errorMessage", "Sản phẩm không tồn tại hoặc đã ngừng bán!");
       }
 
       return "redirect:/productList";
    }
 
-   @RequestMapping({ "/shoppingCartRemoveProduct" })
+   @RequestMapping(value = { "/shoppingCartRemoveProduct" }, method = RequestMethod.POST)
    public String removeProductHandler(HttpServletRequest request, Model model,
-         @RequestParam(value = "code", defaultValue = "") String code) {
+         @RequestParam(value = "code", defaultValue = "") String code,
+         final RedirectAttributes redirectAttributes) {
       Product product = null;
       if (code != null && code.length() > 0) {
          product = productDAO.findProduct(code);
@@ -118,6 +123,8 @@ public class CartController {
          CartInfo cartInfo = Utils.getCartInSession(request);
          ProductInfo productInfo = new ProductInfo(product);
          cartInfo.removeProduct(productInfo);
+      } else {
+         redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy sản phẩm cần xóa khỏi giỏ hàng!");
       }
 
       return "redirect:/shoppingCart";
@@ -127,10 +134,31 @@ public class CartController {
    @RequestMapping(value = { "/shoppingCart" }, method = RequestMethod.POST)
    public String shoppingCartUpdateQty(HttpServletRequest request,
          Model model,
-         @ModelAttribute("cartForm") CartInfo cartForm) {
+         @ModelAttribute("cartForm") CartInfo cartForm,
+         final RedirectAttributes redirectAttributes) {
 
       CartInfo cartInfo = Utils.getCartInSession(request);
-      cartInfo.updateQuantity(cartForm);
+      Map<String, Integer> validatedQuantities = new HashMap<>();
+      if (cartForm == null || cartForm.getCartLines() == null) {
+         redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu giỏ hàng không hợp lệ!");
+         return "redirect:/shoppingCart";
+      }
+
+      for (CartLineInfo line : cartForm.getCartLines()) {
+         if (line == null || line.getProductInfo() == null || line.getProductInfo().getCode() == null
+               || line.getQuantity() < 1) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Số lượng sản phẩm phải lớn hơn 0!");
+            return "redirect:/shoppingCart";
+         }
+         Product product = productDAO.findActiveProduct(line.getProductInfo().getCode());
+         if (product == null || product.getStockQuantity() < 1) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Sản phẩm không còn tồn tại hoặc đã hết hàng!");
+            return "redirect:/shoppingCart";
+         }
+         validatedQuantities.put(product.getCode(), Math.min(line.getQuantity(), product.getStockQuantity()));
+      }
+
+      validatedQuantities.forEach(cartInfo::updateProduct);
 
       return "redirect:/shoppingCart";
    }
@@ -217,7 +245,8 @@ public class CartController {
       try {
          orderDAO.saveOrder(cartInfo);
       } catch (Exception e) {
-         e.printStackTrace();
+         LOGGER.error("Không thể tạo đơn hàng từ MVC checkout", e);
+         model.addAttribute("errorMessage", "Không thể tạo đơn hàng. Vui lòng kiểm tra lại giỏ hàng và tồn kho.");
          return "shoppingCartConfirmation";
       }
 
@@ -245,8 +274,18 @@ public class CartController {
            @RequestParam("quantity") int quantity) {
        Map<String, Object> response = new HashMap<>();
        CartInfo cartInfo = Utils.getCartInSession(request);
-       Product product = productDAO.findProduct(code);
+       Product product = productDAO.findActiveProduct(code);
        if (product != null) {
+           if (quantity < 1) {
+               response.put("success", false);
+               response.put("message", "Số lượng sản phẩm phải lớn hơn 0!");
+               return response;
+           }
+           if (product.getStockQuantity() < 1) {
+               response.put("success", false);
+               response.put("message", "Sản phẩm đã hết hàng; số lượng trong giỏ chưa được thay đổi!");
+               return response;
+           }
            int actualQty = quantity;
            boolean capped = false;
            if (quantity > product.getStockQuantity()) {

@@ -323,7 +323,7 @@
                </div>
                <div>
                   <span class="stats-label">Tổng đơn hàng</span>
-                  <span class="stats-val" th:utext="${paginationResult.totalRecords}">0</span>
+                  <span class="stats-val" th:text="${paginationResult.totalRecords}">0</span>
                </div>
             </div>
          </div>
@@ -346,25 +346,25 @@
                   <tbody>
                      <tr th:each="orderInfo : ${paginationResult.list}">
                         <td>
-                           <span class="order-num-badge" th:utext="${orderInfo.orderNum}"></span>
+                           <span class="order-num-badge" th:text="${orderInfo.orderNum}"></span>
                         </td>
                         <td>
                            <div class="order-date-text">
                               <i class="far fa-calendar-alt"></i>
-                              <span th:utext="${#dates.format(orderInfo.orderDate,'dd-MM-yyyy HH:mm')}"></span>
+                              <span th:text="${#dates.format(orderInfo.orderDate,'dd-MM-yyyy HH:mm')}"></span>
                            </div>
                         </td>
                         <td>
-                           <span class="cust-name" th:utext="${orderInfo.customerName}"></span>
+                           <span class="cust-name" th:text="${orderInfo.customerName}"></span>
                         </td>
                         <td>
-                           <div class="cust-address" th:title="${orderInfo.customerAddress}" th:utext="${orderInfo.customerAddress}"></div>
+                           <div class="cust-address" th:title="${orderInfo.customerAddress}" th:text="${orderInfo.customerAddress}"></div>
                         </td>
                         <td>
-                           <span class="cust-email" th:utext="${orderInfo.customerEmail}"></span>
+                           <span class="cust-email" th:text="${orderInfo.customerEmail}"></span>
                         </td>
                          <td>
-                            <span class="order-amount" th:utext="${#numbers.formatDecimal(orderInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></span>
+                            <span class="order-amount" th:text="${#numbers.formatDecimal(orderInfo.amount * 1000, 1, 'POINT', 0, 'POINT')} + ' ₫'"></span>
                          </td>
                         <td>
                            <span th:if="${orderInfo.status == 'PENDING' or orderInfo.status == '1'}" class="badge badge-warning px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Đang chờ xử lý</span>
@@ -372,7 +372,7 @@
                            <span th:if="${orderInfo.status == 'CANCELLED'}" class="badge badge-danger px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Đã hủy</span>
                            <span th:if="${orderInfo.status == 'RETURN_PENDING'}" class="badge badge-warning px-2.5 py-1 font-weight-bold" style="border-radius: 4px; background-color: #FEF3C7; color: #D97706;">Chờ duyệt trả hàng</span>
                            <span th:if="${orderInfo.status == 'RETURNED'}" class="badge badge-info px-2.5 py-1 font-weight-bold" style="border-radius: 4px;">Đã trả hàng</span>
-                           <span th:if="${orderInfo.status != 'PENDING' and orderInfo.status != '1' and orderInfo.status != 'COMPLETED' and orderInfo.status != 'DELIVERED' and orderInfo.status != 'CANCELLED' and orderInfo.status != 'RETURN_PENDING' and orderInfo.status != 'RETURNED'}" class="status-badge status-pending" th:utext="${orderInfo.status}">PENDING</span>
+                           <span th:if="${orderInfo.status != 'PENDING' and orderInfo.status != '1' and orderInfo.status != 'COMPLETED' and orderInfo.status != 'DELIVERED' and orderInfo.status != 'CANCELLED' and orderInfo.status != 'RETURN_PENDING' and orderInfo.status != 'RETURNED'}" class="status-badge status-pending" th:text="${orderInfo.status}">PENDING</span>
                         </td>
                         <td>
                            <div class="d-flex align-items-center" style="gap: 6px;">
@@ -382,18 +382,22 @@
                               
                               <!-- User Cancel button for PENDING orders -->
                               <button th:if="${orderInfo.status == 'PENDING' or orderInfo.status == '1'}" 
+                                      sec:authorize="hasRole('ROLE_USER')"
                                       class="btn btn-sm btn-outline-danger font-weight-bold" 
                                       style="border-radius: 6px;"
-                                      th:onclick="|cancelOrder('${orderInfo.id}')|"
+                                      th:data-order-id="${orderInfo.id}"
+                                      onclick="cancelOrder(this.dataset.orderId)"
                                       title="Hủy đơn hàng này">
                                  <i class="fas fa-times"></i> Hủy
                               </button>
 
                               <!-- User Return button for COMPLETED orders -->
                               <button th:if="${orderInfo.status == 'COMPLETED' or orderInfo.status == 'DELIVERED'}" 
+                                      sec:authorize="hasRole('ROLE_USER')"
                                       class="btn btn-sm btn-outline-warning font-weight-bold text-dark" 
                                       style="border-radius: 6px;"
-                                      th:onclick="|openReturnModal('${orderInfo.id}')|"
+                                      th:data-order-id="${orderInfo.id}"
+                                      onclick="openReturnModal(this.dataset.orderId)"
                                       title="Yêu cầu trả hàng / hoàn tiền">
                                  <i class="fas fa-undo"></i> Trả hàng
                               </button>
@@ -403,14 +407,16 @@
                                  <button th:if="${orderInfo.status == 'RETURN_PENDING'}" 
                                          class="btn btn-sm btn-success font-weight-bold" 
                                          style="border-radius: 6px;"
-                                         th:onclick="|handleAdminReturn('${orderInfo.id}', 'APPROVE')|"
+                                         th:data-order-id="${orderInfo.id}"
+                                         onclick="handleAdminReturn(this.dataset.orderId, 'APPROVE')"
                                          title="Chấp nhận trả hàng & hoàn kho">
                                     <i class="fas fa-check"></i> Duyệt
                                  </button>
                                  <button th:if="${orderInfo.status == 'RETURN_PENDING'}" 
                                          class="btn btn-sm btn-danger font-weight-bold" 
                                          style="border-radius: 6px;"
-                                         th:onclick="|handleAdminReturn('${orderInfo.id}', 'REJECT')|"
+                                         th:data-order-id="${orderInfo.id}"
+                                         onclick="handleAdminReturn(this.dataset.orderId, 'REJECT')"
                                          title="Từ chối trả hàng">
                                     <i class="fas fa-ban"></i> Từ chối
                                  </button>
@@ -428,7 +434,7 @@
             <th:block th:each="page : ${paginationResult.navigationPages}">
                <a th:if="${page != -1}" class="nav-item"
                   th:classappend="${page == paginationResult.currentPage} ? 'active' : ''"
-                  th:href="@{|/admin/orderList?page=${page}|}" th:utext="${page}"></a>
+                  th:href="@{|/admin/orderList?page=${page}|}" th:text="${page}"></a>
                <span th:if="${page == -1}" class="nav-item">...</span>
             </th:block>
          </div>
@@ -473,7 +479,7 @@
             if (!confirm('Bạn có chắc chắn muốn HỦY đơn hàng #' + orderId + '? Số lượng sản phẩm sẽ được tự động hoàn lại vào kho.')) {
                return;
             }
-            fetch('/api/v1/orders/' + orderId + '/cancel', { method: 'POST' })
+            fetch('/api/v1/orders/' + orderId + '/cancel', { method: 'POST', headers: csrfHeaders() })
                .then(res => res.json())
                .then(data => {
                   if (data.success) {
@@ -507,7 +513,7 @@
 
             fetch('/api/v1/orders/' + orderId + '/return', {
                method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
+               headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                body: JSON.stringify(payload)
             })
             .then(res => res.json())
@@ -532,7 +538,7 @@
 
             fetch('/api/v1/admin/orders/' + orderId + '/return-status', {
                method: 'PUT',
-               headers: { 'Content-Type': 'application/json' },
+               headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                body: JSON.stringify(payload)
             })
             .then(res => res.json())

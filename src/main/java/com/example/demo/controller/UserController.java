@@ -1,13 +1,14 @@
 package com.example.demo.controller;
 
 import java.util.UUID;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -25,14 +26,18 @@ import com.example.demo.entity.Account;
 import com.example.demo.form.RegisterForm;
 import com.example.demo.form.UserProfileForm;
 import com.example.demo.pagination.PaginationResult;
+import com.example.demo.service.AuthenticatedAccountService;
+import com.example.demo.service.AccountProfileService;
 import com.example.demo.validator.RegisterFormValidator;
+import com.example.demo.utils.PageNumberParser;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "User Controller", description = "Các API đăng ký, đăng nhập, khôi phục mật khẩu, hồ sơ cá nhân và quản lý người dùng")
 @Controller
-@Transactional
 public class UserController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
     @Autowired
     private AccountDAO accountDAO;
@@ -48,6 +53,12 @@ public class UserController {
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticatedAccountService authenticatedAccountService;
+
+    @Autowired
+    private AccountProfileService accountProfileService;
 
     @InitBinder
     public void myInitBinder(WebDataBinder dataBinder) {
@@ -98,7 +109,8 @@ public class UserController {
             redirectAttributes.addFlashAttribute("message", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
             return "redirect:/admin/login";
         } catch (Exception e) {
-            model.addAttribute("errorMessage", "Lỗi tạo tài khoản: " + e.getMessage());
+            LOGGER.error("Không thể đăng ký tài khoản {}", registerForm.getUserName(), e);
+            model.addAttribute("errorMessage", "Không thể tạo tài khoản. Vui lòng kiểm tra lại thông tin.");
             return "register";
         }
     }
@@ -127,8 +139,8 @@ public class UserController {
         }
 
         String token = UUID.randomUUID().toString();
-        account.setResetToken(token);
-        accountDAO.saveAccount(account);
+        accountDAO.savePasswordResetToken(account, token,
+                new Date(System.currentTimeMillis() + 15 * 60 * 1000L));
 
         model.addAttribute("successMessage", "Mã đặt lại mật khẩu đã được tạo thành công! (Mã Token Demo: " + token + ")");
         model.addAttribute("resetToken", token);
@@ -167,6 +179,11 @@ public class UserController {
             model.addAttribute("token", token);
             return "resetPassword";
         }
+        if (password.length() < 8 || password.length() > 72) {
+            model.addAttribute("errorMessage", "Mật khẩu phải từ 8 đến 72 ký tự.");
+            model.addAttribute("token", token);
+            return "resetPassword";
+        }
 
         if (!password.equals(confirmPassword)) {
             model.addAttribute("errorMessage", "Mật khẩu xác nhận không khớp.");
@@ -174,15 +191,11 @@ public class UserController {
             return "resetPassword";
         }
 
-        Account account = accountDAO.findAccountByResetToken(token.trim());
-        if (account == null) {
+        boolean reset = accountDAO.resetPassword(token.trim(), passwordEncoder.encode(password));
+        if (!reset) {
             model.addAttribute("errorMessage", "Mã xác thực không tồn tại hoặc đã bị hủy.");
             return "forgotPassword";
         }
-
-        account.setEncrytedPassword(passwordEncoder.encode(password));
-        account.setResetToken(null);
-        accountDAO.saveAccount(account);
 
         redirectAttributes.addFlashAttribute("message", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.");
         return "redirect:/admin/login";
@@ -192,17 +205,9 @@ public class UserController {
     @RequestMapping(value = { "/admin/accountInfo" }, method = RequestMethod.GET)
     public String accountInfo(Model model) {
        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-       Object principal = auth != null ? auth.getPrincipal() : null;
-
-       String username = "";
-       if (principal instanceof UserDetails) {
-          username = ((UserDetails) principal).getUsername();
-       } else if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
-          org.springframework.security.oauth2.core.user.OAuth2User oauthUser = (org.springframework.security.oauth2.core.user.OAuth2User) principal;
-          username = oauthUser.getAttribute("name") != null ? (String) oauthUser.getAttribute("name") : oauthUser.getName();
-       } else if (auth != null) {
-          username = auth.getName();
-       }
+       Account authenticatedAccount = authenticatedAccountService.resolve(auth);
+       String username = authenticatedAccount != null ? authenticatedAccount.getUserName()
+             : (auth == null ? "" : auth.getName());
 
        String role = (auth != null) ? auth.getAuthorities().stream()
                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
@@ -225,15 +230,7 @@ public class UserController {
           return "redirect:/admin/login";
        }
 
-       String username = auth.getName();
-       Account account = accountDAO.findAccount(username);
-       if (account == null && auth.getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
-          org.springframework.security.oauth2.core.user.OAuth2User oauthUser = (org.springframework.security.oauth2.core.user.OAuth2User) auth.getPrincipal();
-          String email = (String) oauthUser.getAttribute("email");
-          if (email != null) {
-             account = accountDAO.findAccountByEmail(email.toLowerCase());
-          }
-       }
+       Account account = authenticatedAccountService.resolve(auth);
 
        if (account == null) {
           return "redirect:/";
@@ -266,17 +263,16 @@ public class UserController {
           return "redirect:/admin/login";
        }
 
-       Account account = accountDAO.findAccount(profileForm.getUserName());
+       Account account = authenticatedAccountService.resolve(auth);
        if (account == null) {
           redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy thông tin tài khoản!");
           return "redirect:/admin/user/profile";
        }
 
-       account.setFullName(profileForm.getFullName());
-       account.setEmail(profileForm.getEmail());
-       account.setPhoneNumber(profileForm.getPhoneNumber());
-       if (profileForm.getAvatarUrl() != null && !profileForm.getAvatarUrl().trim().isEmpty()) {
-          account.setAvatarUrl(profileForm.getAvatarUrl().trim());
+       String validationError = accountProfileService.validate(account, profileForm);
+       if (validationError != null) {
+          redirectAttributes.addFlashAttribute("errorMessage", validationError);
+          return "redirect:/admin/user/profile";
        }
 
        // Xử lý Đổi Mật Khẩu (Chỉ áp dụng cho tài khoản đăng nhập LOCAL)
@@ -294,6 +290,8 @@ public class UserController {
           }
        }
 
+       accountProfileService.apply(account, profileForm);
+
        accountDAO.saveAccount(account);
        redirectAttributes.addFlashAttribute("message", "Cập nhật hồ sơ cá nhân thành công!");
        return "redirect:/admin/user/profile";
@@ -309,10 +307,7 @@ public class UserController {
           return "redirect:/403";
        }
 
-       int page = 1;
-       try {
-          page = Integer.parseInt(pageStr);
-       } catch (Exception e) {}
+       int page = PageNumberParser.parsePositivePage(pageStr);
 
        final int MAX_RESULT = 10;
        final int MAX_NAVIGATION_PAGE = 10;
@@ -370,10 +365,26 @@ public class UserController {
           return "redirect:/admin/users";
        }
 
-       account.setFullName(profileForm.getFullName());
-       account.setEmail(profileForm.getEmail());
-       account.setPhoneNumber(profileForm.getPhoneNumber());
-       account.setUserRole(profileForm.getUserRole());
+       String validationError = accountProfileService.validate(account, profileForm);
+       if (validationError != null) {
+          redirectAttributes.addFlashAttribute("errorMessage", validationError);
+          return "redirect:/admin/user/edit?userName=" + account.getUserName();
+       }
+       String normalizedRole = accountProfileService.normalizeRole(profileForm.getUserRole());
+       if (normalizedRole == null) {
+          redirectAttributes.addFlashAttribute("errorMessage", "Vai trò người dùng không hợp lệ!");
+          return "redirect:/admin/user/edit?userName=" + account.getUserName();
+       }
+       boolean removesAdminAccess = Account.ROLE_ADMIN.equals(accountProfileService.normalizeRole(account.getUserRole()))
+             && (!Account.ROLE_ADMIN.equals(normalizedRole) || !profileForm.isActive()
+                   || !profileForm.isAccountNonLocked());
+       if (removesAdminAccess && accountDAO.countActiveAdmins() <= 1) {
+          redirectAttributes.addFlashAttribute("errorMessage", "Không thể vô hiệu hóa quản trị viên hoạt động cuối cùng!");
+          return "redirect:/admin/user/edit?userName=" + account.getUserName();
+       }
+
+       accountProfileService.apply(account, profileForm);
+       account.setUserRole(normalizedRole);
        account.setActive(profileForm.isActive());
        account.setAccountNonLocked(profileForm.isAccountNonLocked());
 
@@ -381,4 +392,5 @@ public class UserController {
        redirectAttributes.addFlashAttribute("message", "Cập nhật người dùng thành công!");
        return "redirect:/admin/users";
     }
+
 }

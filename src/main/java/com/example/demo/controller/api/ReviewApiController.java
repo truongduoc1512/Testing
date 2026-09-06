@@ -1,10 +1,11 @@
 package com.example.demo.controller.api;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dao.ProductReviewDAO;
@@ -29,6 +29,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/v1/reviews")
 public class ReviewApiController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReviewApiController.class);
 
     @Autowired
     private ProductReviewDAO productReviewDAO;
@@ -44,30 +46,39 @@ public class ReviewApiController {
     @PostMapping
     public ResponseEntity<?> saveReview(@RequestBody ProductReviewForm reviewForm) {
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) ? auth.getName() : "customer_qa";
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để gửi đánh giá!"));
+        }
+        String username = auth.getName();
+        if (auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Tài khoản quản trị không thể tạo đánh giá sản phẩm!"));
+        }
 
-        if (reviewForm.getProductCode() == null || reviewForm.getProductCode().trim().isEmpty() ||
-            reviewForm.getComment() == null || reviewForm.getComment().trim().isEmpty()) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Vui lòng nhập đầy đủ productCode và nội dung comment!");
-            return ResponseEntity.badRequest().body(error);
+        if (reviewForm == null || reviewForm.getProductCode() == null || reviewForm.getProductCode().trim().isEmpty() ||
+            reviewForm.getProductCode().trim().length() > 20 || reviewForm.getComment() == null
+            || reviewForm.getComment().trim().isEmpty() || reviewForm.getComment().trim().length() > 2000) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Vui lòng nhập đầy đủ productCode và nội dung comment!"));
+        }
+        if (reviewForm.getRatingValue() < 1 || reviewForm.getRatingValue() > 5) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Số sao đánh giá phải từ 1 đến 5!"));
         }
 
         try {
             ProductReview review = new ProductReview(reviewForm.getProductCode().trim(), username, reviewForm.getRatingValue(), reviewForm.getComment().trim());
             productReviewDAO.saveReview(review);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Đã gửi đánh giá sản phẩm thành công!");
+            Map<String, Object> response = ApiResponse.success("Đã gửi đánh giá sản phẩm thành công!");
             response.put("review", review);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Lỗi gửi đánh giá: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            LOGGER.error("Không thể lưu đánh giá cho sản phẩm {}", reviewForm.getProductCode(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Không thể gửi đánh giá."));
         }
     }
 
@@ -78,16 +89,22 @@ public class ReviewApiController {
             @RequestBody Map<String, Object> payload) {
         
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) ? auth.getName() : "customer_qa";
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để sửa đánh giá!"));
+        }
+        String username = auth.getName();
 
-        Integer ratingValue = payload.get("ratingValue") != null ? ((Number) payload.get("ratingValue")).intValue() : 5;
-        String comment = (String) payload.get("comment");
+        Integer ratingValue = payload == null ? null : readRating(payload.get("ratingValue"));
+        Object rawComment = payload == null ? null : payload.get("comment");
+        String comment = rawComment instanceof String ? (String) rawComment : null;
 
-        if (comment == null || comment.trim().isEmpty()) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Nội dung nhận xét không được để trống!");
-            return ResponseEntity.badRequest().body(error);
+        if (comment == null || comment.trim().isEmpty() || comment.trim().length() > 2000) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Nội dung nhận xét không được để trống!"));
+        }
+        if (ratingValue == null || ratingValue < 1 || ratingValue > 5) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Số sao đánh giá phải từ 1 đến 5!"));
         }
 
         boolean success = productReviewDAO.updateReview(reviewId, username, ratingValue, comment.trim());
@@ -95,33 +112,40 @@ public class ReviewApiController {
             ProductReview updatedReview = productReviewDAO.findReview(reviewId);
             return ResponseEntity.ok(updatedReview);
         } else {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Không thể sửa bài đánh giá (đã quá 5 phút kể từ lúc đăng hoặc không có quyền sửa).");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Không thể sửa bài đánh giá (đã quá 5 phút kể từ lúc đăng hoặc không có quyền sửa)."));
         }
     }
 
     @Operation(summary = "Xóa bài đánh giá theo ID")
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<?> deleteReview(
-            @PathVariable("reviewId") Long reviewId,
-            @RequestParam(value = "username", required = false) String paramUsername) {
+            @PathVariable("reviewId") Long reviewId) {
         
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) ? auth.getName() : (paramUsername != null ? paramUsername : "customer_qa");
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để xóa đánh giá!"));
+        }
+        String username = auth.getName();
 
         boolean success = productReviewDAO.deleteReview(reviewId, username);
         if (success) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Đã xóa bài đánh giá thành công!");
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(ApiResponse.success("Đã xóa bài đánh giá thành công!"));
         } else {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Không thể xóa bài đánh giá (không tồn tại hoặc không phải là người sở hữu).");
-            return ResponseEntity.badRequest().body(error);
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Không thể xóa bài đánh giá (không tồn tại hoặc không phải là người sở hữu)."));
         }
+    }
+
+    private Integer readRating(Object value) {
+        if (!(value instanceof Number)) {
+            return null;
+        }
+        double rating = ((Number) value).doubleValue();
+        if (!Double.isFinite(rating) || rating != Math.rint(rating)) {
+            return null;
+        }
+        return (int) rating;
     }
 }

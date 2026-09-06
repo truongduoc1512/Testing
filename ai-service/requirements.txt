@@ -10,3 +10,6 @@ torchvision==0.20.1+cpu
 ultralytics
 httpx
 pillow
+# Khai báo thêm thư viện
+flake8
+pylint

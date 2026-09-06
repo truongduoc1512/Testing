@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+import javax.persistence.LockModeType;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
@@ -31,11 +33,20 @@ public class ProductReviewDAO {
 
     public void saveReview(ProductReview review) {
         Session session = this.sessionFactory.getCurrentSession();
+        validateReview(review);
+        Product product = session.find(Product.class, review.getProductCode());
+        if (product == null || !"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+            throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc không còn được bán.");
+        }
         session.save(review);
         recalculateProductCacheCounter(session, review.getProductCode());
     }
 
     public boolean updateReview(Long reviewId, String username, int newRating, String newComment) {
+        if (username == null || newRating < 1 || newRating > 5 || newComment == null
+                || newComment.trim().isEmpty() || newComment.trim().length() > 2000) {
+            return false;
+        }
         Session session = this.sessionFactory.getCurrentSession();
         ProductReview review = session.find(ProductReview.class, reviewId);
 
@@ -55,6 +66,16 @@ public class ProductReviewDAO {
 
         recalculateProductCacheCounter(session, review.getProductCode());
         return true;
+    }
+
+    private void validateReview(ProductReview review) {
+        if (review == null || review.getProductCode() == null || review.getProductCode().trim().isEmpty()
+                || review.getProductCode().trim().length() > 20 || review.getUsername() == null
+                || review.getUsername().trim().isEmpty() || review.getRatingValue() < 1
+                || review.getRatingValue() > 5 || review.getComment() == null
+                || review.getComment().trim().isEmpty() || review.getComment().trim().length() > 2000) {
+            throw new IllegalArgumentException("Dữ liệu đánh giá không hợp lệ.");
+        }
     }
 
     public boolean deleteReview(Long reviewId, String username) {
@@ -80,7 +101,7 @@ public class ProductReviewDAO {
     }
 
     private void recalculateProductCacheCounter(Session session, String productCode) {
-        Product product = session.find(Product.class, productCode);
+        Product product = session.find(Product.class, productCode, LockModeType.PESSIMISTIC_WRITE);
         if (product != null) {
             String hql = "Select count(r), avg(r.ratingValue) from " + ProductReview.class.getName() + " r Where r.productCode = :code";
             Query<?> query = session.createQuery(hql);

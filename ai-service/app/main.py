@@ -1,42 +1,83 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Query
 from fastapi.responses import JSONResponse
 from app.image_qa import analyze_image
 
-# Khởi tạo ứng dụng FastAPI
 app = FastAPI(
-    title="AI Image QA Service",
-    description="Dịch vụ AI kiểm duyệt ảnh sản phẩm tự động cho ShoeShop",
-    version="1.0.0"
+    title="AI Image QA Service & Mock Server",
+    description="Dịch vụ AI kiểm duyệt ảnh sản phẩm và AI Mock Server phục vụ Testing",
+    version="1.0.0",
 )
+
 
 @app.get("/")
 def health_check():
-    """Health-check endpoint — Docker & Spring Boot dùng để kiểm tra service còn sống."""
+    """Điểm cuối kiểm tra trạng thái dịch vụ AI."""
     return {"status": "AI Service is running perfectly", "version": "1.0.0"}
+
 
 @app.post("/api/v1/analyze")
 async def analyze_product_image(file: UploadFile = File(...)):
-    """
-    Endpoint kiểm duyệt ảnh sản phẩm.
-    
-    Nhận file ảnh từ Spring Boot backend (AdminController), phân tích:
-    - Độ sắc nét (Blur Detection via OpenCV Laplacian)
-    - Phát hiện đối tượng (Object Detection via YOLOv8n)
-    
-    Returns JSON với approved=true/false, reason, và metrics chi tiết.
-    """
+    """Phân tích ảnh thật bằng thuật toán AI Image QA."""
     try:
         contents = await file.read()
         result = analyze_image(image_bytes=contents, filename=file.filename or "unknown")
         return JSONResponse(content=result)
-
-    except Exception as e:
+    except Exception as error:
         return JSONResponse(
             status_code=500,
             content={
                 "approved": False,
                 "status": "ERROR",
-                "reason": f"Lỗi hệ thống AI: {str(e)}",
-                "filename": file.filename or "unknown"
-            }
-        )
+                "reason": f"Lỗi hệ thống AI: {error}",
+                "filename": file.filename or "unknown",
+            },
+        )
+
+
+# =================================================================
+# TEST-13: AI MOCK SERVER ENDPOINTS FOR FAST AUTOMATED TESTING
+# =================================================================
+
+@app.post("/api/v1/mock/analyze")
+async def mock_analyze_image(
+    file: UploadFile = File(...),
+    force_status: str = Query(None, description="Ép buộc trạng thái: 'PASS', 'REJECT', 'BLUR', 'NOT_SHOE'")
+):
+    """
+    Mock AI Endpoint phản hồi tức thì (< 10ms) phục vụ Test Automation.
+    - Nếu tên file chứa 'blur' hoặc 'invalid' -> Trả về REJECT.
+    - Nếu query param force_status='REJECT' -> Trả về REJECT.
+    - Mặc định -> Trả về PASS.
+    """
+    filename = (file.filename or "unknown").lower()
+    
+    # Kịch bản 1: Ép buộc trạng thái từ query param hoặc tên file
+    if force_status == "REJECT" or "blur" in filename or "invalid" in filename:
+        return JSONResponse(content={
+            "approved": False,
+            "status": "REJECTED",
+            "quality_score": 0.35,
+            "reason": "Ảnh bị mờ hoặc không đạt tiêu chuẩn độ phân giải.",
+            "filename": file.filename,
+            "is_mock": True
+        })
+    
+    if force_status == "NOT_SHOE" or "not_shoe" in filename:
+        return JSONResponse(content={
+            "approved": False,
+            "status": "REJECTED",
+            "quality_score": 0.20,
+            "reason": "Không phát hiện sản phẩm giày trong hình ảnh.",
+            "filename": file.filename,
+            "is_mock": True
+        })
+
+    # Kịch bản 2: Trả về PASS (Ảnh đạt chuẩn)
+    return JSONResponse(content={
+        "approved": True,
+        "status": "APPROVED",
+        "quality_score": 0.95,
+        "reason": "Ảnh rõ nét, ánh sáng tốt và nhận diện đúng sản phẩm giày.",
+        "filename": file.filename,
+        "is_mock": True
+    })

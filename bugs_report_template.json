@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "ShoeShop Quality Assurance & Testing",
+  "jira_project_key": "TEST",
+  "task_ref": "TEST-19",
+  "description": "Standard Bug Report Template and Sample Bugs for Lifecycle Management",
+  "bug_categories": ["UI/UX", "Backend/API", "Database", "Logic & AI"],
+  "severity_levels": ["Blocker", "Critical", "Major", "Minor", "Trivial"],
+  "statuses": ["New", "Open", "In Progress", "Resolved", "Re-testing", "Closed", "Re-open"],
+  "sample_bugs": [
+    {
+      "bug_id": "BUG-001",
+      "jira_key": "TEST-101",
+      "summary": "[AI-Service] API /api/v1/analyze ném lỗi 500 khi nhận file ảnh định dạng PNG trong suốt",
+      "issue_type": "Bug",
+      "severity": "Critical",
+      "priority": "P2 - High",
+      "category": "Logic & AI",
+      "status": "In Progress",
+      "reporter": "tester_qa_01",
+      "assignee": "ai-team-lead",
+      "environment": {
+        "service": "ai-service",
+        "container": "shoeshopp-ai-service-1",
+        "os": "Linux Ubuntu 22.04",
+        "python_version": "3.10.12"
+      },
+      "description": "Khi gửi file ảnh PNG chứa kênh alpha (transparent background) đến endpoint /api/v1/analyze, OpenCV trong image_qa.py không thể decode đúng màu làm mô hình YOLOv8 ném ngoại lệ 500.",
+      "steps_to_reproduce": [
+        "1. Chuẩn bị file ảnh sneakers_transparent.png chứa kênh alpha (4 channel RGBA).",
+        "2. Gửi request POST multipart/form-data đến http://localhost:8000/api/v1/analyze.",
+        "3. Kiểm tra HTTP Status code và body trả về."
+      ],
+      "expected_result": "API trả về HTTP 200 OK với kết quả phân tích JSON approved=true/false.",
+      "actual_result": "API trả về HTTP 500 Internal Server Error với traceback: cv2.error: HighGUI(ERR): Can't decode image.",
+      "created_at": "2026-08-13T09:30:00Z",
+      "updated_at": "2026-08-13T10:15:00Z"
+    },
+    {
+      "bug_id": "BUG-002",
+      "jira_key": "TEST-102",
+      "summary": "[Backend] API /api/cart/add không kiểm tra tồn kho khiến số lượng tồn kho âm",
+      "issue_type": "Bug",
+      "severity": "Blocker",
+      "priority": "P1 - Highest",
+      "category": "Backend/API",
+      "status": "Open",
+      "reporter": "tester_qa_02",
+      "assignee": "be-tech-lead",
+      "environment": {
+        "service": "shoeshop-backend",
+        "framework": "Spring Boot 3.x",
+        "database": "MySQL 8.0"
+      },
+      "description": "Thực hiện gửi đồng thời 20 requests đặt sản phẩm chỉ còn 1 sản phẩm trong kho. Hệ thống không lock dòng dữ liệu dẫn đến số lượng tồn kho bị âm (-19).",
+      "steps_to_reproduce": [
+        "1. Cập nhật tồn kho sản phẩm ID 502 về số lượng 1 trong DB.",
+        "2. Dùng JMeter gửi 20 threads song song mua sản phẩm ID 502.",
+        "3. Kiểm tra bảng `products` trong DB MySQL."
+      ],
+      "expected_result": "Chỉ 1 đơn hàng thành công, 19 đơn hàng còn lại nhận phản hồi 400 Bad Request 'Sản phẩm hết hàng'.",
+      "actual_result": "Cả 20 đơn hàng đều thành công và stock trong DB giảm xuống -19.",
+      "created_at": "2026-08-13T08:00:00Z",
+      "updated_at": "2026-08-13T08:30:00Z"
+    },
+    {
+      "bug_id": "BUG-003",
+      "jira_key": "TEST-103",
+      "summary": "[UI/UX] Nút 'Thanh toán' trên giao diện Mobile Safari bị đè bởi Footer menu",
+      "issue_type": "Bug",
+      "severity": "Minor",
+      "priority": "P4 - Low",
+      "category": "UI/UX",
+      "status": "Resolved",
+      "reporter": "tester_qa_01",
+      "assignee": "fe-dev-team",
+      "environment": {
+        "device": "iPhone 14 Pro",
+        "os": "iOS 17.2",
+        "browser": "Safari Mobile"
+      },
+      "description": "Khi xem trang Checkout trên màn hình nhỏ (width < 390px), nút 'Thanh toán' bị trôi xuống dưới và bị thanh Footer cố định đè lên khiến người dùng khó bấm.",
+      "steps_to_reproduce": [
+        "1. Mở trình duyệt Safari trên iPhone hoặc Chrome Responsive Mode (375x812).",
+        "2. Thêm sản phẩm vào giỏ và điền thông tin giao hàng.",
+        "3. Cuộn xuống cuối trang Checkout."
+      ],
+      "expected_result": "Nút 'Thanh toán' hiển thị rõ ràng trên Footer với z-index hợp lý và margin-bottom phù hợp.",
+      "actual_result": "Nút bị che khuất 50% diện tích bấm.",
+      "created_at": "2026-08-12T14:00:00Z",
+      "updated_at": "2026-08-13T09:00:00Z"
+    }
+  ]
+}

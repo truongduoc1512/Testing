@@ -79,10 +79,10 @@ public class VoucherUsage implements Serializable {
     }
 
     public Date getUsedAt() {
-        return usedAt;
+        return usedAt == null ? null : new Date(usedAt.getTime());
     }
 
     public void setUsedAt(Date usedAt) {
-        this.usedAt = usedAt;
+        this.usedAt = usedAt == null ? null : new Date(usedAt.getTime());
     }
 }
