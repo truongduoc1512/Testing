@@ -72,7 +72,7 @@ MODULES = {
                 "name": "Mật khẩu 5 ký tự (Dưới biên dưới)",
                 "tech": "BVA",
                 "code_file": "RegisterFormValidatorTest.java",
-                "code_method": "validate_rejectsShortPasswordUnder6Chars()"
+                "code_method": "validate_passwordOutsideBoundary_rejectsLengthAndSkipsDao()"
             }
         ],
         "mvn_command": "mvn test -Dtest=\"UserDetailsServiceImplTest,CustomOAuth2UserServiceTest,RegisterFormValidatorTest,AccountDAOTest\"",
@@ -147,126 +147,131 @@ MODULES = {
                 "name": "Tìm kiếm với từ khóa hợp lệ",
                 "tech": "Bảng quyết định (Rule 5) / Phân vùng tương đương",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
-                "code_method": "test_TC_SRCH_01_valid_keyword() / queryProducts_withLikeName()"
+                "code_method": "test_TC_SRCH_01_valid_keyword() / queryProducts_likeNameOnlyOverloadDelegatesWithActiveScope()"
             },
             {
                 "id": "TC_SRCH_02",
                 "name": "Tìm kiếm từ khóa không tồn tại",
                 "tech": "Bảng quyết định (Rule 3) / Phân vùng tương đương",
-                "code_file": "test_search_pagination_api.py",
-                "code_method": "test_TC_SRCH_02_nonexistent_keyword()"
+                "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
+                "code_method": "test_TC_SRCH_02_non_existing_keyword() / queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort()"
             },
             {
                 "id": "TC_SRCH_03",
                 "name": "Tìm kiếm từ khóa chứa ký tự đặc biệt / SQL Injection",
                 "tech": "BVA / Kiểm thử bảo mật (SQLi)",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
-                "code_method": "test_TC_SRCH_03_sql_injection_defense()"
+                "code_method": "test_TC_SRCH_03_special_characters_sqli() / queryProducts_bindsNameCategoryPriceAndBooleanFilters()"
             },
             {
                 "id": "TC_SRCH_04",
                 "name": "Tìm kiếm với tham số rỗng",
                 "tech": "Phân vùng tương đương",
-                "code_file": "test_search_pagination_api.py",
-                "code_method": "test_TC_SRCH_04_empty_keyword()"
+                "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
+                "code_method": "test_TC_SRCH_04_empty_keyword() / queryProducts_treatsEmptyOrBlankOptionalTextAsAbsent()"
             },
             {
                 "id": "TC_SRCH_05",
                 "name": "Tìm kiếm không phân biệt hoa thường",
                 "tech": "Phân vùng tương đương",
-                "code_file": "test_search_pagination_api.py",
-                "code_method": "test_TC_SRCH_05_case_insensitive()"
+                "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
+                "code_method": "test_TC_SRCH_05_case_insensitive_search() / queryProducts_bindsNameCategoryPriceAndBooleanFilters()"
             },
             {
                 "id": "TC_SRCH_06",
                 "name": "Kết hợp Tìm kiếm & Bộ lọc giá",
                 "tech": "Phân vùng tương đương / Kết hợp nhiều lọc",
-                "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
-                "code_method": "test_TC_SRCH_06_search_and_filter_price()"
+                "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
+                "code_method": "queryProducts_bindsNameCategoryPriceAndBooleanFilters() / getProducts_normalizesPageAndPassesEveryFilter()"
             },
             {
                 "id": "TC_SRCH_07",
                 "name": "Lọc sản phẩm theo Thương hiệu & Danh mục",
                 "tech": "Phân vùng tương đương / Kết hợp nhiều lọc",
                 "code_file": "ProductDAOTest.java",
-                "code_method": "queryProducts_filtersByBrandAndCategory()"
+                "code_method": "queryProducts_bindsSingleBrandAsScalar() / queryProducts_bindsMultipleBrandsAsList()"
             },
             {
                 "id": "TC_PAG_01",
                 "name": "Phân trang trang 1 mặc định",
                 "tech": "Bảng quyết định (Rule 5) / Phân vùng tương đương",
-                "code_file": "test_search_pagination_api.py",
-                "code_method": "test_TC_PAG_01_default_page_1()"
+                "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
+                "code_method": "test_TC_PAG_01_default_page_navigation() / populatedResult_collectsRecordsAndCalculatesNonDivisiblePages()"
             },
             {
                 "id": "TC_PAG_02",
                 "name": "Phân trang chuyển sang trang 2",
                 "tech": "Phân vùng tương đương",
-                "code_file": "test_search_pagination_api.py",
-                "code_method": "test_TC_PAG_02_page_2_no_overlap()"
+                "code_file": "test_search_pagination_api.py & ProductApiControllerTest.java",
+                "code_method": "test_TC_PAG_02_page_2_navigation() / getProducts_passesEmptyOptionalFiltersOnRequestedPage()"
             },
             {
                 "id": "TC_PAG_03",
                 "name": "Truy vấn với số trang âm / bằng 0",
                 "tech": "Bảng quyết định (Rule 4) / BVA",
-                "code_file": "ProductDAOTest.java",
-                "code_method": "queryProducts_zeroOrNegativePage_defaultsToFirstPage()"
+                "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
+                "code_method": "test_TC_PAG_03_negative_page_normalization() / emptyResult_normalizesPageAndReturnsImmutableCollections()"
             },
             {
                 "id": "TC_PAG_04",
                 "name": "Số trang vượt quá giới hạn tổng số trang",
                 "tech": "BVA",
-                "code_file": "ProductDAOTest.java",
-                "code_method": "queryProducts_pageBeyondMax_returnsEmptyList()"
+                "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
+                "code_method": "test_TC_PAG_04_exceeding_max_pages() / pageBeyondLast_isClampedOnlyForNavigationAndMissingPageHasNoRows()"
             },
             {
                 "id": "TC_PAG_05",
                 "name": "Phân trang kết hợp Sắp xếp theo giá (priceAsc/priceDesc)",
                 "tech": "Phân vùng tương đương / Sắp xếp",
                 "code_file": "ProductDAOTest.java",
-                "code_method": "queryProducts_sortedByPriceAscending()"
+                "code_method": "queryProducts_selectsRequestedSort()"
             },
             {
                 "id": "TC_PAG_06",
                 "name": "Kiểm thử giá trị biên cực đại (Worst-Case BVA) với `page` và `size` cực lớn",
                 "tech": "Worst-Case Boundary Value Analysis (BVA $5^n$)",
-                "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
-                "code_method": "test_TC_PAG_06_custom_page_size()"
+                "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
+                "code_method": "test_worst_case_boundaries() / largeResult_capsNavigationAndAddsLeadingEllipsis()"
             },
             {
                 "id": "TC_PROD_01",
                 "name": "Truy vấn thông tin chi tiết sản phẩm hợp lệ",
                 "tech": "Bảng quyết định (Rule 5)",
-                "code_file": "ProductDAOTest.java",
-                "code_method": "findProduct_returnsProductWhenExists()"
+                "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
+                "code_method": "findProductInfo_mapsActiveProduct() / getProductByCode_returnsExistingProduct()"
             },
             {
                 "id": "TC_PROD_02",
                 "name": "Truy vấn mã sản phẩm không tồn tại",
                 "tech": "Bảng quyết định (Rule 1)",
-                "code_file": "ProductDAOTest.java",
-                "code_method": "findProduct_returnsNullWhenNotExists()"
+                "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
+                "code_method": "findActiveProduct_returnsNullForMissingOrNonActiveProduct() / getProductByCode_returnsNotFoundWhenProductDoesNotExist()"
             },
             {
                 "id": "TC_PROD_03",
                 "name": "Truy vấn sản phẩm bị ngừng kinh doanh (INACTIVE) / SQLi",
                 "tech": "Bảng quyết định (Rule 2) / Kiểm thử bảo mật",
-                "code_file": "ProductDAOTest.java",
-                "code_method": "findProduct_handlesSqlInjectionAndInactiveState()"
+                "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
+                "code_method": "findProductInfo_returnsNullForUnavailableProduct() / getProductByCode_returnsNotFoundWhenProductDoesNotExist()"
             }
         ],
-        "mvn_command": "mvn test -Dtest=\"ProductDAOTest,ProductApiControllerTest\"",
+        "mvn_command": "mvn test -Dtest=\"ProductDAOTest,ProductApiControllerTest,PaginationResultTest\"",
         "code_invocations": 79,
         "code_details": [
             {
                 "file": "ProductDAOTest.java",
-                "count": 55,
-                "desc": "55 invocations kiểm thử tổ hợp đa tiêu chí tìm kiếm, lọc giá, phân trang và sắp xếp."
+                "count": 53,
+                "desc": "53 invocations kiểm thử tổ hợp đa tiêu chí tìm kiếm, lọc giá, phân trang và sắp xếp."
             },
             {
                 "file": "ProductApiControllerTest.java",
-                "count": 24,
-                "desc": "24 invocations kiểm thử các endpoint REST API tìm kiếm và phân trang."
+                "count": 19,
+                "desc": "19 invocations kiểm thử các endpoint REST API tìm kiếm và phân trang."
+            },
+            {
+                "file": "PaginationResultTest.java",
+                "count": 7,
+                "desc": "7 invocations kiểm thử giải thuật tính toán phân trang, offset, giới hạn biên và navigation ellipsis."
             }
         ],
         "coverage_classes": [
@@ -305,7 +310,7 @@ MODULES = {
                 "name": "Thêm mới sản phẩm hợp lệ vào giỏ",
                 "tech": "Bảng quyết định (Rule 4) / EP",
                 "code_file": "CartApiControllerTest.java & CartControllerCoverageTest.java",
-                "code_method": "addCartItem_acceptsSupportedQuantityRepresentation() / addToCart_addsAvailableProduct()"
+                "code_method": "addCartItem_acceptsSupportedQuantityRepresentation() / addToCart_addsAvailableProductAndSuccessMessage()"
             },
             {
                 "id": "TC_CART_002",
@@ -326,7 +331,7 @@ MODULES = {
                 "name": "Chặn thêm số lượng vượt tồn kho",
                 "tech": "Bảng quyết định (Rule 3) / EP / BVA",
                 "code_file": "CartApiControllerTest.java & CartControllerCoverageTest.java",
-                "code_method": "updateCartItem_clampsQuantityToAvailableStock() / addToCart_rejectsSoldOutProduct()"
+                "code_method": "updateCartItem_capsRequestedQuantityAtAvailableStock() / addToCart_rejectsSoldOutProduct()"
             },
             {
                 "id": "TC_CART_005",
@@ -386,56 +391,56 @@ MODULES = {
                 "name": "Kiểm tra áp dụng thành công mã hợp lệ (Giảm %)",
                 "tech": "Bảng QĐ (R8) / EP / BVA",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_appliesPercentageDiscountSuccessfully()"
+                "code_method": "validateAndApplyVoucher_calculatesPercentDiscount()"
             },
             {
                 "id": "TC_VOU_002",
                 "name": "Kiểm tra chặn áp mã khi hóa đơn chưa đạt Min Order Value",
                 "tech": "Bảng QĐ (R4) / BVA",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_rejectsBelowMinOrderAmount()"
+                "code_method": "validateAndApplyVoucher_rejectsAmountOneUnitBelowMinimum() / validateAndApplyVoucher_acceptsAmountAtMinimumBoundary()"
             },
             {
                 "id": "TC_VOU_003",
                 "name": "Kiểm tra chặn áp mã khi Voucher đã quá hạn (Expired)",
                 "tech": "Bảng QĐ (R3) / EP",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_rejectsAfterEndDate()"
+                "code_method": "validateAndApplyVoucher_rejectsExpiredVoucher()"
             },
             {
                 "id": "TC_VOU_004",
                 "name": "Kiểm tra chặn áp mã khi Voucher cạn lượt chung (Usage Limit)",
                 "tech": "Bảng QĐ (R5) / BVA",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_rejectsWhenGlobalUsageLimitReached()"
+                "code_method": "validateAndApplyVoucher_enforcesGlobalUsageBoundary()"
             },
             {
                 "id": "TC_VOU_005",
                 "name": "Kiểm tra hệ thống chặn mã rác / mã không tồn tại",
                 "tech": "Bảng QĐ (R1) / EP",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_rejectsNonExistentVoucher()"
+                "code_method": "validateAndApplyVoucher_rejectsUnknownVoucher()"
             },
             {
                 "id": "TC_VOU_006",
                 "name": "Kiểm tra áp dụng thành công mã hợp lệ (Trừ tiền cứng)",
                 "tech": "Bảng QĐ (R8) / EP",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_appliesFixedDiscountSuccessfully()"
+                "code_method": "validateAndApplyVoucher_capsFixedDiscountAtOrderAmount()"
             },
             {
                 "id": "TC_VOU_007",
                 "name": "Kiểm tra chặn áp mã do giới hạn Cá nhân (Per User Limit)",
                 "tech": "Bảng QĐ (R6) / BVA",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_rejectsWhenPerUserLimitReached()"
+                "code_method": "validateAndApplyVoucher_enforcesPerUserUsageBoundary()"
             },
             {
                 "id": "TC_VOU_008",
                 "name": "Khách vãng lai (Guest) không bị ràng buộc giới hạn cá nhân",
                 "tech": "Bảng QĐ (R7) / EP",
                 "code_file": "VoucherDAOTest.java",
-                "code_method": "validateAndApplyVoucher_succeedsForGuestWithoutPerUserCheck()"
+                "code_method": "validateAndApplyVoucher_skipsPerUserLimitForGuest()"
             },
             {
                 "id": "TC_VOU_009",
@@ -449,14 +454,14 @@ MODULES = {
                 "name": "Admin tạo mã giảm giá mới qua API (Create)",
                 "tech": "EP / CRUD",
                 "code_file": "VoucherApiControllerTest.java",
-                "code_method": "createVoucherAdmin_success()"
+                "code_method": "createVoucher_savesAndReturnsCreatedEntity()"
             },
             {
                 "id": "TC_VOU_011",
                 "name": "Admin vô hiệu hóa mã giảm giá qua API (Deactivate)",
                 "tech": "EP / CRUD",
                 "code_file": "VoucherApiControllerTest.java",
-                "code_method": "deactivateVoucherAdmin_success()"
+                "code_method": "deleteVoucher_returnsSuccessWhenDaoDeletes()"
             },
             {
                 "id": "TC_VOU_012",
@@ -520,64 +525,64 @@ MODULES = {
                 "id": "TC_CHK_001",
                 "name": "Kiểm tra Checkout khi giỏ hàng rỗng",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Giỏ hàng)",
-                "code_file": "CartControllerTest.java & OrderWorkflowIntegrationTest.java",
-                "code_method": "checkout_rejectsEmptyCart()"
+                "code_file": "CartControllerCoverageTest.java",
+                "code_method": "confirmationReview_redirectsEmptyCart()"
             },
             {
                 "id": "TC_CHK_002",
                 "name": "Kiểm tra Checkout khi thiếu thông tin giao hàng hợp lệ",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Thông tin giao hàng)",
-                "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_blankRequiredField_rejectsOnlyRequiredCode()"
+                "code_file": "CustomerFormValidatorTest.java & CartControllerCoverageTest.java",
+                "code_method": "validate_blankRequiredField_rejectsOnlyRequiredCode() / confirmationReview_redirectsCartWithInvalidCustomer()"
             },
             {
                 "id": "TC_CHK_003",
                 "name": "Kiểm tra giữ giỏ hàng khi quá trình tạo đơn gặp lỗi",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Xác nhận đơn có lỗi)",
-                "code_file": "CartControllerTest.java",
-                "code_method": "checkout_post_daoException_keepsCart()"
+                "code_file": "CartControllerCoverageTest.java",
+                "code_method": "confirmationSave_preservesCartWhenOrderSaveFails()"
             },
             {
                 "id": "TC_CHK_004",
                 "name": "Kiểm tra hoàn tất Checkout thành công",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Hoàn tất đặt hàng)",
-                "code_file": "OrderWorkflowIntegrationTest.java",
-                "code_method": "testFullOrderPlacementWorkflow_success()"
+                "code_file": "CartControllerCoverageTest.java & OrderDAOTest.java",
+                "code_method": "confirmationSave_movesSuccessfulCartToLastOrder() / saveOrder_createsPendingGuestOrderWithNextNumber()"
             },
             {
                 "id": "TC_CHK_005",
                 "name": "Kiểm tra yêu cầu Checkout trực tuyến với giỏ hàng rỗng",
                 "tech": "Bảng quyết định (Luật 1 Lỗi giỏ hàng rỗng)",
-                "code_file": "CartControllerTest.java",
-                "code_method": "checkout_post_emptyCart_rejects()"
+                "code_file": "CartControllerCoverageTest.java",
+                "code_method": "confirmationSave_redirectsEmptyCart()"
             },
             {
                 "id": "TC_CHK_006",
                 "name": "Kiểm tra yêu cầu Checkout khi thông tin giao hàng chưa hợp lệ",
                 "tech": "Bảng quyết định (Luật 2 Lỗi customer)",
-                "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_invalidEmail_rejectsPatternCode()"
+                "code_file": "CustomerFormValidatorTest.java & CartControllerCoverageTest.java",
+                "code_method": "validate_invalidEmail_rejectsPatternCode() / confirmationSave_redirectsCartWithInvalidCustomer()"
             },
             {
                 "id": "TC_CHK_007",
                 "name": "Kiểm tra giữ giỏ hàng khi Checkout trực tuyến thất bại",
                 "tech": "Bảng quyết định (Luật 5 – Lỗi tồn kho khi Checkout trực tuyến)",
-                "code_file": "CartControllerTest.java",
-                "code_method": "checkout_post_daoException_keepsCart()"
+                "code_file": "CartControllerCoverageTest.java & OrderDAOTest.java",
+                "code_method": "confirmationSave_preservesCartWhenOrderSaveFails() / saveOrder_enforcesStockBoundary()"
             },
             {
                 "id": "TC_CHK_008",
                 "name": "Kiểm tra Checkout trực tuyến thành công",
                 "tech": "Bảng quyết định (Luật 7 Đường đi hoàn hảo)",
-                "code_file": "CartControllerTest.java",
-                "code_method": "checkout_post_valid_clearsCartAndRedirects()"
+                "code_file": "CartControllerCoverageTest.java",
+                "code_method": "confirmationSave_movesSuccessfulCartToLastOrder()"
             },
             {
                 "id": "TC_CHK_009",
                 "name": "Kiểm tra toàn bộ luồng Checkout hợp lệ",
                 "tech": "Bảng quyết định (Luật 7 Đường đi hoàn hảo)",
-                "code_file": "OrderWorkflowIntegrationTest.java",
-                "code_method": "testFullOrderPlacementWorkflow_success()"
+                "code_file": "CartControllerCoverageTest.java & OrderDAOTest.java",
+                "code_method": "confirmationSave_movesSuccessfulCartToLastOrder() / saveOrder_createsPendingGuestOrderWithNextNumber()"
             },
             {
                 "id": "TC_CHK_010",
@@ -591,14 +596,14 @@ MODULES = {
                 "name": "Từ chối tên người nhận vượt quá độ dài tối đa",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: name vượt 255 ký tự)",
                 "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_nameOutsideBoundary_rejectsExpectedCode(256)"
+                "code_method": "validate_nameOutsideBoundary_rejectsExpectedCode()"
             },
             {
                 "id": "TC_CHK_012",
                 "name": "Kiểm tra dữ liệu Checkout được hoàn tác trong môi trường kiểm thử",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Checkout transaction)",
-                "code_file": "TransactionalIsolationIntegrationTest.java",
-                "code_method": "testConcurrentOrderPlacement_preventsOverselling()"
+                "code_file": "OrderDAOTest.java",
+                "code_method": "saveOrder_enforcesStockBoundary()"
             },
             {
                 "id": "TC_CHK_013",
@@ -612,28 +617,28 @@ MODULES = {
                 "name": "Kiểm tra tên người nhận tại biên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – name tại min",
                 "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_nameAtStandardBoundary_hasNoNameError(1)"
+                "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
             {
                 "id": "TC_CHK_015",
                 "name": "Kiểm tra tên người nhận tại biên ngay trên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – name tại min+1",
                 "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_nameAtStandardBoundary_hasNoNameError(2)"
+                "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
             {
                 "id": "TC_CHK_016",
                 "name": "Kiểm tra tên người nhận tại biên ngay dưới lớn nhất",
                 "tech": "Standard BVA 4n+1 – name tại max−1",
                 "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_nameAtStandardBoundary_hasNoNameError(254)"
+                "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
             {
                 "id": "TC_CHK_017",
                 "name": "Kiểm tra tên người nhận tại biên lớn nhất",
                 "tech": "Standard BVA 4n+1 – name tại max",
                 "code_file": "CustomerFormValidatorTest.java",
-                "code_method": "validate_nameAtStandardBoundary_hasNoNameError(255)"
+                "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
             {
                 "id": "TC_CHK_018",
@@ -974,77 +979,77 @@ MODULES = {
                 "name": "Đánh giá hợp lệ 5 sao và tính điểm tự động",
                 "tech": "BVA (Max / R7)",
                 "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
-                "code_method": "createReview_recalculatesProductRatingAndReviewCount()"
+                "code_method": "saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache() / saveReview_trimsAndReturnsCreatedReview()"
             },
             {
                 "id": "TC_REV_002",
                 "name": "Đánh giá hợp lệ 1 sao và tính điểm tự động",
                 "tech": "BVA (Min / R7)",
                 "code_file": "ProductReviewDAOTest.java",
-                "code_method": "createReview_recalculatesProductRatingAndReviewCount()"
+                "code_method": "saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache()"
             },
             {
                 "id": "TC_REV_003",
                 "name": "Chặn lưu đánh giá khi Comment rỗng hoặc quá 2000 ký tự",
                 "tech": "Đoán lỗi (R3)",
                 "code_file": "ProductReviewDAOTest.java",
-                "code_method": "createReview_rejectsEmptyOrBlankComment() & createReview_rejectsCommentExceeding2000Chars()"
+                "code_method": "saveReview_rejectsEachInvalidField()"
             },
             {
                 "id": "TC_REV_004",
                 "name": "Chặn đánh giá 0 sao",
                 "tech": "BVA (Min-1 / R3)",
                 "code_file": "ProductReviewDAOTest.java",
-                "code_method": "createReview_rejectsRatingBelow1()"
+                "code_method": "saveReview_rejectsEachInvalidField()"
             },
             {
                 "id": "TC_REV_005",
                 "name": "Chặn đánh giá 6 sao",
                 "tech": "BVA (Max+1 / R3)",
                 "code_file": "ProductReviewDAOTest.java",
-                "code_method": "createReview_rejectsRatingAbove5()"
+                "code_method": "saveReview_rejectsEachInvalidField()"
             },
             {
                 "id": "TC_REV_006",
                 "name": "Báo lỗi 401: Khách vãng lai không được Đánh giá",
                 "tech": "EP (Guest / R1)",
                 "code_file": "ReviewApiControllerTest.java",
-                "code_method": "createReview_requiresAuthentication_returns401()"
+                "code_method": "saveReview_rejectsLoginRequiredAuthentication()"
             },
             {
                 "id": "TC_REV_007",
                 "name": "Báo lỗi 403: Cấm Admin dùng quyền tạo đánh giá ảo",
                 "tech": "EP (Admin / R1)",
                 "code_file": "ReviewApiControllerTest.java",
-                "code_method": "createReview_forbiddenForAdminRole_returns403()"
+                "code_method": "saveReview_rejectsAdminRole()"
             },
             {
                 "id": "TC_REV_008",
                 "name": "Chặn đánh giá vào Sản phẩm đang bị Tắt (INACTIVE)",
                 "tech": "EP (Product / R2)",
-                "code_file": "ReviewApiControllerTest.java",
-                "code_method": "createReview_rejectsInactiveProduct_returns400()"
+                "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
+                "code_method": "saveReview_rejectsMissingOrNonActiveProduct() / saveReview_mapsDomainExceptionToBadRequest()"
             },
             {
                 "id": "TC_REV_009",
                 "name": "Chặn hành vi sửa/xóa Review của người khác",
                 "tech": "EP (Owner / R4)",
-                "code_file": "ReviewApiControllerTest.java",
-                "code_method": "updateReview_forbiddenForOtherUser_returns403()"
+                "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
+                "code_method": "updateReview_returnsFalseForDifferentOwner() / updateReview_returnsBadRequestWhenDaoRejectsUpdate()"
             },
             {
                 "id": "TC_REV_010",
                 "name": "Chặn quyền chỉnh sửa Review khi đã quá 5 phút",
                 "tech": "BVA (Time / R5)",
                 "code_file": "ProductReviewDAOTest.java",
-                "code_method": "updateReview_rejectsAfter5MinutesExpired()"
+                "code_method": "updateReview_returnsFalseOutsideFiveMinuteWindow()"
             },
             {
                 "id": "TC_REV_011",
                 "name": "Xóa thành công Review và Khôi phục điểm Rating gốc",
                 "tech": "EP (CRUD / R7)",
-                "code_file": "ProductReviewDAOTest.java",
-                "code_method": "deleteReview_recalculatesAverageRating()"
+                "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
+                "code_method": "deleteReview_deletesAndRefreshesProductCache() / deleteReview_returnsSuccessWhenDaoDeletesReview()"
             }
         ],
         "mvn_command": "mvn test -Dtest=\"ProductReviewDAOTest,ReviewApiControllerTest\"",
@@ -1104,7 +1109,7 @@ MODULES = {
                 "name": "Thuật toán Hủy đơn phục hồi Tồn kho nhưng không làm Âm lượt Sales",
                 "tech": "BVA (Toán học)",
                 "code_file": "OrderReturnDAOTest.java",
-                "code_method": "cancelOrder_restoresStockWithoutMakingSalesNegative()"
+                "code_method": "cancelOrder_restoresStockAndNeverMakesSalesNegative()"
             },
             {
                 "id": "TC_CAN_003",
@@ -1118,28 +1123,28 @@ MODULES = {
                 "name": "Chặn Hacker thao tác đơn hàng của người khác",
                 "tech": "EP (Ownership)",
                 "code_file": "OrderReturnDAOTest.java & OrderCancelReturnApiControllerTest.java",
-                "code_method": "cancelOrder_rejectsMissingOrDifferentCustomer() / cancelOrder_forbidsDifferentCustomer()"
+                "code_method": "cancelOrder_rejectsMissingOrDifferentCustomer() / getReturn_forbidsRequestOwnedByAnotherUser()"
             },
             {
                 "id": "TC_CAN_005",
                 "name": "Khách tạo Yêu cầu Trả hàng (Return) thành công",
                 "tech": "State (Hợp lệ)",
                 "code_file": "OrderReturnDAOTest.java",
-                "code_method": "createReturnRequest_whenDelivered_createsRequestSuccessfully()"
+                "code_method": "createReturnRequest_trimsFieldsPersistsAndTagsOrder()"
             },
             {
                 "id": "TC_CAN_006",
                 "name": "Chặn tạo nhiều yêu cầu Trả hàng trùng lặp trên cùng 1 đơn",
                 "tech": "EP (Duplicate)",
                 "code_file": "OrderReturnDAOTest.java",
-                "code_method": "createReturnRequest_rejectsDuplicateRequests()"
+                "code_method": "createReturnRequest_rejectsDuplicateRequest()"
             },
             {
                 "id": "TC_CAN_007",
                 "name": "Báo lỗi Form Xin trả hàng bỏ trống lý do hoặc ảnh quá dài",
                 "tech": "BVA (Validation)",
-                "code_file": "OrderCancelReturnApiControllerTest.java",
-                "code_method": "createReturn_rejectsInvalidForm()"
+                "code_file": "OrderCancelReturnApiControllerTest.java & OrderReturnDAOTest.java",
+                "code_method": "createReturn_rejectsInvalidForm() / createReturnRequest_rejectsEachInvalidFormBoundary()"
             },
             {
                 "id": "TC_CAN_008",
@@ -1160,7 +1165,7 @@ MODULES = {
                 "name": "Chặn Khách hàng (User) can thiệp vào quyền Duyệt đơn của Admin",
                 "tech": "EP (Phân quyền)",
                 "code_file": "OrderCancelReturnApiControllerTest.java",
-                "code_method": "updateStatus_rejectsUnauthorizedRoles()"
+                "code_method": "updateStatus_rejectsNonAdminAuthentication()"
             }
         ],
         "mvn_command": "mvn test -Dtest=\"OrderReturnDAOTest,OrderCancelReturnApiControllerTest\"",
@@ -1213,28 +1218,28 @@ MODULES = {
                 "name": "Chặn hạ cấp (Downgrade) quyền của Admin duy nhất còn hoạt động",
                 "tech": "BVA / EP",
                 "code_file": "UserControllerCoverageTest.java",
-                "code_method": "saveUserRole_rejectsDemotingLastActiveAdmin()"
+                "code_method": "userEditSave_blocksLastActiveAdminFromLosingAdminRole()"
             },
             {
                 "id": "TC_ADM_002",
                 "name": "Chặn Khóa/Vô hiệu hóa Admin duy nhất còn hoạt động",
                 "tech": "BVA / EP",
                 "code_file": "UserControllerCoverageTest.java",
-                "code_method": "saveUserStatus_rejectsDeactivatingLastActiveAdmin()"
+                "code_method": "userEditSave_blocksLastActiveAdminFromLosingAdminRole() / userEditSave_deactivatesAdminWhenAnotherActiveAdminExists()"
             },
             {
                 "id": "TC_ADM_003",
                 "name": "Cho phép hạ cấp Admin nếu vẫn còn Admin khác",
                 "tech": "EP",
                 "code_file": "UserControllerCoverageTest.java",
-                "code_method": "saveUserRole_allowsDemotionWhenAnotherActiveAdminExists()"
+                "code_method": "userEditSave_allowsAdminDowngradeWhenAnotherActiveAdminExists()"
             },
             {
                 "id": "TC_ADM_004",
                 "name": "Chặn User thường cố tình vào xem Danh sách User của Admin",
                 "tech": "Quyền",
                 "code_file": "UserControllerCoverageTest.java",
-                "code_method": "userList_rejectsNonAdminRole()"
+                "code_method": "userList_redirectsNonAdmin()"
             },
             {
                 "id": "TC_ADM_005",
@@ -1255,7 +1260,7 @@ MODULES = {
                 "name": "Báo lỗi khi tạo sản phẩm thiếu Mã Code hoặc Tên",
                 "tech": "Validation",
                 "code_file": "ProductFormValidatorTest.java",
-                "code_method": "validate_rejectsEmptyCodeOrName()"
+                "code_method": "validate_blankRequiredField_rejectsThatFieldAndSkipsDao()"
             },
             {
                 "id": "TC_ADM_008",
@@ -1276,7 +1281,7 @@ MODULES = {
                 "name": "Chặn Admin ép trạng thái đơn hàng sai luồng",
                 "tech": "State",
                 "code_file": "OrderApiControllerTest.java",
-                "code_method": "updateStatus_rejectsInvalidStateTransition()"
+                "code_method": "updateStatus_mapsDaoException()"
             }
         ],
         "mvn_command": "mvn test -Dtest=\"UserControllerCoverageTest,ProductFormValidatorTest,OrderApiControllerTest\"",
@@ -1333,50 +1338,55 @@ MODULES = {
                 "id": "TC_AI_001",
                 "name": "Kiểm định ảnh giày rõ nét hợp lệ",
                 "tech": "Bảng quyết định (Rule 5) / EP / BVA",
-                "code_file": "AiServiceIntegrationTest.java & mock_ai_server.py",
-                "code_method": "testAnalyzeImage_validShoe_returnsApproved()"
+                "code_file": "AiServiceIntegrationTest.java & ProductControllerCoverageTest.java",
+                "code_method": "shouldSendMultipartImageAndPersistProductWhenAiApproves() / productSave_acceptsApprovedImageAndUsesFallbackFilename()"
             },
             {
                 "id": "TC_AI_002",
                 "name": "Từ chối ảnh giày bị mờ nét",
                 "tech": "Bảng quyết định (Rule 4) / Error Guessing / BVA",
-                "code_file": "AiServiceIntegrationTest.java",
-                "code_method": "testAnalyzeImage_blurryShoe_returnsRejected()"
+                "code_file": "AiServiceIntegrationTest.java & ProductControllerCoverageTest.java",
+                "code_method": "shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage() / productSave_rejectsImageWhenAiDoesNotApprove()"
             },
             {
                 "id": "TC_AI_003",
-                "name": "Từ chối ảnh không phải giày",
+                "name": "Từ chối ảnh không phải giày hoặc kích thước quá nhỏ",
                 "tech": "Bảng quyết định (Rule 3) / Error Guessing",
-                "code_file": "AiServiceIntegrationTest.java",
-                "code_method": "testAnalyzeImage_nonShoeObject_returnsRejected()"
+                "code_file": "ActualFastApiIntegrationTest.java & AiServiceIntegrationTest.java",
+                "code_method": "shouldRenderRejectionAndAvoidPersistenceWhenActualFastApiRejectsSmallImage() / shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage()"
             },
             {
                 "id": "TC_AI_004",
-                "name": "Chặn ảnh vượt dung lượng (> 5MB)",
-                "tech": "Bảng quyết định (Rule 2) / BVA",
-                "code_file": "AiServiceIntegrationTest.java",
-                "code_method": "testAnalyzeImage_exceeds5MB_returns413()"
+                "name": "Chặn ảnh lỗi hoặc phục hồi khi AI Service gặp sự cố (500 Server Error)",
+                "tech": "Bảng quyết định (Rule 2) / BVA / Resilience",
+                "code_file": "AiServiceIntegrationTest.java & ProductControllerCoverageTest.java",
+                "code_method": "shouldWarnAndPersistProductWhenAiReturnsServerError() / productSave_warnsAndContinuesWhenAiRequestFails()"
             },
             {
                 "id": "TC_AI_005",
-                "name": "Chặn file sai định dạng",
+                "name": "Xử lý phản hồi AI khuyết thiếu hoặc không xác định",
                 "tech": "Bảng quyết định (Rule 1) / EP",
-                "code_file": "AiServiceIntegrationTest.java",
-                "code_method": "testAnalyzeImage_invalidFormat_returns422()"
+                "code_file": "ProductControllerCoverageTest.java",
+                "code_method": "productSave_allowsUndecidedAiResponse() / productSave_allowsMissingAiResponseBody()"
             }
         ],
-        "mvn_command": "mvn test -Dtest=\"AiServiceIntegrationTest,ActualFastApiIntegrationTest\"",
-        "code_invocations": 4,
+        "mvn_command": "mvn test -Dtest=\"AiServiceIntegrationTest,ActualFastApiIntegrationTest,ProductControllerCoverageTest\"",
+        "code_invocations": 9,
         "code_details": [
             {
                 "file": "AiServiceIntegrationTest.java",
                 "count": 3,
-                "desc": "3 invocations kiểm thử tích hợp Spring Boot kết nối dịch vụ AI qua Testcontainers."
+                "desc": "3 invocations kiểm thử tích hợp Spring Boot kết nối dịch vụ AI qua HTTP Mock Server (Approved, Rejected, 500 Server Error)."
             },
             {
                 "file": "ActualFastApiIntegrationTest.java",
                 "count": 1,
-                "desc": "1 invocation kiểm thử trực tiếp vi dịch vụ FastAPI YOLOv8 (Skipped nếu chưa bật server)."
+                "desc": "1 invocation kiểm thử trực tiếp vi dịch vụ FastAPI YOLOv8 với ảnh không đạt kích thước/chuẩn nhận diện."
+            },
+            {
+                "file": "ProductControllerCoverageTest.java",
+                "count": 5,
+                "desc": "5 invocations kiểm thử bộ điều khiển Controller với các phản hồi AI (Approved, Rejected, Missing body, Undecided, Network failure)."
             }
         ],
         "coverage_classes": [
@@ -1951,6 +1961,30 @@ def main():
         print(f"      - Dac ta: {mod['total_specified_tc']} TCs | Code: {mod['code_invocations']} Tests | Do phu: Stmt {stmt}, Branch {br}")
     print("  [0] Thoát chương trình")
     print("---------------------------------------------------------------------------")
+
+    # Hỗ trợ chạy trực tiếp qua tham số dòng lệnh (vd: python scripts/check_module_testcases.py 2)
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].strip()
+        targets = []
+        if arg.lower() in ("all", "--all"):
+            targets = list(MODULES.keys())
+        elif arg in MODULES:
+            targets = [arg]
+        
+        if targets:
+            for choice in targets:
+                selected_mod = MODULES[choice]
+                print(f"\n⏳ Đang xử lý và tạo báo cáo cho: {selected_mod['name']}...")
+                output_dir = os.path.join(os.path.dirname(__file__), "..", "target")
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = os.path.join(output_dir, f"test_case_report_{selected_mod['id']}.html")
+                html = generate_html_report(selected_mod)
+                with open(output_file, "w", encoding="utf-8") as f:
+                    f.write(html)
+                abs_path = os.path.abspath(output_file)
+                print("✅ ĐÃ XUẤT BÁO CÁO THÀNH CÔNG!")
+                print(f"📄 Đường dẫn file: {abs_path}")
+            return
 
     while True:
         choice = input("👉 Nhập số lựa chọn của bạn (1-9 hoặc 0 để thoát): ").strip()
