@@ -13,22 +13,45 @@
 
 ## 2. Phân tích Kỹ thuật Thiết kế (Test Design Analysis)
 
-### 2.1 Bảng Phân hoạch lớp tương đương (EP) - Luật "Vị Vua Cuối Cùng" (Last Active Admin Rule)
-Một trong những lỗi chí mạng của các hệ thống quản trị là "Vô tình khóa mất tài khoản Admin duy nhất". Lập trình viên đã thiết lập một chốt chặn rất hay để giải quyết vấn đề này. 
-Hệ thống sẽ đếm tổng số Admin đang hoạt động (`countActiveAdmins`). Nếu con số này là **1**, hệ thống cấm tuyệt đối các thao tác sau lên tài khoản Admin đó:
-- Đổi Role từ `ROLE_ADMIN` xuống `ROLE_USER` (Hạ cấp).
-- Đổi trạng thái `isActive = false` (Vô hiệu hóa).
-- Đổi trạng thái `isAccountNonLocked = false` (Khóa tài khoản).
+### 2.1 Bảng Chuyển đổi trạng thái (State Transition Table)
+Hệ thống kiểm soát chặt chẽ máy trạng thái FSM đối với cả **Vòng đời Đơn hàng** và **Vòng đời Tài khoản Quản trị viên**, ngăn chặn mọi hành vi ép trạng thái sai quy trình:
 
-### 2.2 Phân quyền Sở hữu (Ownership EP) - Tính độc lập của Admin
-Không phải cứ có quyền Admin là có quyền sinh sát tất cả mọi thứ. Hệ thống giới hạn "Phạm vi quản lý" (Scope) cực kỳ chặt chẽ:
-- **Quản lý Sản phẩm (Product Scope):** Admin A **không được phép** Sửa (Update) hoặc Xóa (Delete/Deactivate) Sản phẩm do Admin B tạo ra. API sẽ bắn lỗi 403 Forbidden.
-- **Quản lý Đơn hàng (Order Scope):** Admin chỉ được phép Cập nhật trạng thái những Đơn hàng nằm trong vùng quản lý của mình (`canManageOrder`). Xóa rào vùng này sẽ bị đá văng bằng 403.
+| Đối tượng | Trạng thái hiện tại | Thao tác (Action) | Quyền thực thi / Điều kiện | Trạng thái kỳ vọng (Next State) | Tính hợp lệ | Test Case liên quan |
+| :--- | :--- | :--- | :--- | :--- | :---: | :---: |
+| **Đơn hàng** | `PENDING` | Duyệt giao hàng (Ship) | Admin có Scope quản lý | `SHIPPING` | Hợp lệ | TC_ADM_008 |
+| **Đơn hàng** | `SHIPPING` | Hoàn tất giao hàng | Admin có Scope quản lý | `COMPLETED` | Hợp lệ | TC_ADM_008 |
+| **Đơn hàng** | `CANCELLED` | Cố tình ép sang Giao hàng | Admin | *(Bị chặn, giữ nguyên `CANCELLED`)* | Báo lỗi 409 Conflict (Sai luồng FSM) | TC_ADM_010 |
+| **Đơn hàng** | `RETURN_PENDING` | Phê duyệt trả hàng (Approve) | Admin có Scope quản lý | `RETURNED` | Hợp lệ (Cộng kho, trừ sales) | TC_CAN_008 |
+| **Đơn hàng** | `RETURN_PENDING` | Từ chối trả hàng (Reject) | Admin có Scope quản lý | `COMPLETED` | Hợp lệ (Giữ nguyên kho) | TC_CAN_009 |
+| **Admin Account** | `ROLE_ADMIN` (Active) | Hạ cấp xuống `ROLE_USER` | Số Admin Active = 1 | *(Bị chặn, giữ nguyên `ROLE_ADMIN`)* | Báo lỗi (Chặn mất Admin cuối cùng) | TC_ADM_001 |
+| **Admin Account** | `ROLE_ADMIN` (Active) | Vô hiệu hóa / Khóa | Số Admin Active = 1 | *(Bị chặn, giữ nguyên Active)* | Báo lỗi (Chặn khóa Admin cuối cùng) | TC_ADM_002 |
+| **Admin Account** | `ROLE_ADMIN` (Active) | Hạ cấp xuống `ROLE_USER` | Số Admin Active $\ge 2$ | `ROLE_USER` (Active) | Hợp lệ | TC_ADM_003 |
 
-### 2.3 Thuật toán Ảo - Tính lại giá Đơn hàng
-Lập trình viên viết một logic ẩn rất thú vị khi Admin truy vấn xem Chi tiết một đơn hàng:
-- Nếu Admin đang xem Đơn hàng do chính Admin đó tự mua đóng vai khách (`isOrderCustomer = true`): Giá trị đơn hàng (Amount) được bảo lưu nguyên gốc.
-- Nếu Admin xem Đơn hàng của Khách hàng khác mua: Hệ thống sẽ kích hoạt hàm **Tính toán lại giá trị** (Recalculate Amount) dựa trên các Detail chứ không lấy giá lưu cứng.
+### 2.2 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
+
+| STT | Điều kiện đầu vào (Input / Condition) | Lớp tương đương Hợp lệ (Valid EP) | Lớp tương đương Không hợp lệ (Invalid EP) | Test Case liên quan |
+| :---: | :--- | :--- | :--- | :---: |
+| 1 | **Phân quyền truy cập trang Quản trị (RBAC)** | Tài khoản mang quyền Quản trị viên (`ROLE_ADMIN`) | - Khách vãng lai chưa đăng nhập (Báo lỗi 401 Unauthorized)<br>- Khách hàng thông thường mang quyền `ROLE_USER` (Báo lỗi 403 Forbidden) | TC_ADM_004 |
+| 2 | **Quyền sở hữu chéo Sản phẩm (Product Ownership Scope)** | Admin A chỉ thực hiện Sửa (Update) hoặc Xóa (Deactivate) trên Sản phẩm do chính Admin A tạo ra (`owner = adminA`) | Admin A cố tình can thiệp Sửa/Xóa Sản phẩm do Admin B tạo ra (`owner = adminB`) $\rightarrow$ Báo lỗi 403 Forbidden | TC_ADM_005<br>TC_ADM_006 |
+| 3 | **Phạm vi Phân quyền Quản lý Đơn hàng (Order Scope)** | Admin thao tác duyệt / cập nhật đơn hàng nằm trong phạm vi được giao phụ trách (`canManageOrder = true`) | Admin thao tác trên đơn hàng nằm ngoài phạm vi phân quyền quản trị (`canManageOrder = false`) $\rightarrow$ Báo lỗi 403 Forbidden | TC_ADM_008 |
+| 4 | **Thuật toán Tính lại giá trị Đơn hàng (Amount Recalculation)** | - Admin tự mua hàng đóng vai khách (`isOrderCustomer = true`): Bảo lưu giá trị đơn hàng gốc.<br>- Admin xem đơn của khách hàng (`isOrderCustomer = false`): Tự động kích hoạt thuật toán tính lại giá thực tế từ chi tiết dòng hàng. | N/A (Thuật toán phân định tự động theo chủ sở hữu đơn hàng) | TC_ADM_009 |
+| 5 | **Tính toàn vẹn biểu mẫu Sản phẩm (Product Form Validation)** | Form nhập đầy đủ Mã sản phẩm và Tên sản phẩm hợp lệ, Giá bán $> 0$, Tồn kho $\ge 0$ | Bỏ trống Mã sản phẩm (`code` rỗng/null) hoặc Tên sản phẩm (`name` rỗng/null/khoảng trắng) $\rightarrow$ Báo lỗi 400 Bad Request | TC_ADM_007 |
+
+### 2.3 Bảng Phân tích giá trị biên (Boundary Value Analysis - BVA)
+
+| STT | Biến kiểm thử / Ràng buộc logic | Điểm biên BVA | Giá trị kiểm thử | Phân loại BVA | Kết quả dự kiến (Expected Output) | Test Case |
+| :---: | :--- | :---: | :---: | :---: | :--- | :---: |
+| 1 | **Số lượng Admin đang hoạt động (`countActiveAdmins`)**<br>*Ràng buộc: $countActiveAdmins > 1$ mới được phép hạ cấp hoặc khóa tài khoản* | min | 1 tài khoản | Invalid Boundary | Hệ thống chặn đứng hành động hạ cấp / khóa, bảo lưu tài khoản Admin duy nhất | TC_ADM_001<br>TC_ADM_002 |
+| 2 | **Số lượng Admin đang hoạt động (`countActiveAdmins`)** | min + 1 | 2 tài khoản | Valid (Biên hợp lệ) | Cho phép hạ cấp hoặc khóa Admin vì vẫn còn ít nhất 1 Admin khác hoạt động | TC_ADM_003 |
+| 3 | **Số lượng Admin đang hoạt động (`countActiveAdmins`)** | nom | 3, 5 tài khoản | Valid | Thao tác hạ cấp / khóa diễn ra bình thường | TC_ADM_003 |
+| 4 | **Độ dài Mã sản phẩm (`code`)**<br>*Ràng buộc: $1 \le \text{length}(code) \le 20$ ký tự* | min - 1 | 0 ký tự (`""` rỗng) | Invalid (Dưới biên) | Báo lỗi 400 Bad Request (Thiếu mã sản phẩm) | TC_ADM_007 |
+| 5 | **Độ dài Mã sản phẩm (`code`)** | min | 1 ký tự | Valid (Biên dưới) | Hợp lệ, tạo sản phẩm thành công | TC_ADM_007 |
+| 6 | **Độ dài Mã sản phẩm (`code`)** | max | 20 ký tự | Valid (Biên trên) | Hợp lệ, tạo sản phẩm thành công | TC_ADM_007 |
+| 7 | **Độ dài Mã sản phẩm (`code`)** | max + 1 | 21 ký tự | Invalid (Vượt biên) | Báo lỗi 400 Bad Request (Mã sản phẩm quá dài) | TC_ADM_007 |
+| 8 | **Độ dài Tên sản phẩm (`name`)**<br>*Ràng buộc: $1 \le \text{length}(name) \le 255$ ký tự* | min - 1 | 0 ký tự (`""` rỗng) | Invalid (Dưới biên) | Báo lỗi 400 Bad Request (Thiếu tên sản phẩm) | TC_ADM_007 |
+| 9 | **Độ dài Tên sản phẩm (`name`)** | min | 1 ký tự | Valid (Biên dưới) | Hợp lệ, tạo sản phẩm thành công | TC_ADM_007 |
+| 10 | **Độ dài Tên sản phẩm (`name`)** | max | 255 ký tự | Valid (Biên trên) | Hợp lệ, tạo sản phẩm thành công | TC_ADM_007 |
+| 11 | **Độ dài Tên sản phẩm (`name`)** | max + 1 | 256 ký tự | Invalid (Vượt biên) | Báo lỗi 400 Bad Request (Tên sản phẩm quá dài) | TC_ADM_007 |
 
 ---
 
