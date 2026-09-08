@@ -63,12 +63,12 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="UserDetailsServiceImplTest,CustomOAuth2UserServiceTest,RegisterFormValidatorTest,AccountDAOTest"',
-        "code_invocations": 64,
+        "code_invocations": 62,
         "code_details": [
             {"file": "AccountDAOTest.java", "count": 28, "desc": "28 invocations kiểm thử xác thực, đổi mật khẩu và phân quyền tài khoản ở tầng DAO."},
-            {"file": "UserDetailsServiceImplTest.java", "count": 8, "desc": "8 invocations kiểm tra logic load user Spring Security, mã hóa pass, trạng thái active/locked."},
-            {"file": "RegisterFormValidatorTest.java", "count": 18, "desc": "18 invocations kiểm thử toàn bộ giá trị biên độ dài username, password, email."},
-            {"file": "CustomOAuth2UserServiceTest.java", "count": 10, "desc": "10 invocations kiểm thử luồng đăng nhập mạng xã hội (Google OAuth2)."}
+            {"file": "RegisterFormValidatorTest.java", "count": 24, "desc": "24 invocations kiểm thử toàn bộ giá trị biên độ dài username, password, email."},
+            {"file": "CustomOAuth2UserServiceTest.java", "count": 7, "desc": "7 invocations kiểm thử luồng đăng nhập mạng xã hội (Google OAuth2)."},
+            {"file": "UserDetailsServiceImplTest.java", "count": 3, "desc": "3 invocations kiểm tra logic load user Spring Security, mã hóa pass, trạng thái active/locked."}
         ]
     },
     "2": {
@@ -194,10 +194,9 @@ MODULES = {
         "mvn_command": 'mvn test -Dtest="ProductDAOTest,PaginationResultTest,ProductApiControllerTest"',
         "code_invocations": 79,
         "code_details": [
-            {"file": "ProductDAOTest.java", "count": 49, "desc": "49 invocations kiểm thử toàn bộ các nhánh tìm kiếm, lọc giá, lọc danh mục và sắp xếp của ProductDAO."},
-            {"file": "PaginationResultTest.java", "count": 14, "desc": "14 invocations kiểm thử thuật toán tính toán tổng trang, dấu ba chấm và danh sách navigationPages."},
-            {"file": "ProductApiControllerTest.java", "count": 16, "desc": "16 invocations kiểm thử tầng REST API sản phẩm, phân trang và tìm kiếm."},
-            {"file": "test_search_pagination_api.py", "count": 11, "desc": "11 bài kiểm thử tự động hóa API trực tiếp (kèm 25 Worst-Case Boundary combinations)."}
+            {"file": "ProductDAOTest.java", "count": 53, "desc": "53 invocations kiểm thử toàn bộ các nhánh tìm kiếm, lọc giá, lọc danh mục và sắp xếp của ProductDAO."},
+            {"file": "ProductApiControllerTest.java", "count": 19, "desc": "19 invocations kiểm thử tầng REST API sản phẩm, phân trang và tìm kiếm."},
+            {"file": "PaginationResultTest.java", "count": 7, "desc": "7 invocations kiểm thử thuật toán tính toán tổng trang, dấu ba chấm và danh sách navigationPages."}
         ]
     },
     "3": {
@@ -244,10 +243,10 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="CartApiControllerTest,ShoppingCartFinalizeTemplateTest"',
-        "code_invocations": 32,
+        "code_invocations": 47,
         "code_details": [
-            {"file": "CartApiControllerTest.java", "count": 22, "desc": "22 invocations kiểm thử thêm, sửa, xóa, tính tổng tiền giỏ hàng và kiểm tra tồn kho."},
-            {"file": "ShoppingCartFinalizeTemplateTest.java", "count": 10, "desc": "10 invocations kiểm thử giao diện giỏ hàng và đồng bộ session người dùng."}
+            {"file": "CartApiControllerTest.java", "count": 46, "desc": "46 invocations kiểm thử toàn diện thêm, sửa, xóa, tính tổng tiền giỏ hàng và kiểm tra tồn kho."},
+            {"file": "ShoppingCartFinalizeTemplateTest.java", "count": 1, "desc": "1 test kiểm thử giao diện giỏ hàng và đồng bộ session người dùng."}
         ]
     },
     "4": {
@@ -429,12 +428,12 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="OrderDAOTest,CustomerFormValidatorTest,OrderWorkflowIntegrationTest,UserAddressDAOTest"',
-        "code_invocations": 142,
+        "code_invocations": 146,
         "code_details": [
-            {"file": "OrderDAOTest.java", "count": 73, "desc": "73 invocations kiểm thử lưu đơn, phân trang đơn, tính toán số tiền và lịch sử giao dịch."},
-            {"file": "CustomerFormValidatorTest.java", "count": 24, "desc": "24 invocations kiểm thử biên BVA các trường Form giao hàng (tên, email, phone, địa chỉ)."},
-            {"file": "OrderWorkflowIntegrationTest.java", "count": 20, "desc": "20 invocations kiểm thử tích hợp luồng Checkout xuyên suốt từ giỏ hàng đến hóa đơn."},
-            {"file": "UserAddressDAOTest.java", "count": 25, "desc": "25 invocations kiểm thử sổ địa chỉ giao hàng của khách hàng."}
+            {"file": "OrderDAOTest.java", "count": 93, "desc": "93 invocations kiểm thử toàn bộ các nhánh lưu đơn, phân trang đơn, tính toán số tiền, hoàn kho và bảo đảm độ phủ trắng 100%."},
+            {"file": "CustomerFormValidatorTest.java", "count": 25, "desc": "25 invocations kiểm thử biên BVA các trường Form giao hàng (tên, email, phone, địa chỉ)."},
+            {"file": "UserAddressDAOTest.java", "count": 25, "desc": "25 invocations kiểm thử sổ địa chỉ giao hàng của khách hàng."},
+            {"file": "OrderWorkflowIntegrationTest.java", "count": 3, "desc": "3 kịch bản kiểm thử tích hợp luồng Checkout xuyên suốt từ giỏ hàng đến hóa đơn trên MySQL thật."}
         ]
     },
     "6": {
@@ -523,10 +522,10 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="ProductReviewDAOTest,ReviewApiControllerTest"',
-        "code_invocations": 52,
+        "code_invocations": 73,
         "code_details": [
             {"file": "ProductReviewDAOTest.java", "count": 36, "desc": "36 invocations kiểm thử nghiệp vụ đánh giá, biên rating [1, 5], giới hạn 5 phút sửa bài và tính lại cache điểm."},
-            {"file": "ReviewApiControllerTest.java", "count": 16, "desc": "16 invocations kiểm thử phân quyền đăng nhập, xác thực REST API và bảo mật Ownership."}
+            {"file": "ReviewApiControllerTest.java", "count": 37, "desc": "37 invocations kiểm thử toàn diện phân quyền đăng nhập, bảo mật Ownership và REST API."}
         ]
     },
     "7": {
@@ -608,10 +607,10 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="OrderCancelReturnTests,OrderReturnDAOTest"',
-        "code_invocations": 65,
+        "code_invocations": 53,
         "code_details": [
-            {"file": "OrderReturnDAOTest.java", "count": 49, "desc": "49 invocations kiểm thử vòng đời yêu cầu trả hàng, hoàn kho và phân quyền Admin."},
-            {"file": "OrderCancelReturnTests.java", "count": 16, "desc": "16 bài kiểm thử tích hợp hủy đơn, FSM trạng thái và thuật toán chặn âm sales count."}
+            {"file": "OrderReturnDAOTest.java", "count": 50, "desc": "50 invocations kiểm thử vòng đời yêu cầu trả hàng, hoàn kho và phân quyền Admin."},
+            {"file": "OrderCancelReturnTests.java", "count": 3, "desc": "3 kịch bản kiểm thử tích hợp Spring Boot thực tế với DB cho luồng Hủy đơn."}
         ]
     },
     "8": {
@@ -693,11 +692,11 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="UserControllerCoverageTest,ProductFormValidatorTest,OrderApiControllerTest"',
-        "code_invocations": 68,
+        "code_invocations": 114,
         "code_details": [
-            {"file": "UserControllerCoverageTest.java", "count": 28, "desc": "28 invocations kiểm thử quy tắc Last Active Admin, phân quyền User và chỉnh sửa profile."},
-            {"file": "OrderApiControllerTest.java", "count": 22, "desc": "22 invocations kiểm thử phân quyền quản lý đơn hàng theo Scope và tính toán lại giá."},
-            {"file": "ProductFormValidatorTest.java", "count": 18, "desc": "18 invocations kiểm thử biên form tạo sản phẩm của quản trị viên."}
+            {"file": "UserControllerCoverageTest.java", "count": 65, "desc": "65 invocations kiểm thử quy tắc Last Active Admin, phân quyền User và chỉnh sửa profile."},
+            {"file": "ProductFormValidatorTest.java", "count": 29, "desc": "29 invocations kiểm thử biên form tạo sản phẩm của quản trị viên."},
+            {"file": "OrderApiControllerTest.java", "count": 20, "desc": "20 invocations kiểm thử phân quyền quản lý đơn hàng theo Scope và tính toán lại giá."}
         ]
     },
     "9": {
@@ -744,10 +743,10 @@ MODULES = {
             }
         ],
         "mvn_command": 'mvn test -Dtest="AiServiceIntegrationTest,ActualFastApiIntegrationTest"',
-        "code_invocations": 18,
+        "code_invocations": 4,
         "code_details": [
-            {"file": "AiServiceIntegrationTest.java", "count": 12, "desc": "12 invocations kiểm thử tích hợp Spring Boot kết nối microservice AI qua REST Template/Mock."},
-            {"file": "ActualFastApiIntegrationTest.java", "count": 6, "desc": "6 invocations kiểm thử trực tiếp vi dịch vụ FastAPI YOLOv8 thực tế."}
+            {"file": "AiServiceIntegrationTest.java", "count": 3, "desc": "3 invocations kiểm thử tích hợp Spring Boot kết nối dịch vụ AI qua Testcontainers."},
+            {"file": "ActualFastApiIntegrationTest.java", "count": 1, "desc": "1 invocation kiểm thử trực tiếp vi dịch vụ FastAPI YOLOv8 (Skipped nếu chưa bật server)."}
         ]
     }
 }
