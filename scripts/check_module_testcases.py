@@ -337,17 +337,17 @@ MODULES = {
             }
         ],
         "mvn_command": "mvn test -Dtest=\"CartApiControllerTest,CartControllerCoverageTest\"",
-        "code_invocations": 47,
+        "code_invocations": 91,
         "code_details": [
             {
                 "file": "CartApiControllerTest.java",
-                "count": 27,
-                "desc": "27 invocations kiểm thử toàn bộ API giỏ hàng, session timeout và kiểm soát tồn kho."
+                "count": 46,
+                "desc": "46 invocations kiểm thử toàn diện REST API giỏ hàng, payload validation, session timeout và kiểm soát tồn kho."
             },
             {
                 "file": "CartControllerCoverageTest.java",
-                "count": 20,
-                "desc": "20 invocations kiểm thử giao diện giỏ hàng, cập nhật số lượng và tính lại tổng tiền."
+                "count": 45,
+                "desc": "45 invocations kiểm thử luồng controller MVC giỏ hàng, cập nhật số lượng, chuyển trang và xử lý ngoại lệ."
             }
         ],
         "coverage_classes": [
