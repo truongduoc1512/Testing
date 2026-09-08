@@ -1164,17 +1164,17 @@ MODULES = {
             }
         ],
         "mvn_command": "mvn test -Dtest=\"OrderReturnDAOTest,OrderCancelReturnApiControllerTest\"",
-        "code_invocations": 114,
+        "code_invocations": 91,
         "code_details": [
             {
                 "file": "OrderReturnDAOTest.java",
-                "count": 68,
-                "desc": "68 invocations kiểm thử quy trình FSM đổi trả, hoàn kho và toàn vẹn cơ sở dữ liệu."
+                "count": 50,
+                "desc": "50 invocations kiểm thử quy trình FSM đổi trả, hoàn kho và toàn vẹn cơ sở dữ liệu."
             },
             {
                 "file": "OrderCancelReturnApiControllerTest.java",
-                "count": 46,
-                "desc": "46 invocations kiểm thử toàn bộ API hủy/trả đơn, phân quyền Admin và bảo mật token khách vãng lai."
+                "count": 41,
+                "desc": "41 invocations kiểm thử toàn bộ API hủy/trả đơn, phân quyền Admin và bảo mật token khách vãng lai."
             }
         ],
         "coverage_classes": [
