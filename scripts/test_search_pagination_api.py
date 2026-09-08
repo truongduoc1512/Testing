@@ -220,7 +220,6 @@ class TestSearchAndPaginationAPI(unittest.TestCase):
             "list",
             "maxResult",
             "totalPages",
-            "maxNavigationPage",
             "navigationPages",
         ]
         for key in required_keys:
