@@ -5,10 +5,12 @@ on:
     branches:
       - develop
       - main
+      - week/week-6-security-performa
   pull_request:
     branches:
       - develop
       - main
+      - week/week-6-security-performa
   workflow_dispatch:
 
 jobs:
