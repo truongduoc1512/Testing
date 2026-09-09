@@ -112,13 +112,13 @@ jobs:
       - name: Wait for Services Health and Readiness
         run: |
           echo "Waiting for services to become healthy..."
-          docker compose exec -T shoeshop-mysql mysqladmin ping -h localhost --silent --wait=60
+          docker compose exec -T shoeshop-mysql mysqladmin ping -h localhost -u root -ptruonghoaiduoc5 --silent --wait=60
           
           echo "Waiting for AI Microservice (port 8000)..."
           timeout 60s bash -c 'until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs)" = "200" ]; do echo "AI service warming up..."; sleep 2; done'
 
           echo "Waiting for Backend (via Nginx proxy on port 80)..."
-          timeout 180s bash -c 'until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/admin/login)" = "200" ]; do echo "Backend warming up (status: $(curl -s -o /dev/null -w "%{http_code}" http://localhost/admin/login))..."; sleep 5; done'
+          timeout 240s bash -c 'until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/admin/login)" = "200" ]; do echo "Backend warming up (status: $(curl -s -o /dev/null -w "%{http_code}" http://localhost/admin/login))..."; sleep 5; done'
           
           echo "All services are up and responding successfully!"
 
