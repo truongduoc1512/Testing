@@ -20,4 +20,9 @@
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 
+    <Match>
+        <Class name="com.example.demo.validator.ProductFormValidator"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
 </FindBugsFilter>
