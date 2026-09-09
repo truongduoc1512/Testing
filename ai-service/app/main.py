@@ -41,7 +41,9 @@ async def analyze_product_image(file: UploadFile = File(...)):
 @app.post("/api/v1/mock/analyze")
 async def mock_analyze_image(
     file: UploadFile = File(...),
-    force_status: str = Query(None, description="Ép buộc trạng thái: 'PASS', 'REJECT', 'BLUR', 'NOT_SHOE'")
+    force_status: str = Query(
+        None, description="Ép buộc trạng thái: 'PASS', 'REJECT', 'BLUR', 'NOT_SHOE'"
+    ),
 ):
     """
     Mock AI Endpoint phản hồi tức thì (< 10ms) phục vụ Test Automation.
@@ -50,7 +52,7 @@ async def mock_analyze_image(
     - Mặc định -> Trả về PASS.
     """
     filename = (file.filename or "unknown").lower()
-    
+
     # Kịch bản 1: Ép buộc trạng thái từ query param hoặc tên file
     if force_status == "REJECT" or "blur" in filename or "invalid" in filename:
         return JSONResponse(content={
@@ -61,7 +63,7 @@ async def mock_analyze_image(
             "filename": file.filename,
             "is_mock": True
         })
-    
+
     if force_status == "NOT_SHOE" or "not_shoe" in filename:
         return JSONResponse(content={
             "approved": False,

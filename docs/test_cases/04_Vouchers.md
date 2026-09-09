@@ -19,31 +19,32 @@
 
 Theo chuẩn ISTQB, chức năng Voucher áp dụng đồng thời 3 kỹ thuật. Dưới đây là phân tích chi tiết cho từng kỹ thuật:
 
-### 2.1 Bảng Phân hoạch lớp tương đương (EP)
+### 2.1 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
 
-| STT | Trường hợp của điều kiện đầu vào | Lớp tương đương Hợp lệ | Lớp tương đương Không hợp lệ |
-| :---: | :--- | :--- | :--- |
-| 1 | Sự tồn tại của mã | Mã có trong DB | Mã rác (Không có trong DB) |
-| 2 | Trạng thái kích hoạt | Bật (Active = True) | Bị vô hiệu hóa (Active = False) |
-| 3 | Tình trạng hạn sử dụng | Còn hạn sử dụng | Quá hạn sử dụng |
-| 4 | Tổng giá trị đơn hàng | Đạt mốc tối thiểu (Min Order Value) | Chưa đạt mốc tối thiểu |
-| 5 | Số lượt sử dụng toàn cục | Còn lượt (< Usage Limit) | Đã hết lượt (>= Usage Limit) |
-| 6 | Vai trò Người dùng | Khách hàng Đăng nhập, Khách vãng lai (Guest) | N/A |
-| 7 | Số lượt dùng cá nhân (Tài khoản) | Chưa dùng hết (< Per User Limit) | Đã dùng quá giới hạn quy định |
+| STT | Điều kiện đầu vào (Input / Condition) | Lớp tương đương Hợp lệ (Valid EP) | Lớp tương đương Không hợp lệ (Invalid EP) | Test Case tương ứng |
+| :---: | :--- | :--- | :--- | :---: |
+| 1 | **Sự tồn tại của mã Voucher** | Mã tồn tại trong CSDL | Mã không tồn tại / Mã rác | **TC_VOU_005** |
+| 2 | **Trạng thái kích hoạt (Active)** | Đang kích hoạt (`active = true`) | Bị vô hiệu hóa (`active = false`) | **TC_VOU_009** |
+| 3 | **Hạn sử dụng (Expiration Date)** | Ngày áp dụng $\le$ Ngày hết hạn | Đã quá ngày hết hạn | **TC_VOU_003** |
+| 4 | **Giá trị đơn hàng tối thiểu (Min Order)** | Tổng đơn hàng $\ge$ `minOrderValue` | Tổng đơn hàng $<$ `minOrderValue` | **TC_VOU_002** |
+| 5 | **Lượt dùng chung toàn hệ thống (Global Limit)** | Số lượt đã dùng $<$ `usageLimit` | Số lượt đã dùng $\ge$ `usageLimit` | **TC_VOU_004** |
+| 6 | **Loại người dùng & Ràng buộc cá nhân** | - Khách đã đăng nhập: Chưa dùng hết lượt cá nhân (`used < perUserLimit`)<br>- Khách vãng lai: Không ràng buộc cá nhân | Khách đã đăng nhập: Đã dùng hết số lượt cá nhân cho phép (`used >= perUserLimit`) | **TC_VOU_007**<br>**TC_VOU_008** |
+| 7 | **Hình thức chiết khấu (Discount Type)** | - Giảm theo phần trăm (`PERCENT`) có chặn trần `maxDiscount`<br>- Giảm trừ tiền cứng (`FIXED`) không vượt quá tổng đơn hàng | N/A (Áp dụng đúng công thức chiết khấu) | **TC_VOU_001**<br>**TC_VOU_006** |
+| 8 | **Quyền Quản trị Voucher (Admin API CRUD)** | Tài khoản `ROLE_ADMIN` gửi request Tạo / Vô hiệu hóa mã | Tài khoản không có quyền Admin cố tình gọi API tạo/sửa mã | **TC_VOU_010**<br>**TC_VOU_011** |
+| 9 | **Truy vấn Voucher khả dụng (Public API)** | Bất kỳ ai cũng có thể lấy danh sách voucher Active, còn hạn và còn lượt dùng | N/A (Hệ thống tự động lọc các mã hết hạn/hết lượt) | **TC_VOU_012** |
 
-### 2.2 Bảng Phân tích giá trị biên (BVA)
-**Ràng buộc 1 (Đơn hàng):** Tổng tiền $\ge$ Min Order Value (Giả sử yêu cầu 500 đô).
-**Ràng buộc 2 (Tổng lượt):** Số lượt xài chung $<$ Usage Limit (Giả sử giới hạn 50 lượt).
-**Ràng buộc 3 (Cá nhân):** Lượt xài user $<$ Per User Limit (Giả sử mỗi người 2 lượt).
+### 2.2 Bảng Phân tích giá trị biên (Boundary Value Analysis - BVA)
 
-| Case | Biến số | Giá trị | Phân loại BVA | Kết quả dự kiến (Expected Output) |
-| :---: | :--- | :---: | :---: | :--- |
-| 1 | Tổng đơn hàng | 200 đô | min - 1 (Invalid) | Báo lỗi 400 (Chưa đạt giá trị tối thiểu) |
-| 2 | Tổng đơn hàng | 500 đô | min (Valid) | Thành công (Áp dụng giảm giá) |
-| 3 | Số lượt xài chung | 49 lượt | max - 1 (Valid) | Thành công (Áp dụng giảm giá) |
-| 4 | Số lượt xài chung | 50 lượt | max (Invalid) | Báo lỗi 400 (Đã hết lượt sử dụng) |
-| 5 | Lượt xài user | 1 lượt | max - 1 (Valid) | Thành công (Áp dụng giảm giá) |
-| 6 | Lượt xài user | 2 lượt | max (Invalid) | Báo lỗi 400 (Bạn đã dùng hết số lượt) |
+| STT | Biến kiểm thử / Ràng buộc logic | Điểm biên BVA | Giá trị kiểm thử | Phân loại BVA | Kết quả dự kiến (Expected Output) | Test Case |
+| :---: | :--- | :---: | :---: | :---: | :--- | :---: |
+| 1 | **Giá trị đơn hàng (`orderAmount`)**<br>*Ràng buộc: $orderAmount \ge minOrderValue$ (Giả sử 500 đô)* | min - 1 | 499 đô (hoặc 200 đô) | Invalid Boundary | Báo lỗi 400 (Chưa đạt giá trị đơn tối thiểu) | **TC_VOU_002** |
+| 2 | **Giá trị đơn hàng (`orderAmount`)** | min | 500 đô | Valid (Biên dưới) | Thành công (Áp dụng giảm giá) | **TC_VOU_002** |
+| 3 | **Số lượt sử dụng chung (`usedCount`)**<br>*Ràng buộc: $usedCount < usageLimit$ (Giả sử limit = 50)* | max - 1 | 49 lượt | Valid | Thành công (Áp dụng giảm giá) | **TC_VOU_004** |
+| 4 | **Số lượt sử dụng chung (`usedCount`)** | max | 50 lượt | Invalid Boundary | Báo lỗi 400 (Mã đã hết số lượt sử dụng) | **TC_VOU_004** |
+| 5 | **Số lượt sử dụng cá nhân (`userUsedCount`)**<br>*Ràng buộc: $userUsedCount < perUserLimit$ (Giả sử limit = 2)* | max - 1 | 1 lượt | Valid | Thành công (Áp dụng giảm giá) | **TC_VOU_007** |
+| 6 | **Số lượt sử dụng cá nhân (`userUsedCount`)** | max | 2 lượt | Invalid Boundary | Báo lỗi 400 (Bạn đã dùng hết số lượt) | **TC_VOU_007** |
+| 7 | **Trần giảm giá tối đa (`maxDiscount`)**<br>*Ràng buộc: Giảm 20%, maxDiscount = 50 đô, đơn hàng 500 đô* | max + $\Delta$ | Tính toán: 100 đô | Boundary (Vượt trần) | Tiền giảm bị chặn cứng ở mức 50 đô (thay vì 100 đô) | **TC_VOU_001** |
+| 8 | **Giảm trừ tiền cứng (`fixedDiscount`)**<br>*Ràng buộc: Tiền giảm không làm âm hóa đơn* | max | Giảm = Đơn hàng | Valid | Hóa đơn về 0 đô, không bị số âm | **TC_VOU_006** |
 
 ### 2.3 Bảng Quyết định tổng hợp (Collapsed Decision Table)
 Gộp các vùng dữ liệu trên vào Ma trận Quyết định để che phủ luồng Áp dụng Voucher (Luật từ chối theo thứ tự ưu tiên của Backend):
@@ -78,8 +79,8 @@ Gộp các vùng dữ liệu trên vào Ma trận Quyết định để che ph�
 | **TC_VOU_004** | Bảng QĐ (R5) / BVA | Kiểm tra chặn áp mã khi Voucher cạn lượt chung (Usage Limit) | Giỏ hàng 200 đô. | Nhập mã Voucher và Áp dụng. | `TESTLIMITREJECT` (UsageLimit=1, đã bị xài 1 lần). | Báo lỗi chứa cụm từ "hết số lượt". Tiền giảm 0. | Khớp với Unit Test. | Pass |
 | **TC_VOU_005** | Bảng QĐ (R1) / EP | Kiểm tra hệ thống chặn mã rác / mã không tồn tại | Giỏ hàng hợp lệ. | Nhập mã Voucher rác. | `MISSING` (Code không có trong DB). | Báo lỗi Mã giảm giá không tồn tại. | Khớp với Unit Test. | Pass |
 | **TC_VOU_006** | Bảng QĐ (R8) / EP | Kiểm tra áp dụng thành công mã hợp lệ (Trừ tiền cứng) | Giỏ hàng 200 đô. | Nhập mã Voucher và Áp dụng. | `TESTFIXED30` (Loại trừ tiền cứng 30 đô). | Thành công. Tiền giảm đúng 30 đô. | Khớp với Unit Test. | Pass |
-| **TC_VOU_007** | Bảng QĐ (R6) / BVA | Kiểm tra chặn áp mã do giới hạn Cá nhân (Per User Limit) | User `alice` có đơn hàng 100 đô. | Gọi API áp dụng Voucher cho User `alice`. | Mã `SALE10` (Giới hạn cá nhân = 2, `alice` đã xài 2 lần). | API từ chối áp mã. Báo lỗi "đã dùng hết số lượt cho phép". | Khớp với `VoucherDAOTest`. | Pass |
-| **TC_VOU_008** | Bảng QĐ (R7) / EP | Khách vãng lai (Guest) không bị ràng buộc giới hạn cá nhân | Khách vãng lai (username trống/null). | Gọi API áp dụng Voucher. | Mã `SALE10` (Giới hạn cá nhân = 0). | API cho phép áp mã thành công. | Khớp với `VoucherDAOTest`. | Pass |
+| **TC_VOU_007** | Bảng QĐ (R7) / BVA | Kiểm tra chặn áp mã do giới hạn Cá nhân (Per User Limit) | User `alice` có đơn hàng 100 đô. | Gọi API áp dụng Voucher cho User `alice`. | Mã `SALE10` (Giới hạn cá nhân = 2, `alice` đã xài 2 lần). | API từ chối áp mã. Báo lỗi "đã dùng hết số lượt cho phép". | Khớp với `VoucherDAOTest`. | Pass |
+| **TC_VOU_008** | Bảng QĐ (R6) / EP | Khách vãng lai (Guest) không bị ràng buộc giới hạn cá nhân | Khách vãng lai (username trống/null). | Gọi API áp dụng Voucher. | Mã `SALE10` (Giới hạn cá nhân = 0). | API cho phép áp mã thành công. | Khớp với `VoucherDAOTest`. | Pass |
 | **TC_VOU_009** | Bảng QĐ (R2) / EP | Kiểm tra chặn áp mã đã bị khóa (Inactive) | Giỏ hàng hợp lệ. | Cố tình nhập mã đã bị khóa. | Mã `SALE10` có trường `active = false`. | Báo lỗi "Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa". | Khớp với `VoucherDAOTest`. | Pass |
 | **TC_VOU_010** | EP / CRUD | Admin tạo mã giảm giá mới qua API (Create) | Tài khoản Admin. | Gửi `POST /api/v1/admin/vouchers` với body hợp lệ. | Body chứa `code=NEWYEAR`, `discountValue=20`, v.v... | Server trả về 200 OK. Mã mới xuất hiện trong DB. | Khớp API Postman. | Pass |
 | **TC_VOU_011** | EP / CRUD | Admin vô hiệu hóa mã giảm giá qua API (Deactivate) | Tài khoản Admin. | Gửi `DELETE /api/v1/admin/vouchers/SALE10`. | Endpoint đi kèm Code voucher hợp lệ. | Trả về 200 OK. Cột `active` chuyển thành `false`. | Khớp API Postman. | Pass |
