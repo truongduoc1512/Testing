@@ -99,6 +99,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Newman and HTML Extra Reporter
+        run: npm install -g newman newman-reporter-htmlextra
+
       - name: Build and Launch Dockerized Services
         run: |
           docker compose up -d --build shoeshop-mysql ai-service shoeshop-backend nginx-proxy
@@ -119,10 +122,12 @@ jobs:
       - name: Execute Newman API Test Collection
         run: |
           mkdir -p target
-          npx --yes newman run docs/Shoeshop_API_Collection.json \
+          newman run docs/Shoeshop_API_Collection.json \
             -e docs/Shoeshop_Postman_Environment.json \
             -r cli,htmlextra \
             --reporter-htmlextra-export target/newman-report.html \
+            --reporter-htmlextra-title "ShoeShop API Automated Test Suite" \
+            --reporter-htmlextra-darkTheme \
             --insecure
 
       - name: Upload Newman HTML Test Report
