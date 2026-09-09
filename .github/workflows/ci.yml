@@ -103,6 +103,9 @@ jobs:
         run: npm install -g newman newman-reporter-htmlextra
 
       - name: Build and Launch Dockerized Services
+        env:
+          GOOGLE_CLIENT_ID: your-google-client-id.apps.googleusercontent.com
+          GOOGLE_CLIENT_SECRET: your-google-client-secret
         run: |
           docker compose up -d --build shoeshop-mysql ai-service shoeshop-backend nginx-proxy
 
