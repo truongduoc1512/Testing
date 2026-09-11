@@ -1,95 +1,97 @@
 # 📊 BÁO CÁO TỔNG HỢP TIẾN ĐỘ - TUẦN 3
-> **Dự án:** ShoeShop Testing & Development  
-> **Sprint Jira:** Sprint 3 - API Automation, JaCoCo Coverage & Bug Lifecycle  
-> **Thời gian:** 10/08/2026 - 17/08/2026  
+> **Dự án:** ShoeShop Testing & Quality Assurance System  
+> **Sprint Jira:** Sprint 3 — API Automation, JaCoCo Coverage & Bug Lifecycle  
+> **Thời gian:** 10/08/2026 – 17/08/2026  
 > **Người tổng hợp (Leader):** Trương Hoài Được  
+> **Nhánh tích hợp chính:** `week/week-3-api-automation` ➔ `develop`  
+> **Phiên bản Release Tag:** `v3.0.0`  
 
 ---
 
-## 🎯 1. MỤC TIÊU TUẦN
-- [x] **Mục tiêu 1:** Tự động hóa kiểm thử REST API phân hệ User & Product bằng Postman (`TEST-15`).
-- [x] **Mục tiêu 2:** Tự động hóa kiểm thử REST API phân hệ Cart, Order, Voucher, Review, Wishlist & Return (`TEST-16`).
-- [x] **Mục tiêu 3:** Mở rộng bộ test Java lên 1,074 bài test và đo lường độ phủ White-box Coverage JaCoCo (`Line 99.85%`, `Branch 99.33%`) (`TEST-17`).
-- [x] **Mục tiêu 4:** Thực hiện kiểm thử thủ công Cổng AI Image Upload trên FastAPI (`TEST-18`).
-- [x] **Mục tiêu 5:** Xây dựng quy trình Quản lý Vòng đời Bug & Tool Python Logger tự động (`TEST-19`).
-- [x] **Mục tiêu 6:** Tự động hóa kiểm thử API Tìm kiếm & Phân trang (`TEST-20`).
-- [x] **Mục tiêu 7:** Hoàn thiện đóng gói DevOps: Đánh tag phiên bản `v3.0.0`, tối ưu `docker-compose.yml`, tích hợp nhánh `week/week-3-api-automation` vào `develop` và gắn Tag GitHub `v3.0.0` (`TEST-21`).
+## 🎯 1. MỤC TIÊU SPRINT (SPRINT OBJECTIVES)
+- [x] **Mục tiêu 1:** Tự động hóa kiểm thử REST API cho phân hệ Người dùng (Authentication, Profile, Address) và Danh mục sản phẩm (`TEST-15`).
+- [x] **Mục tiêu 2:** Tự động hóa kiểm thử REST API cho phân hệ Giỏ hàng, Đơn hàng, Voucher giảm giá, Đánh giá sản phẩm và Hủy/Đổi trả hàng (`TEST-16`).
+- [x] **Mục tiêu 3:** Mở rộng toàn diện bộ test Java lên **1.074 bài kiểm thử** (34 file test), đo lường độ phủ White-box Coverage bằng JaCoCo đạt ngưỡng kỷ lục: **Line 99.85%**, **Branch 99.33%** (`TEST-17`).
+- [x] **Mục tiêu 4:** Thực hiện kiểm thử thủ công Cổng AI Computer Vision Upload (`POST /api/v1/analyze`) trên nền FastAPI và YOLOv8 (`TEST-18`).
+- [x] **Mục tiêu 5:** Xây dựng Khung quản lý vòng đời Bug (Bug Lifecycle Framework 6 trạng thái) và công cụ tự động bắt lỗi runtime `BugLogger` bằng Python (`TEST-19`).
+- [x] **Mục tiêu 6:** Tự động hóa kiểm thử API Tìm kiếm & Phân trang sản phẩm bằng script Python, áp dụng kỹ thuật kiểm thử tổ hợp Worst-Case ($5^2 = 25$ cases) (`TEST-20`).
+- [x] **Mục tiêu 7:** Đóng gói bản phát hành DevOps: Khắc phục lỗi CSRF logout, gắn tag phiên bản `v3.0.0` và tích hợp vào nhánh `develop` (`TEST-21`).
 
 ---
 
 ## 📋 2. BẢNG TỔNG HỢP THỰC THI TASK (JIRA & GITHUB)
 
-| Mã Task Jira | Tên công việc | Người thực hiện | Trạng thái Jira | Nhánh Git (Branch Name) | Loại Task |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `TEST-15` | Automate User & Product APIs | Hoài Được | ✅ Done | `feat/w3-TEST-15-automate-user-product-apis` | `feat` |
-| `TEST-16` | Automate Cart & Order APIs | Hoài Được | ✅ Done | `feat/w3-TEST-15-automate-user-product-apis` | `feat` |
-| `TEST-17` | Measure white-box coverage | Phương | ✅ Done | `test/w3-TEST-17-measure-white-box-coverage` | `test` |
-| `TEST-18` | Manual AI upload testing | Lĩnh | ✅ Done | `test/w3-TEST-18-manual-ai-upload-testing` | `test` |
-| `TEST-19` | Manage bug lifecycle | Thịnh | ✅ Done | `feat/w3-TEST-19-manage-bug-lifecycle` | `feat` |
-| `TEST-20` | Test search & pagination APIs | Thịnh | ✅ Done | `feat/w3-TEST-20-test-search-pagination-apis` | `feat` |
-| `TEST-21` | Submit Week 3 summary report & merge | Tất cả thành viên | ✅ Done | `week/week-3-api-automation` | `docs` |
+| Mã Task Jira | Tên công việc (Summary) | Người thực hiện | Điểm SP | Trạng thái | Pull Request / Nhánh Git | Phân loại |
+| :--- | :--- | :--- | :---: | :---: | :--- | :---: |
+| `TEST-15` | Automate User & Product APIs (Postman) | Hoài Được | 5 | ✅ Done | [PR feat/w3-TEST-15-automate-user-product-apis](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-15-automate-user-product-apis) | `feat` |
+| `TEST-16` | Automate Cart, Order, Voucher & Review APIs | Hoài Được | 5 | ✅ Done | [PR feat/w3-TEST-15-automate-user-product-apis](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-15-automate-user-product-apis) | `feat` |
+| `TEST-17` | Measure white-box coverage (JaCoCo Quality Gate) | Hoàng Phương | 8 | ✅ Done | [PR test/w3-TEST-17-measure-white-box-coverage](https://github.com/truongduoc1512/Testing/tree/test/w3-TEST-17-measure-white-box-coverage) | `test` |
+| `TEST-18` | Manual AI upload testing (YOLOv8 Vision Gate) | Lĩnh | 3 | ✅ Done | [PR test/w3-TEST-18-manual-ai-upload-testing](https://github.com/truongduoc1512/Testing/tree/test/w3-TEST-18-manual-ai-upload-testing) | `test` |
+| `TEST-19` | Manage bug lifecycle & automated bug logger | Ngọc Thịnh | 5 | ✅ Done | [PR feat/w3-TEST-19-manage-bug-lifecycle](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-19-manage-bug-lifecycle) | `feat` |
+| `TEST-20` | Test search & pagination APIs (Worst-Case $5^n$) | Ngọc Thịnh | 3 | ✅ Done | [PR feat/w3-TEST-20-test-search-pagination-apis](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-20-test-search-pagination-apis) | `feat` |
+| `TEST-21` | Submit Week 3 summary report & DevOps release `v3.0.0` | Tất cả | 2 | ✅ Done | [PR week/week-3-api-automation](https://github.com/truongduoc1512/Testing/tree/week/week-3-api-automation) | `docs` |
 
 ---
 
-## 📈 3. THỐNG KÊ CHỈ SỐ TUẦN (METRICS)
+## 📈 3. THỐNG KÊ CHỈ SỐ SPRINT (METRICS & KPIS)
 
-- **Tổng số Task cam kết:** 7 tasks
-- **Số Task hoàn thành (Done):** 7 / 7 tasks (100%)
-- **Tổng Story Points hoàn thành:** 31 points
-- **Số kịch bản API Test tự động bằng Postman:** 46 kịch bản (`Shoeshop_API_Collection.json` — 100% Pass Rate)
-- **Số bài Unit & Integration Test Java:** 1,074 bài test (34 test files)
-- **Tỷ lệ bao phủ dòng code (Line Coverage):** **99.85%** (3,372 / 3,377 lines — Vượt mốc 70%)
-- **Tỷ lệ bao phủ nhánh rẽ (Branch Coverage):** **99.33%** (1,776 / 1,788 branches — Vượt mốc 65%)
-- **Số kịch bản API Tìm kiếm & Phân trang (Python):** 10 test cases (`test_search_pagination_api.py`)
-- **Phiên bản Release Tag đóng gói:** `v3.0.0`
-- **Số Pull Request / Branch đã Merge:** 6 Branches
-
----
-
-## 🔍 4. MINH CHỨNG NGHỆM THU THEO THÀNH VIÊN
-
-### Hoài Được — Task: `TEST-15`, `TEST-16`, `TEST-21`
-- **Sản phẩm bàn giao:** 
-  * Bộ Master E2E Postman Collection `Shoeshop_API_Collection.json` (1,786 dòng JSON, 46 API Test Cases).
-  * Tài liệu báo cáo tự động hóa API [docs/TEST-15.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-15.md).
-  * Khắc phục lỗi Spring Security `/admin/logout` (AntPathRequestMatcher) và tối ưu cấu hình `docker-compose.yml` (`restart: unless-stopped`).
-  * Thực thi quy trình đóng gói DevOps, đánh tag release `v3.0.0`, merge `week/week-3-api-automation` vào `develop` và gắn Tag `v3.0.0` trên GitHub.
-
-### Phương — Task: `TEST-17`
-- **Sản phẩm bàn giao:** 
-  * Bộ 34 file Java Test chứa 1,074 Unit & Integration Tests bao phủ Controller, REST API, Service, DAO, Entity, Form và Utility.
-  * Script PowerShell tự động đo lường độ phủ cô lập CSDL tạm [`scripts/test-coverage.ps1`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/test-coverage.ps1) (281 dòng).
-  * Tài liệu báo cáo JaCoCo White-box Coverage [docs/TEST-17.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-17.md) (`Line: 99.85%`, `Branch: 99.33%`).
-
-### Lĩnh — Task: `TEST-18`
-- **Sản phẩm bàn giao:** 
-  * Báo cáo kiểm thử thủ công Cổng AI Upload (`POST /api/v1/analyze`) trên FastAPI AI Service.
-  * Kịch bản nghiệm thu kiểm tra định dạng rác (`.MOV`), bóc tách object (`umbrella`) và duyệt ảnh giày (`product_item`).
-  * Tài liệu báo cáo nghiệm thu [docs/test-results/TEST-18.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/test-results/TEST-18.md).
-
-### Thịnh — Task: `TEST-19`, `TEST-20`
-- **Sản phẩm bàn giao:** 
-  * Ma trận Vòng đời Bug (Bug Lifecycle Framework 6 bước) + Tool Python [`ai-service/app/bug_logger.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/ai-service/app/bug_logger.py) + Template JSON [`bugs_report_template.json`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/bugs_report_template.json) + Báo cáo [docs/TEST-19.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-19.md).
-  * Bộ kịch bản và script Python tự động kiểm thử API Tìm kiếm & Phân trang [`scripts/test_search_pagination_api.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/test_search_pagination_api.py) + Postman Collection `TEST_SEARCH_PAGINATION_COLLECTION.json` + Báo cáo [docs/TEST-20.md](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-20.md).
+| Chỉ số đo lường (Metric) | Kế hoạch cam kết | Kết quả thực tế | Tỷ lệ hoàn thành | Đánh giá |
+| :--- | :---: | :---: | :---: | :---: |
+| **Tổng số Task Jira cam kết** | 7 tasks | 7 tasks | **100%** | 🟢 Đạt chuẩn |
+| **Tổng Story Points hoàn thành** | 31 SP | 31 SP | **100%** | 🟢 Đạt chuẩn |
+| **Số kịch bản API Test tự động (Postman)** | 35 requests | **46 kịch bản (100% Pass)** | **131%** | 🟢 Tuyệt vời |
+| **Tổng số bài Unit & Integration Tests Java** | 800 tests | **1.074 bài test (34 files)** | **134%** | 🟢 Kỷ lục |
+| **Line Coverage (Tỷ lệ bao phủ dòng)** | > 70.0% | **99.85%** (3.372 / 3.377 lines) | **Vượt xa chuẩn** | 🟢 Xuất sắc |
+| **Branch Coverage (Tỷ lệ bao phủ nhánh)** | > 65.0% | **99.33%** (1.776 / 1.788 branches) | **Vượt xa chuẩn** | 🟢 Xuất sắc |
+| **Instruction Coverage (Bao phủ chỉ lệnh)** | N/A | **99.86%** (14.508 / 14.528 inst.) | **Vượt chuẩn** | 🟢 Xuất sắc |
+| **Method Coverage (Bao phủ hàm)** | N/A | **100.0%** (782 / 782 methods) | **Tuyệt đối** | 🟢 Hoàn hảo |
+| **Class Coverage (Bao phủ lớp đối tượng)** | N/A | **100.0%** (69 / 69 classes) | **Tuyệt đối** | 🟢 Hoàn hảo |
+| **Phiên bản Release Tag đóng gói** | `v3.0.0` | **`v3.0.0` trên GitHub** | **100%** | 🟢 Thành công |
 
 ---
 
-## ⚠️ 5. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP (BLOCKERS & SOLUTIONS)
+## 🔍 4. CHI TIẾT SẢN PHẨM BÀN GIAO & MINH CHỨNG THEO THÀNH VIÊN
 
-| STT | Vấn đề / Lỗi gặp phải | Nguyên nhân | Giải pháp đã xử lý | Trạng thái |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Lỗi Whitelabel Error Page (404) khi người dùng bấm "Đăng xuất" trên giao diện | Spring Security bật CSRF bắt buộc `/admin/logout` phải dùng phương thức HTTP POST, trong khi menu HTML gửi HTTP GET | Cập nhật [WebSecurityConfig.java](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/src/main/java/com/example/demo/config/WebSecurityConfig.java) dùng `logoutRequestMatcher(new AntPathRequestMatcher("/admin/logout"))` hỗ trợ cả GET & POST | ✅ Resolved |
-| 2 | Container `shoeshop-api` bị lặp Crash Loop vô hạn (hiện logo SPRING liên tục) mỗi khi mở Docker Desktop | Do đặt `restart: always` và Spring Boot khởi chạy trước khi MySQL đạt trạng thái Healthy hoàn toàn | Đổi thành `restart: unless-stopped`, thêm timeout JDBC và bổ sung tự động nạp `seed_data.sql` vào script [scripts/start-test-env.ps1](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/start-test-env.ps1) | ✅ Resolved |
-| 3 | Postman Runner báo 3 kịch bản FAILED liên quan đến sản phẩm mẫu `P5593` | CSDL chưa được nạp tập dữ liệu mẫu `seed_data.sql` khiến sản phẩm không tồn tại và giỏ hàng bị trống khi checkout | Nạp `seed_data.sql` vào CSDL Docker và tích hợp nạp dữ liệu tự động ngay khi CSDL vừa bật | ✅ Resolved |
+### 1. Trương Hoài Được (Leader) — Thực hiện `TEST-15`, `TEST-16`, `TEST-21`
+- **Sản phẩm bàn giao:**
+  * Bộ Master Postman Collection [`docs/Shoeshop_API_Collection.json`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/Shoeshop_API_Collection.json) gồm 1.786 dòng JSON chứa 46 kịch bản kiểm thử API chi tiết có pre-request scripts và test scripts kiểm tra status code, response time, JSON schema và data assertions.
+  * Bộ Environment Variables Postman [`docs/Shoeshop_Postman_Environment.json`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/Shoeshop_Postman_Environment.json).
+  * Tài liệu báo cáo tự động hóa API [`docs/TEST-15.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-15.md).
+  * Khắc phục lỗi Spring Security `/admin/logout` (AntPathRequestMatcher), tối ưu container restart policy (`unless-stopped`), merge nhánh và gắn tag `v3.0.0` trên GitHub.
+
+### 2. Hoàng Phương — Thực hiện `TEST-17`
+- **Sản phẩm bàn giao:**
+  * Phát triển bộ 34 file Java Test chứa **1.074 Unit & Integration Tests**, bao phủ toàn bộ Controller, REST API, Service, DAO, Entity, Form và Utility.
+  * Script PowerShell tự động đo lường độ bao phủ cô lập CSDL tạm [`scripts/test-coverage.ps1`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/test-coverage.ps1) (281 dòng) tự động khởi tạo DB riêng, chạy kiểm thử, đọc counter XML của JaCoCo và xuất bảng tỷ lệ phần trăm trực quan.
+  * Tài liệu báo cáo chi tiết JaCoCo White-box Coverage [`docs/TEST-17.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-17.md).
+
+### 3. Lĩnh — Thực hiện `TEST-18`
+- **Sản phẩm bàn giao:**
+  * Thực hiện kiểm thử hộp đen thủ công đối với Cổng AI Computer Vision (`POST /api/v1/analyze`).
+  * Thực nghiệm kiểm tra định dạng rác (video `.MOV`, file text `.txt`), kiểm tra khả năng phát hiện vật thể lạ (dù `umbrella`, xe hơi `car`) và phát hiện vật phẩm giày hợp lệ (`product_item`) với ngưỡng tự tin `confidence_score >= 0.65`.
+  * Tài liệu báo cáo nghiệm thu [`docs/test-results/TEST-18.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/test-results/TEST-18.md).
+
+### 4. Ngọc Thịnh — Thực hiện `TEST-19`, `TEST-20`
+- **Sản phẩm bàn giao:**
+  * **Framework Quản lý Vòng đời Bug:** Xây dựng quy trình 6 bước (Open ➔ In Progress ➔ Resolved ➔ Under Review ➔ Verified / Retest ➔ Closed) kèm tài liệu [`docs/TEST-19.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-19.md).
+  * Module ghi nhận lỗi tự động [`ai-service/app/bug_logger.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/ai-service/app/bug_logger.py) đóng gói Exception kèm Stacktrace, System Context thành file JSON và template [`bugs_report_template.json`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/bugs_report_template.json).
+  * Script Python kiểm thử API Tìm kiếm & Phân trang [`scripts/test_search_pagination_api.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/test_search_pagination_api.py) áp dụng kỹ thuật tổ hợp Worst-Case BVA ($5^2$) + Postman Collection `TEST_SEARCH_PAGINATION_COLLECTION.json` + Báo cáo [`docs/TEST-20.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-20.md).
 
 ---
 
-## 🚀 6. KẾ HOẠCH TUẦN TIẾP THEO (WEEK 4 - UI Automation & Integration Testing)
+## ⚠️ 5. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
 
-Trong Tuần 4 (Sprint 4), toàn bộ đội ngũ sẽ chuyển trọng tâm sang Kiểm thử tự động Giao diện (UI) và Kiểm thử tích hợp hệ thống (Integration Testing). Các mục tiêu trọng điểm bao gồm:
+| STT | Vấn đề phát sinh (Blocker) | Nguyên nhân gốc rễ | Giải pháp kỹ thuật đã xử lý | Kết quả |
+| :---: | :--- | :--- | :--- | :--- :---: |
+| 1 | Lỗi 404 Whitelabel khi bấm nút "Đăng xuất" trên giao diện Web | Spring Security bật CSRF bắt buộc `/admin/logout` phải gửi POST, trong khi menu HTML gửi GET | Cập nhật `WebSecurityConfig.java` dùng `logoutRequestMatcher(new AntPathRequestMatcher("/admin/logout"))` hỗ trợ cả 2 method | ✅ Triệt để |
+| 2 | Container `shoeshop-api` bị Crash Loop lặp lại khi mở Docker Desktop | Đặt `restart: always` và app boot trước khi MySQL sẵn sàng | Đổi thành `restart: unless-stopped`, thêm timeout JDBC và nạp tự động `seed_data.sql` | ✅ Ổn định |
+| 3 | Postman Runner báo 3 kịch bản FAILED liên quan đến sản phẩm `P5593` | CSDL chưa nạp dữ liệu mẫu khiến sản phẩm không tồn tại | Viết script tự động nạp `seed_data.sql` ngay khi bật container MySQL | ✅ 100% Pass |
 
-- **Thiết lập nền tảng Automation Test UI:** Áp dụng mô hình **Page Object Model (POM)** bằng Selenium WebDriver cho các phân hệ cốt lõi (Authentication & Checkout) (`TEST-22`, `TEST-23`).
-- **Kiểm thử chéo đa trình duyệt (Cross-browser Testing):** Viết script Python tự động kiểm thử UI trên 5 profile trình duyệt khác nhau (Chrome, Firefox, Edge, Brave, Chromium) (`TEST-25`).
-- **Integration Testing & Testcontainers:** Kiểm chứng độ toàn vẹn giao dịch (Transaction Rollback) với CSDL thật độc lập (`TEST-24`).
-- **Kiểm thử Hồi quy (Regression/Retest):** Xây dựng quy trình tự động xác thực trạng thái vòng đời Bug để đảm bảo không tái phát các lỗi đã đóng (`TEST-26`).
-- **Đóng gói API Automation:** Viết script Wrapper chạy Postman Collection bằng Newman CLI và tự động xuất HTML Report (`TEST-27`).
+---
+
+## 🚀 6. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 4)
+Sprint 4 sẽ tập trung vào **Kiểm thử tự động giao diện (UI Automation)** và **Kiểm thử tích hợp chuyên sâu (Integration Testing)**:
+- **Lĩnh:** Áp dụng mô hình **Page Object Model (POM)** với Selenium WebDriver cho luồng Authentication (`TEST-22`) và Checkout (`TEST-23`).
+- **Phương:** Xây dựng khung kiểm thử Integration Test với Docker Testcontainers và kiểm chứng Transaction Rollback (`TEST-24`).
+- **Thịnh:** Kiểm thử chéo đa trình duyệt (Cross-browser) bằng Python Selenium (`TEST-25`) và tự động hóa kiểm thử hồi quy Bug (`TEST-26`).
+- **Được (Leader):** Đóng gói bộ test API chạy qua Newman CLI và xuất báo cáo HTML (`TEST-27`).
