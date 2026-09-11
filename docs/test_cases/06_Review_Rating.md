@@ -17,28 +17,35 @@
 
 ## 2. Phân tích Kỹ thuật Thiết kế (Test Design Analysis)
 
-### 2.1 Bảng Phân hoạch lớp tương đương (EP)
+### 2.1 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
 
-| STT | Trường hợp của điều kiện đầu vào | Lớp tương đương Hợp lệ | Lớp tương đương Không hợp lệ |
-| :---: | :--- | :--- | :--- |
-| 1 | Quyền Đăng nhập (Role) | Tài khoản Khách mua hàng (ROLE_USER) | Khách vãng lai (Guest), Quản trị viên (ROLE_ADMIN) |
-| 2 | Trạng thái Sản phẩm | Sản phẩm đang bán (ACTIVE) | Không tồn tại, Bị ẩn (INACTIVE), Bản nháp (DRAFT) |
-| 3 | Quyền Chủ sở hữu (Ownership) | User A sửa/xóa bài đánh giá của chính User A | User B đi sửa/xóa bài của User A |
-| 4 | Nội dung đánh giá | Chuỗi văn bản từ 1 - 2000 ký tự | Rỗng, Null, Toàn khoảng trắng, hoặc > 2000 ký tự |
-| 5 | Tự động tính toán (Cache) | Cập nhật chính xác Tổng lượt Review và Trung bình Rating | Bị lệch dữ liệu khi có người Xóa/Sửa review |
+| STT | Điều kiện đầu vào (Input / Condition) | Lớp tương đương Hợp lệ (Valid EP) | Lớp tương đương Không hợp lệ (Invalid EP) | Test Case tương ứng |
+| :---: | :--- | :--- | :--- | :---: |
+| 1 | **Vai trò & Quyền người dùng (User Role)** | Khách mua hàng đã đăng nhập (`ROLE_USER`) | - Khách vãng lai chưa đăng nhập (Báo lỗi 401 Unauthorized)<br>- Quản trị viên `ROLE_ADMIN` (Báo lỗi 403 Forbidden, cấm seeding ảo) | **TC_REV_006**<br>**TC_REV_007** |
+| 2 | **Trạng thái Sản phẩm được đánh giá** | Sản phẩm đang mở bán (`ACTIVE`) | Sản phẩm không tồn tại, bị ẩn (`INACTIVE`), hoặc bản nháp (`DRAFT`) | **TC_REV_008** |
+| 3 | **Quyền Sở hữu bài đánh giá (Ownership)** | Người dùng chỉnh sửa hoặc xóa bài đánh giá do chính mình tạo ra (`owner = currentUser`) | Người dùng A can thiệp sửa/xóa bài đánh giá của Người dùng B (Báo lỗi 403 / từ chối cập nhật) | **TC_REV_009** |
+| 4 | **Số sao đánh giá (Rating Value EP)** | Số nguyên nằm trong khoảng hợp lệ $[1, 5]$ sao | Số sao $\le 0$ hoặc $\ge 6$ sao | **TC_REV_001**<br>**TC_REV_002**<br>**TC_REV_004**<br>**TC_REV_005** |
+| 5 | **Độ dài nội dung bình luận (Comment Length)** | Chuỗi văn bản hợp lệ từ 1 đến 2000 ký tự | Nội dung rỗng, null, chỉ toàn khoảng trắng hoặc vượt quá 2000 ký tự | **TC_REV_003** |
+| 6 | **Thời gian chỉnh sửa đánh giá (Time Window)** | Thao tác chỉnh sửa diễn ra trong vòng 5 phút kể từ lúc tạo bài ($\le 300,000$ ms) | Thao tác chỉnh sửa khi bài viết đã tạo quá 5 phút ($> 300,000$ ms) | **TC_REV_010** |
+| 7 | **Đồng bộ bộ nhớ đệm điểm số (Rating Cache Sync)** | Khi Thêm mới, Chỉnh sửa hoặc Xóa bài đánh giá, hệ thống tự động tính lại số sao trung bình và tổng lượt review của sản phẩm | Bị sai lệch hoặc không làm mới điểm đánh giá trung bình sau khi bài viết bị xóa | **TC_REV_001**<br>**TC_REV_002**<br>**TC_REV_011** |
 
-### 2.2 Bảng Phân tích giá trị biên (BVA)
-**Ràng buộc 1 (Số sao):** $1 \le \text{Rating} \le 5$ (Kiểu số nguyên nguyên dương).
-**Ràng buộc 2 (Thời gian):** Chỉ cho phép sửa đánh giá trong vòng $\le 5$ phút ($\le 300,000$ milliseconds) tính từ lúc tạo.
+### 2.2 Bảng Phân tích giá trị biên (Boundary Value Analysis - BVA)
 
-| Case | Biến số | Giá trị | Phân loại BVA | Kết quả dự kiến (Expected Output) |
-| :---: | :--- | :---: | :---: | :--- |
-| 1 | Số sao | 0 | min - 1 (Invalid) | Báo lỗi 400 (Số sao phải $\ge 1$) |
-| 2 | Số sao | 1 | min (Valid) | Thành công (Lưu đánh giá 1 sao) |
-| 3 | Số sao | 5 | max (Valid) | Thành công (Lưu đánh giá 5 sao) |
-| 4 | Số sao | 6 | max + 1 (Invalid) | Báo lỗi 400 (Số sao phải $\le 5$) |
-| 5 | Tuổi của bài Review | 299,000 ms | max - 1 (Valid) | Cho phép Cập nhật bài đánh giá (Vẫn trong 5 phút) |
-| 6 | Tuổi của bài Review | 301,000 ms | max + 1 (Invalid) | Báo lỗi chặn sửa (Đã quá 5 phút) |
+| STT | Biến kiểm thử / Ràng buộc logic | Điểm biên BVA | Giá trị kiểm thử | Phân loại BVA | Kết quả dự kiến (Expected Output) | Test Case |
+| :---: | :--- | :---: | :---: | :---: | :--- | :---: |
+| 1 | **Số sao đánh giá (`ratingValue`)**<br>*Ràng buộc: $1 \le ratingValue \le 5$ (Số nguyên)* | min - 1 | 0 sao | Invalid (Dưới biên) | Báo lỗi 400 Bad Request (Số sao phải từ 1 đến 5) | **TC_REV_004** |
+| 2 | **Số sao đánh giá (`ratingValue`)** | min | 1 sao | Valid (Biên dưới) | Lưu đánh giá 1 sao thành công, tính lại điểm trung bình | **TC_REV_002** |
+| 3 | **Số sao đánh giá (`ratingValue`)** | min + 1 | 2 sao | Valid | Lưu đánh giá 2 sao thành công | **TC_REV_002** |
+| 4 | **Số sao đánh giá (`ratingValue`)** | max - 1 | 4 sao | Valid | Lưu đánh giá 4 sao thành công | **TC_REV_001** |
+| 5 | **Số sao đánh giá (`ratingValue`)** | max | 5 sao | Valid (Biên trên) | Lưu đánh giá 5 sao thành công, tính lại điểm trung bình | **TC_REV_001** |
+| 6 | **Số sao đánh giá (`ratingValue`)** | max + 1 | 6 sao | Invalid (Vượt biên) | Báo lỗi 400 Bad Request (Số sao phải từ 1 đến 5) | **TC_REV_005** |
+| 7 | **Thời gian cho phép sửa bài (`timeWindow`)**<br>*Ràng buộc: Thời gian từ lúc tạo $\le 5$ phút ($300,000$ ms)* | max - 1 | 299,000 ms (4p 59s) | Valid | Hợp lệ, cho phép cập nhật nội dung đánh giá | **TC_REV_010** |
+| 8 | **Thời gian cho phép sửa bài (`timeWindow`)** | max | 300,000 ms (Đúng 5 phút) | Valid (Biên trên) | Hợp lệ, cho phép cập nhật nội dung đánh giá | **TC_REV_010** |
+| 9 | **Thời gian cho phép sửa bài (`timeWindow`)** | max + 1 | 301,000 ms (5p 01s) | Invalid (Quá hạn) | Hệ thống khóa quyền chỉnh sửa, báo lỗi quá 5 phút | **TC_REV_010** |
+| 10 | **Độ dài nội dung bình luận (`comment`)**<br>*Ràng buộc: $1 \le \text{length}(comment) \le 2000$ ký tự* | min - 1 | 0 ký tự (`""` rỗng / khoảng trắng) | Invalid (Dưới biên) | Báo lỗi 400 Bad Request (Nội dung không được rỗng) | **TC_REV_003** |
+| 11 | **Độ dài nội dung bình luận (`comment`)** | min | 1 ký tự | Valid (Biên dưới) | Lưu bình luận ngắn 1 ký tự thành công | **TC_REV_003** |
+| 12 | **Độ dài nội dung bình luận (`comment`)** | max | 2000 ký tự | Valid (Biên trên) | Lưu bình luận tối đa 2000 ký tự thành công | **TC_REV_003** |
+| 13 | **Độ dài nội dung bình luận (`comment`)** | max + 1 | 2001 ký tự | Invalid (Vượt biên) | Báo lỗi 400 Bad Request (Bình luận vượt quá 2000 ký tự) | **TC_REV_003** |
 
 ### 2.3 Bảng Quyết định tổng hợp (Collapsed Decision Table)
 
@@ -55,7 +62,7 @@
 | **A4: Báo lỗi Cấm sửa của người khác** | - | - | - | X | - | - | - |
 | **A5: Báo lỗi Quá 5 phút cấm sửa** | - | - | - | - | X | - | - |
 | **A6: Thành công (Tạo/Sửa/Xóa + Tính lại điểm)**| - | - | - | - | - | X | X |
-| **Test Case Tương ứng** | TC_006, 007 | TC_008 | TC_003, 004, 005 | TC_009 | TC_010 | TC_011 | TC_001, 002 |
+| **Test Case Tương ứng** | TC_REV_006, 007 | TC_REV_008 | TC_REV_003, 004, 005 | TC_REV_009 | TC_REV_010 | TC_REV_011 | TC_REV_001, 002 |
 
 ---
 

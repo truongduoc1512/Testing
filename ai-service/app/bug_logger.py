@@ -158,8 +158,11 @@ class BugLogger:
     ) -> BugReport:
         """Tự động ghi nhận một Exception và đóng gói thành BugReport."""
         stack_trace = traceback.format_exc()
-        actual_result = f"Xảy ra ngoại lệ ({type(exception).__name__}): {str(exception)}\nStacktrace:\n{stack_trace}"
-        
+        actual_result = (
+            f"Xảy ra ngoại lệ ({type(exception).__name__}): {str(exception)}\n"
+            f"Stacktrace:\n{stack_trace}"
+        )
+
         bug_report = BugReport(
             summary=summary,
             description=f"Hệ thống phát hiện lỗi runtime trong quá trình xử lý: {str(exception)}",

@@ -25,16 +25,30 @@
 | **RETURN_PENDING**| Từ chối trả (Reject)| Admin | **COMPLETED** | (Không đổi) | Hợp lệ |
 | **SHIPPING** | Hủy đơn / Xin trả | Khách hàng | *(Giữ nguyên)* | (Không đổi) | Báo lỗi 400 |
 
-### 2.2 Bảng Phân hoạch lớp tương đương (EP)
-1. **Phân quyền Role:** Guest (401), Khách hàng ROLE_USER (Chỉ được Hủy/Xin trả), Quản trị viên ROLE_ADMIN (Chỉ được Duyệt/Từ chối).
-2. **Quyền sở hữu (Ownership):** Khách hàng chỉ thao tác trên đơn của mình. Admin chỉ thao tác trên đơn được phân quyền quản lý (Scope).
-3. **Chống trùng lặp (Duplicate):** Khi đơn đã ở `RETURN_PENDING`, cấm tạo thêm request trả hàng thứ 2.
+### 2.2 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
 
-### 2.3 Bảng Giá trị biên (BVA)
-Ràng buộc nguy hiểm: Khi khách Hủy đơn, hệ thống sẽ Trừ lượt Sales của Sản phẩm đó đi tương ứng. 
-=> **Câu hỏi:** Nếu Sales hiện tại đang là `0`, mà khách Hủy đơn thì thuật toán có bị lỗi thành `-1` (Âm) không?
-- **Biên test:** 0, 1, 2, 3. Kết quả mong đợi: Số Sales không bao giờ được phép rớt xuống dưới 0.
-- **Giới hạn văn bản:** Lý do (tối đa 2000 ký tự), Hình ảnh (tối đa 500 ký tự).
+| STT | Điều kiện đầu vào (Input / Condition) | Lớp tương đương Hợp lệ (Valid EP) | Lớp tương đương Không hợp lệ (Invalid EP) | Test Case liên quan |
+| :---: | :--- | :--- | :--- | :---: |
+| 1 | **Vai trò người dùng (User Role)** | - Khách hàng `ROLE_USER` (Thực hiện Hủy đơn / Tạo yêu cầu Trả hàng)<br>- Quản trị viên `ROLE_ADMIN` (Thực hiện Duyệt / Từ chối đơn trả hàng) | - Khách vãng lai chưa đăng nhập (Báo lỗi 401 Unauthorized)<br>- Khách hàng `ROLE_USER` cố tình gọi API duyệt của Admin (Báo lỗi 403 Forbidden) | TC_CAN_004<br>TC_CAN_010 |
+| 2 | **Quyền sở hữu đơn hàng (Order Ownership)** | Khách hàng thực hiện thao tác trên đơn hàng do chính mình sở hữu (`customer = currentUser`) | Khách hàng A thao tác trên mã đơn hàng của Khách hàng B (Báo lỗi 403 Forbidden) | TC_CAN_004 |
+| 3 | **Trạng thái đơn hàng khi Hủy (Cancel Order State)** | Đơn hàng đang ở trạng thái Chờ xử lý (`PENDING`) | Đơn hàng đang giao (`SHIPPING`), Đã nhận (`COMPLETED`), Đã hủy (`CANCELLED`), hoặc Đã trả (`RETURNED`) | TC_CAN_001<br>TC_CAN_003 |
+| 4 | **Trạng thái đơn hàng khi Trả hàng (Return Order State)** | Đơn hàng đã hoàn tất giao dịch (`COMPLETED`) | Đơn hàng đang chờ (`PENDING`), Đang giao (`SHIPPING`), hoặc Đã hủy (`CANCELLED`) | TC_CAN_005<br>TC_CAN_003 |
+| 5 | **Tính duy nhất của yêu cầu (Request Duplicate)** | Đơn hàng chưa có yêu cầu trả hàng nào đang chờ xử lý (`hasPendingReturn = false`) | Đơn hàng đã tồn tại yêu cầu trả hàng đang ở trạng thái chờ duyệt (`RETURN_PENDING`) | TC_CAN_006 |
+| 6 | **Tính toàn vẹn dữ liệu Form Trả hàng (Return Form Data)** | Form điền đầy đủ lý do hợp lệ (1 - 2000 ký tự) và URL hình ảnh minh chứng ($\le 500$ ký tự) | - Lý do bị bỏ trống, null, hoặc chỉ toàn khoảng trắng<br>- URL hình ảnh vượt quá 500 ký tự | TC_CAN_007 |
+
+### 2.3 Bảng Phân tích giá trị biên (Boundary Value Analysis - BVA)
+
+| STT | Biến kiểm thử / Ràng buộc logic | Điểm biên BVA | Giá trị kiểm thử | Phân loại BVA | Kết quả dự kiến (Expected Output) | Test Case |
+| :---: | :--- | :---: | :---: | :---: | :--- | :---: |
+| 1 | **Lượt bán khi Hủy đơn (`salesCount`)**<br>*Ràng buộc: Thuật toán không bao giờ để số lượt bán rớt xuống âm: $Sales = \max(0, Sales - quantity)$* | min - 1 *(Chống lỗi âm)* | 0 lượt (Hủy đơn 1 sp) | Invalid Boundary | Tồn kho phục hồi đầy đủ, lượt bán bị chặn đứng tại `0` (không tụt xuống `-1`) | TC_CAN_002 |
+| 2 | **Lượt bán khi Hủy đơn (`salesCount`)** | min | 1 lượt (Hủy đơn 1 sp) | Valid (Biên dưới) | Lượt bán giảm từ 1 về `0` thành công | TC_CAN_002 |
+| 3 | **Lượt bán khi Hủy đơn (`salesCount`)** | min + 1 | 2 lượt (Hủy đơn 1 sp) | Valid | Lượt bán giảm từ 2 về `1` thành công | TC_CAN_002 |
+| 4 | **Độ dài lý do trả hàng (`reason`)**<br>*Ràng buộc: $1 \le \text{length}(reason) \le 2000$ ký tự* | min - 1 | 0 ký tự (`""` rỗng) | Invalid (Dưới biên) | Báo lỗi 400 Bad Request (Validation Error) | TC_CAN_007 |
+| 5 | **Độ dài lý do trả hàng (`reason`)** | min | 1 ký tự | Valid (Biên dưới) | Hợp lệ, chấp nhận lý do | TC_CAN_007 |
+| 6 | **Độ dài lý do trả hàng (`reason`)** | max | 2000 ký tự | Valid (Biên trên) | Hợp lệ, chấp nhận lý do | TC_CAN_007 |
+| 7 | **Độ dài lý do trả hàng (`reason`)** | max + 1 | 2001 ký tự | Invalid (Vượt biên) | Báo lỗi 400 Bad Request (Lý do quá dài) | TC_CAN_007 |
+| 8 | **Độ dài liên kết hình ảnh (`imageUrl`)**<br>*Ràng buộc: $\text{length}(imageUrl) \le 500$ ký tự* | max | 500 ký tự | Valid (Biên trên) | Hợp lệ, lưu trữ URL ảnh minh chứng | TC_CAN_007 |
+| 9 | **Độ dài liên kết hình ảnh (`imageUrl`)** | max + 1 | 501 ký tự | Invalid (Vượt biên) | Báo lỗi 400 Bad Request (Đường dẫn ảnh quá dài) | TC_CAN_007 |
 
 ---
 

@@ -38,9 +38,15 @@ shoeshop-key-v2*
 .claude
 RULE_REFERENCE.md
 
-# Python cache
+# Python cache & temporary scratchpad
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
+.pytest_cache/
+scratch/
+
+# Testing tools & load test results
+tools/
+*.jtl
+*.log
