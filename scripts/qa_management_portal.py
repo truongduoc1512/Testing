@@ -50,2038 +50,6027 @@ def read_file_content(relative_path, default=""):
 CURATED_TC_TEST_DATA = {
     # ==================== PHÂN HỆ 1: AUTHENTICATION ====================
     "TC_AUTH_001": {
-        "input": {"userName": "employee1", "password": "123"},
-        "entityDB": {"role": "USER", "active": True},
-        "testMethods": [
-            "AuthenticationUiTest.TC01_customerLoginWithValidCredentials()",
-            "UserDetailsServiceImplTest.loadUserByUsername_addsRolePrefixForLegacyRoleValue()"
+        "specTestCase": "TC_AUTH_001 (Đăng nhập tài khoản Customer hợp lệ & Ánh xạ Quyền)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra đăng nhập thành công tài khoản khách hàng thông thường (Customer), chuẩn hóa tiền tố quyền ROLE_USER và cập nhật thời điểm hoạt động",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "UserDetailsServiceImplTest.loadUserByUsername_addsRolePrefixForLegacyRoleValue",
+                "testScope": "Spring Security Service Unit Test (Role Normalization)",
+                "inputData": {'username': 'employee1', 'storedRoleInDb': 'USER', 'active': True},
+                "expectedOutcome": "Spring Security tự động thêm tiền tố ROLE_, phân giải thành GrantedAuthority('ROLE_USER') hợp lệ"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "AccountDAOTest.saveAccount_refreshesUpdatedAtAndDelegatesPersistence",
+                "testScope": "DAO Layer Unit Test (Account State & Timestamp Persistence)",
+                "inputData": {'username': 'employee1', 'account': 'Account entity with active=true'},
+                "expectedOutcome": "Hệ thống làm mới trường updatedAt sang thời điểm hiện tại và ủy quyền cho Hibernate session lưu trữ thành công"
+            }
         ]
     },
     "TC_AUTH_002": {
-        "input": {"userName": "manager1", "password": "123"},
-        "entityDB": {"role": "ROLE_ADMIN", "active": True},
-        "testMethods": [
-            "AuthenticationUiTest.TC02_adminLoginWithValidCredentials()",
-            "UserDetailsServiceImplTest.loadUserByUsername_preservesAlreadyPrefixedRoleValue()"
+        "specTestCase": "TC_AUTH_002 (Đăng nhập tài khoản Admin hợp lệ & Phân quyền Quản trị)",
+        "totalTestRuns": 3,
+        "summary": "Kiểm tra đăng nhập thành công tài khoản Quản trị viên (Admin), bảo toàn tiền tố ROLE_ADMIN và truy vấn dữ liệu vận hành quản trị",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "UserDetailsServiceImplTest.loadUserByUsername_preservesAlreadyPrefixedRoleValue",
+                "testScope": "Spring Security Service Unit Test (Admin Role Preservation)",
+                "inputData": {'username': 'manager1', 'storedRoleInDb': 'ROLE_ADMIN', 'active': True},
+                "expectedOutcome": "Bảo toàn nguyên vẹn vai trò 'ROLE_ADMIN' đã có tiền tố chuẩn, phân giải thành GrantedAuthority('ROLE_ADMIN')"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "AccountDAOTest.countActiveAdmins_returnsTypedAggregate",
+                "testScope": "DAO Layer Unit Test (Active Admin Aggregate Query)",
+                "inputData": {'query': "SELECT COUNT(a) FROM Account a WHERE a.userRole = 'ROLE_ADMIN' AND a.active = true"},
+                "expectedOutcome": "Trả về đúng số lượng tài khoản quản trị viên đang hoạt động (Long typed aggregate)"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "AccountDAOTest.listAccounts_buildsPaginationFromDescendingCreatedDateQuery",
+                "testScope": "DAO Layer Unit Test (Admin User List Pagination Query)",
+                "inputData": {'page': 1, 'maxResult': 10, 'orderBy': 'createdDate DESC'},
+                "expectedOutcome": "Xây dựng PaginationResult chuẩn với câu truy vấn sắp xếp ngày tạo giảm dần cho trang Admin"
+            }
         ]
     },
     "TC_AUTH_003": {
-        "testInvocations": [
-            {"case": 1, "userName": "employee1", "password": "WrongPass123", "expectedError": "Invalid credentials"},
-            {"case": 2, "userName": "", "password": "123", "expectedError": "Empty username"},
-            {"case": 3, "userName": "invalid_user_123", "password": "", "expectedError": "Empty password"}
-        ],
-        "testMethods": [
-            "AuthenticationUiTest.TC03_invalidLoginShouldDisplayError()",
-            "AuthenticationUiTest.TC04_loginWithEmptyUsername()",
-            "AuthenticationUiTest.TC05_loginWithEmptyPassword()"
+        "specTestCase": "TC_AUTH_003 (Đăng nhập thất bại do sai mật khẩu & Bảo mật Reset Token)",
+        "totalTestRuns": 17,
+        "summary": "Kiểm tra cơ chế từ chối khi sai thông tin đăng nhập, bảo vệ token đặt lại mật khẩu và cập nhật mật khẩu nguyên tử (Atomic Update)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "AccountDAOTest.savePasswordResetToken_rejectsIncompleteInput [1]",
+                "testScope": "DAO Unit Test (Null Account Guard)",
+                "inputData": {'account': None, 'rawToken': 'validToken123', 'expiry': 'Valid Date'},
+                "expectedOutcome": "Ném IllegalArgumentException('Account must not be null'), từ chối lưu token"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "AccountDAOTest.savePasswordResetToken_rejectsIncompleteInput [2]",
+                "testScope": "DAO Unit Test (Null Token Guard)",
+                "inputData": {'account': 'Valid Account', 'rawToken': None, 'expiry': 'Valid Date'},
+                "expectedOutcome": "Ném IllegalArgumentException('Token must not be blank'), từ chối lưu token"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "AccountDAOTest.savePasswordResetToken_rejectsIncompleteInput [3]",
+                "testScope": "DAO Unit Test (Empty Token Guard)",
+                "inputData": {'account': 'Valid Account', 'rawToken': '', 'expiry': 'Valid Date'},
+                "expectedOutcome": "Ném IllegalArgumentException('Token must not be blank'), từ chối lưu token"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "AccountDAOTest.savePasswordResetToken_rejectsIncompleteInput [4]",
+                "testScope": "DAO Unit Test (Null Expiry Guard)",
+                "inputData": {'account': 'Valid Account', 'rawToken': 'validToken123', 'expiry': None},
+                "expectedOutcome": "Ném IllegalArgumentException('Expiry must not be null'), từ chối lưu token"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "AccountDAOTest.savePasswordResetToken_storesHashAndExpiry",
+                "testScope": "DAO Unit Test (SHA-256 Token Hashing & Expiry Storage)",
+                "inputData": {'account': 'Valid Account', 'rawToken': '  plainToken123  ', 'expiry': 'Future Date'},
+                "expectedOutcome": "Băm SHA-256 token sau khi trim khoảng trắng, lưu hash vào account.passwordResetToken và gắn hạn dùng"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "AccountDAOTest.findAccountByResetToken_rejectsMissingToken [1]",
+                "testScope": "DAO Unit Test (Missing Token Guard: null)",
+                "inputData": {'rawToken': None},
+                "expectedOutcome": "Token truyền vào là null -> Trả về null mà không thực thi query CSDL"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "AccountDAOTest.findAccountByResetToken_rejectsMissingToken [2]",
+                "testScope": "DAO Unit Test (Missing Token Guard: empty '')",
+                "inputData": {'rawToken': ''},
+                "expectedOutcome": "Token truyền vào là chuỗi rỗng '' -> Trả về null không query DB"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "AccountDAOTest.findAccountByResetToken_rejectsMissingToken [3]",
+                "testScope": "DAO Unit Test (Missing Token Guard: blank '   ')",
+                "inputData": {'rawToken': '   '},
+                "expectedOutcome": "Token toàn khoảng trắng -> Trả về null không query DB"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "AccountDAOTest.findAccountByResetToken_hashesTrimmedTokenAndUsesCurrentTime",
+                "testScope": "DAO Unit Test (Token Lookup With Hashing & Time Validity)",
+                "inputData": {'rawToken': '  validToken  ', 'queryCondition': 'token = :hash AND expiry > :now'},
+                "expectedOutcome": "Trim khoảng trắng, băm SHA-256 và so khớp thời điểm hiện tại để lấy đúng tài khoản hợp lệ"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsTrueAndSetsAtomicUpdateParameters",
+                "testScope": "DAO Unit Test (Atomic Password Reset Execution)",
+                "inputData": {'rawToken': 'validToken', 'newEncryptedPassword': 'newHashedPassword123'},
+                "expectedOutcome": "Thực thi UPDATE nguyên tử, cập nhật encrytedPassword mới, xóa resetToken về null và trả về true"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseForInvalidInput [1]",
+                "testScope": "DAO Unit Test (Invalid Reset Input: token is null)",
+                "inputData": {'rawToken': None, 'newEncryptedPassword': 'validPassword'},
+                "expectedOutcome": "Token null -> Trả về false không thực hiện UPDATE"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseForInvalidInput [2]",
+                "testScope": "DAO Unit Test (Invalid Reset Input: token is empty '')",
+                "inputData": {'rawToken': '', 'newEncryptedPassword': 'validPassword'},
+                "expectedOutcome": "Token rỗng -> Trả về false không thực hiện UPDATE"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseForInvalidInput [3]",
+                "testScope": "DAO Unit Test (Invalid Reset Input: token is blank '   ')",
+                "inputData": {'rawToken': '   ', 'newEncryptedPassword': 'validPassword'},
+                "expectedOutcome": "Token khoảng trắng -> Trả về false không thực hiện UPDATE"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseForInvalidInput [4]",
+                "testScope": "DAO Unit Test (Invalid Reset Input: password is null)",
+                "inputData": {'rawToken': 'validToken', 'newEncryptedPassword': None},
+                "expectedOutcome": "Mật khẩu mới null -> Trả về false không thực hiện UPDATE"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseForInvalidInput [5]",
+                "testScope": "DAO Unit Test (Invalid Reset Input: password is empty '')",
+                "inputData": {'rawToken': 'validToken', 'newEncryptedPassword': ''},
+                "expectedOutcome": "Mật khẩu mới rỗng -> Trả về false không thực hiện UPDATE"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseUnlessExactlyOneTokenIsConsumed [1]",
+                "testScope": "DAO Unit Test (Concurrency Guard: 0 rows updated)",
+                "inputData": {'updatedRows': 0, 'cause': 'Token đã bị sử dụng hoặc hết hạn'},
+                "expectedOutcome": "Không có dòng nào khớp cập nhật -> Trả về false báo đặt lại mật khẩu thất bại"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "AccountDAOTest.resetPassword_returnsFalseUnlessExactlyOneTokenIsConsumed [2]",
+                "testScope": "DAO Unit Test (Concurrency Guard: >1 rows updated)",
+                "inputData": {'updatedRows': 2, 'cause': 'Xung đột token trùng lặp bất thường'},
+                "expectedOutcome": "Nhiều hơn 1 dòng bị ảnh hưởng -> Kích hoạt rollback giao dịch và trả về false"
+            }
         ]
     },
     "TC_AUTH_004": {
-        "parameterizedMatrix": [
-            {"invocation": 1, "username": "nonexist_user", "password": "123456", "source": "Literal", "expectedException": "UsernameNotFoundException"},
-            {"invocation": 2, "username": None, "source": "@NullSource", "expectedException": "UsernameNotFoundException"},
-            {"invocation": 3, "username": "", "source": "@EmptySource", "expectedException": "UsernameNotFoundException"},
-            {"invocation": 4, "username": "   ", "source": "@ValueSource", "expectedException": "UsernameNotFoundException"}
-        ],
-        "testMethods": [
-            "UserDetailsServiceImplTest.loadUserByUsername_throwsForUnknownAccount()",
-            "AccountDAOTest.findAccount_delegatesMissingUsernameWithoutGuard_characterization()"
+        "specTestCase": "TC_AUTH_004 (Chặn đăng nhập tài khoản chưa đăng ký / không tồn tại)",
+        "totalTestRuns": 5,
+        "summary": "Kiểm tra chặn đăng nhập với tài khoản không tồn tại trong CSDL, ném UsernameNotFoundException và xử lý an toàn username rỗng/null",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "UserDetailsServiceImplTest.loadUserByUsername_throwsForUnknownAccount",
+                "testScope": "Spring Security Service Unit Test (Unknown Username Exception)",
+                "inputData": {'username': 'nonexist_user', 'dbLookupResult': None},
+                "expectedOutcome": "Hệ thống ném UsernameNotFoundException('User nonexist_user was not found in the database')"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "AccountDAOTest.findAccount_preservesUsernameWithoutNormalization_characterization",
+                "testScope": "DAO Layer Unit Test (Username Literal Preservation)",
+                "inputData": {'username': '  untrimmed_user  '},
+                "expectedOutcome": "Bảo lưu nguyên trạng chuỗi username khi tra cứu CSDL mà không tự ý trim"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "AccountDAOTest.findAccount_delegatesMissingUsernameWithoutGuard_characterization [1]",
+                "testScope": "DAO Layer Unit Test (Missing Username Delegation: null)",
+                "inputData": {'username': None},
+                "expectedOutcome": "Ủy quyền cho session.get(Account.class, null) trả về null an toàn"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "AccountDAOTest.findAccount_delegatesMissingUsernameWithoutGuard_characterization [2]",
+                "testScope": "DAO Layer Unit Test (Missing Username Delegation: empty '')",
+                "inputData": {'username': ''},
+                "expectedOutcome": "Ủy quyền cho session.get(Account.class, '') trả về null an toàn"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "AccountDAOTest.findAccount_delegatesMissingUsernameWithoutGuard_characterization [3]",
+                "testScope": "DAO Layer Unit Test (Missing Username Delegation: blank '   ')",
+                "inputData": {'username': '   '},
+                "expectedOutcome": "Ủy quyền cho session.get(Account.class, '   ') trả về null an toàn"
+            }
         ]
     },
     "TC_AUTH_005": {
-        "securityMatrix": [
-            {"invocation": 1, "username": "locked_user", "password": "123", "active": False, "expected": "DisabledException"},
-            {"invocation": 2, "oauth2Profile": {"email": None, "name": "Google User"}, "skipPersist": True},
-            {"invocation": 3, "oauth2Profile": {"email": "   ", "name": None}, "skipPersist": True},
-            {"invocation": 4, "oauth2Profile": {"email": "user@test.com"}, "missingKey": "name", "skipPersist": True},
-            {"invocation": "5-10", "daoLookup": ["findAccountByEmail", "findAccountByResetToken"], "inputs": [None, "", "   "]}
-        ],
-        "testMethods": [
-            "CustomOAuth2UserServiceTest.loadUser_skipsPersistenceWhenEmailIsMissing()",
-            "AccountDAOTest.findAccountByEmail_boundaryTests()",
-            "AccountDAOTest.findAccountByResetToken_boundaryTests()"
+        "specTestCase": "TC_AUTH_005 (Chặn tài khoản bị khóa & Xác thực mạng xã hội Google OAuth2)",
+        "totalTestRuns": 11,
+        "summary": "Kiểm tra chặn tài khoản bị vô hiệu hóa/thiếu thông tin và luồng xác thực đăng nhập mạng xã hội Google OAuth2 linh hoạt",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_skipsPersistenceWhenEmailIsMissing [1]",
+                "testScope": "OAuth2 Service Unit Test (Missing Email: null)",
+                "inputData": {'provider': 'google', 'attributes': {'email': None, 'name': 'Google User'}},
+                "expectedOutcome": "Thiếu email null từ Google -> Bỏ qua lưu CSDL, ném ngoại lệ hoặc trả về user tạm thời"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_skipsPersistenceWhenEmailIsMissing [2]",
+                "testScope": "OAuth2 Service Unit Test (Missing Email: empty '')",
+                "inputData": {'provider': 'google', 'attributes': {'email': '', 'name': 'Google User'}},
+                "expectedOutcome": "Email rỗng '' từ Google -> Bỏ qua lưu tài khoản vào CSDL"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_skipsPersistenceWhenEmailIsMissing [3]",
+                "testScope": "OAuth2 Service Unit Test (Missing Email: blank '   ')",
+                "inputData": {'provider': 'google', 'attributes': {'email': '   ', 'name': 'Google User'}},
+                "expectedOutcome": "Email khoảng trắng từ Google -> Bỏ qua lưu tài khoản vào CSDL"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_updatesExistingAccountWithLatestNonNullGoogleFields",
+                "testScope": "OAuth2 Service Unit Test (Existing Account Profile Sync)",
+                "inputData": {'email': 'existing@gmail.com', 'googleName': 'New Google Name'},
+                "expectedOutcome": "Cập nhật tài khoản Google sẵn có với thông tin họ tên mới nhất khác null"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_createsNewGoogleAccountUsingEmailPrefixAndTrimmedName",
+                "testScope": "OAuth2 Service Unit Test (New Google User Creation)",
+                "inputData": {'email': 'john.doe@gmail.com', 'name': '  John Doe  '},
+                "expectedOutcome": "Tạo mới tài khoản với username='john.doe', fullName='John Doe', provider='GOOGLE' và active=true"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_resolvesUsernameCollisionAndFallsBackToEmailPrefixForNullName",
+                "testScope": "OAuth2 Service Unit Test (Username Collision Resolution)",
+                "inputData": {'email': 'alex@gmail.com', 'name': None, 'existingUsernames': ['alex']},
+                "expectedOutcome": "Tự động giải quyết trùng username (alex1, alex2...) và dùng tiền tố email khi name bị null"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "CustomOAuth2UserServiceTest.loadUser_preservesOptionalExistingFieldsAndUsesUsernameWhenNameIsNull",
+                "testScope": "OAuth2 Service Unit Test (Preserve Existing Fields)",
+                "inputData": {'email': 'user@gmail.com', 'name': None, 'existingPhone': '0912345678'},
+                "expectedOutcome": "Bảo tồn nguyên vẹn số điện thoại và các trường có sẵn khi đồng bộ Google"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "AccountDAOTest.findAccountByEmail_rejectsMissingEmail [1]",
+                "testScope": "DAO Unit Test (Email Lookup Guard: null)",
+                "inputData": {'email': None},
+                "expectedOutcome": "Email null -> Trả về null mà không thực thi query CSDL"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "AccountDAOTest.findAccountByEmail_rejectsMissingEmail [2]",
+                "testScope": "DAO Unit Test (Email Lookup Guard: empty '')",
+                "inputData": {'email': ''},
+                "expectedOutcome": "Email rỗng '' -> Trả về null không query DB"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "AccountDAOTest.findAccountByEmail_rejectsMissingEmail [3]",
+                "testScope": "DAO Unit Test (Email Lookup Guard: blank '   ')",
+                "inputData": {'email': '   '},
+                "expectedOutcome": "Email khoảng trắng -> Trả về null không query DB"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "AccountDAOTest.findAccountByEmail_preservesNonBlankEmailWithoutNormalization_characterization",
+                "testScope": "DAO Unit Test (Email Literal Search)",
+                "inputData": {'email': '  user@example.com  '},
+                "expectedOutcome": "Bảo lưu nguyên trạng chuỗi email khi tra cứu tài khoản trong CSDL"
+            }
         ]
     },
     "TC_AUTH_006": {
-        "bvaMatrix": {
-            "passwordLength": {"validPoints": [8, 72], "invalidPoints": [7, 73], "errorKey": "Length.registerForm.password"},
-            "usernameLength": {"validMax": 50, "invalidMin": 51, "errorKey": "Length.registerForm.userName"},
-            "emailLength": {"validMax": 128, "invalidMin": 129, "errorKey": "Length.registerForm.email"},
-            "requiredFields": {"fields": ["userName", "email", "password", "confirmPassword"], "testValues": [None, "   "], "errorKey": "NotEmpty"},
-            "passwordMismatch": {"password": "Password123", "confirmPassword": "DifferentPassword123", "errorKey": "Match"}
-        },
-        "testMethods": [
-            "RegisterFormValidatorTest (10 methods, 17 invocations)",
-            "AuthenticationUiTest.TC06_customerRegistrationNavigation()"
+        "specTestCase": "TC_AUTH_006 (Mật khẩu dưới biên BVA & Toàn diện biểu mẫu đăng ký)",
+        "totalTestRuns": 24,
+        "summary": "Kiểm thử toàn diện Phân tích giá trị biên (BVA) độ dài mật khẩu [8, 72], username [1, 50], email [1, 128], kiểm tra trùng lặp và các trường bắt buộc",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "RegisterFormValidatorTest.validate_passwordOutsideBoundary_rejectsLengthAndSkipsDao [1]",
+                "testScope": "BVA Unit Test (Password Length Min - 1: 7 characters)",
+                "inputData": {'password': 'ppppppp', 'length': 7, 'pointType': 'Min - 1 (Invalid Boundary)'},
+                "expectedOutcome": "Mật khẩu 7 ký tự dưới biên tối thiểu 8 -> Báo lỗi Length.registerForm.password và bỏ qua tra cứu CSDL"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "RegisterFormValidatorTest.validate_passwordOutsideBoundary_rejectsLengthAndSkipsDao [2]",
+                "testScope": "BVA Unit Test (Password Length Max + 1: 73 characters)",
+                "inputData": {'password': 'ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp', 'length': 73, 'pointType': 'Max + 1 (Invalid Boundary)'},
+                "expectedOutcome": "Mật khẩu 73 ký tự vượt biên tối đa 72 -> Báo lỗi Length.registerForm.password và bỏ qua tra cứu CSDL"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "RegisterFormValidatorTest.validate_passwordAtBoundary_hasNoPasswordError [1]",
+                "testScope": "BVA Unit Test (Password Length Min: 8 characters)",
+                "inputData": {'password': 'pppppppp', 'length': 8, 'pointType': 'Min Exact Boundary (Valid)'},
+                "expectedOutcome": "Mật khẩu đúng 8 ký tự là giá trị biên hợp lệ, hasFieldErrors('password') == false"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "RegisterFormValidatorTest.validate_passwordAtBoundary_hasNoPasswordError [2]",
+                "testScope": "BVA Unit Test (Password Length Max: 72 characters)",
+                "inputData": {'password': 'pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp', 'length': 72, 'pointType': 'Max Exact Boundary (Valid)'},
+                "expectedOutcome": "Mật khẩu đúng 72 ký tự là giá trị biên hợp lệ, hasFieldErrors('password') == false"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "RegisterFormValidatorTest.validate_passwordMismatch_rejectsConfirmationAndSkipsDao",
+                "testScope": "Validator Unit Test (Password Confirmation Mismatch)",
+                "inputData": {'password': 'Password123', 'confirmPassword': 'DifferentPassword456'},
+                "expectedOutcome": "Mật khẩu xác nhận không khớp mật khẩu chính -> Báo lỗi Match.registerForm.confirmPassword"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "RegisterFormValidatorTest.validate_usernameAtMaximumLength_hasNoUsernameError",
+                "testScope": "BVA Unit Test (Username Length Max: 50 characters)",
+                "inputData": {'userName': 'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu', 'length': 50, 'pointType': 'Max Boundary (Valid)'},
+                "expectedOutcome": "Username đúng 50 ký tự hợp lệ, hasFieldErrors('userName') == false"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "RegisterFormValidatorTest.validate_usernameOverMaximumLength_rejectsLengthAndSkipsDao",
+                "testScope": "BVA Unit Test (Username Length Max + 1: 51 characters)",
+                "inputData": {'userName': 'uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu', 'length': 51, 'pointType': 'Max + 1 (Invalid Boundary)'},
+                "expectedOutcome": "Username 51 ký tự vượt biên -> Báo lỗi Length.registerForm.userName và bỏ qua gọi CSDL"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "RegisterFormValidatorTest.validate_duplicateUsername_rejectsUsername",
+                "testScope": "Validator Unit Test (Duplicate Username Check)",
+                "inputData": {'userName': 'existingUser', 'dbFound': True},
+                "expectedOutcome": "Username đã tồn tại trong CSDL -> Báo lỗi Duplicate.registerForm.userName"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "RegisterFormValidatorTest.validate_emailAtMaximumLength_hasNoEmailError",
+                "testScope": "BVA Unit Test (Email Length Max: 128 characters)",
+                "inputData": {'email': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com', 'length': 128, 'pointType': 'Max Boundary (Valid)'},
+                "expectedOutcome": "Email đúng 128 ký tự hợp lệ, hasFieldErrors('email') == false"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "RegisterFormValidatorTest.validate_emailOverMaximumLength_rejectsOnlyLengthAndSkipsDao",
+                "testScope": "BVA Unit Test (Email Length Max + 1: 129 characters)",
+                "inputData": {'email': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com', 'length': 129, 'pointType': 'Max + 1 (Invalid Boundary)'},
+                "expectedOutcome": "Email 129 ký tự vượt biên -> Báo lỗi Length.registerForm.email và bỏ qua gọi CSDL"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "RegisterFormValidatorTest.validate_invalidEmail_rejectsPatternAndSkipsDao",
+                "testScope": "Validator Unit Test (RFC Pattern Rejection)",
+                "inputData": {'email': 'invalid-email-without-at-sign'},
+                "expectedOutcome": "Email sai cấu trúc định dạng chuẩn -> Báo lỗi Pattern.registerForm.email"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "RegisterFormValidatorTest.validate_duplicateEmail_rejectsEmail",
+                "testScope": "Validator Unit Test (Duplicate Email Check)",
+                "inputData": {'email': 'existing@example.com', 'dbFound': True},
+                "expectedOutcome": "Email đã tồn tại trong CSDL -> Báo lỗi Duplicate.registerForm.email"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "RegisterFormValidatorTest.validate_duplicateUsernameAndEmail_rejectsBothFields",
+                "testScope": "Validator Unit Test (Both Username & Email Duplicated)",
+                "inputData": {'userName': 'existingUser', 'email': 'existing@example.com'},
+                "expectedOutcome": "Trùng đồng thời cả Username và Email -> Báo lỗi đồng thời trên cả 2 trường"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [1]",
+                "testScope": "Required Field BVA (userName is null)",
+                "inputData": {'field': 'userName', 'value': None},
+                "expectedOutcome": "Tên đăng nhập là null -> Báo lỗi NotEmpty.registerForm.userName và bỏ qua DAO"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [2]",
+                "testScope": "Required Field BVA (userName is blank '   ')",
+                "inputData": {'field': 'userName', 'value': '   '},
+                "expectedOutcome": "Tên đăng nhập khoảng trắng -> Báo lỗi NotEmpty.registerForm.userName"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [3]",
+                "testScope": "Required Field BVA (email is null)",
+                "inputData": {'field': 'email', 'value': None},
+                "expectedOutcome": "Email là null -> Báo lỗi NotEmpty.registerForm.email và bỏ qua DAO"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [4]",
+                "testScope": "Required Field BVA (email is blank '   ')",
+                "inputData": {'field': 'email', 'value': '   '},
+                "expectedOutcome": "Email khoảng trắng -> Báo lỗi NotEmpty.registerForm.email"
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [5]",
+                "testScope": "Required Field BVA (password is null)",
+                "inputData": {'field': 'password', 'value': None},
+                "expectedOutcome": "Mật khẩu là null -> Báo lỗi NotEmpty.registerForm.password và bỏ qua DAO"
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [6]",
+                "testScope": "Required Field BVA (password is blank '   ')",
+                "inputData": {'field': 'password', 'value': '   '},
+                "expectedOutcome": "Mật khẩu khoảng trắng -> Báo lỗi NotEmpty.registerForm.password"
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [7]",
+                "testScope": "Required Field BVA (confirmPassword is null)",
+                "inputData": {'field': 'confirmPassword', 'value': None},
+                "expectedOutcome": "Xác nhận mật khẩu là null -> Báo lỗi NotEmpty.registerForm.confirmPassword"
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": "RegisterFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCodeAndSkipsDao [8]",
+                "testScope": "Required Field BVA (confirmPassword is blank '   ')",
+                "inputData": {'field': 'confirmPassword', 'value': '   '},
+                "expectedOutcome": "Xác nhận mật khẩu khoảng trắng -> Báo lỗi NotEmpty.registerForm.confirmPassword"
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": "RegisterFormValidatorTest.validate_validRegistration_normalizesInputAndQueriesDao",
+                "testScope": "Validator Unit Test (Valid Registration Form)",
+                "inputData": {'userName': '  validuser  ', 'email': '  user@example.com  ', 'password': 'Password123', 'confirmPassword': 'Password123'},
+                "expectedOutcome": "Chuẩn hóa trim khoảng trắng, tra cứu CSDL đúng 1 lần và xác nhận form hợp lệ không có lỗi"
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": "RegisterFormValidatorTest.supports_registerForm_returnsTrue",
+                "testScope": "Validator Unit Test (Class Support: RegisterForm.class)",
+                "inputData": {'targetClass': 'RegisterForm.class'},
+                "expectedOutcome": "Validator xác nhận hỗ trợ đúng lớp RegisterForm.class, trả về true"
+            },
+            {
+                "runIndex": 24,
+                "targetMethod": "RegisterFormValidatorTest.supports_otherClass_returnsFalse",
+                "testScope": "Validator Unit Test (Class Support: Other Classes)",
+                "inputData": {'targetClass': 'OtherForm.class'},
+                "expectedOutcome": "Validator từ chối các lớp form khác, trả về false"
+            }
         ]
     },
     # ==================== PHÂN HỆ 2: SEARCH & PAGINATION ====================
     "TC_SRCH_01": {
-        "request": {
-            "name": "Nike",
-            "page": 1,
-            "sort": "price",
-            "minPrice": 10.0,
-            "maxPrice": 20.0,
-            "location": "Hanoi",
-            "brand": "Demo",
-            "isMall": True,
-            "isFavored": False,
-            "rating": 4,
-            "category": "Sneaker"
-        },
-        "testMethods": [
-            "ProductDAOTest.queryProducts_likeNameOnlyOverloadDelegatesWithActiveScope()",
-            "ProductControllerCoverageTest.listProduct_propagatesFiltersAndNormalizesGuestPage()"
+        "specTestCase": "TC_SRCH_01 (Tìm kiếm với từ khóa hợp lệ)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra tìm kiếm sản phẩm theo từ khóa tên hợp lệ, tự động ủy quyền scope active và trả về danh sách sản phẩm khớp",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_likeNameOnlyOverloadDelegatesWithActiveScope",
+                "testScope": "DAO Unit Test (Simple Name Search Overload)",
+                "inputData": {'keyword': 'Nike', 'activeScope': True},
+                "expectedOutcome": "Ủy quyền truy vấn HQL với predicate lower(p.name) like :likeName và giới hạn sản phẩm active"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductApiControllerTest.getProducts_normalizesPageAndPassesEveryFilter",
+                "testScope": "REST API Controller Test (Keyword Query Execution)",
+                "inputData": {'endpoint': 'GET /api/v1/products?name=Nike&page=1', 'keyword': 'Nike'},
+                "expectedOutcome": "API trả về HTTP 200 OK kèm danh sách PaginationResult chứa các sản phẩm có tên chứa 'Nike'"
+            }
         ]
     },
     "TC_SRCH_02": {
-        "input": {"name": "XYZ_NOT_EXIST_123"},
-        "hibernateMock": {"scrollFirst": False, "scrollRowNumber": -1, "totalRecords": 0},
-        "testMethods": [
-            "ProductDAOTest.queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort()",
-            "ProductApiControllerTest.getProducts_passesEmptyOptionalFiltersOnRequestedPage()"
+        "specTestCase": "TC_SRCH_02 (Tìm kiếm từ khóa không tồn tại)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra tìm kiếm với từ khóa không khớp với bất kỳ sản phẩm nào trong CSDL, trả về danh sách rỗng an toàn",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort",
+                "testScope": "DAO Unit Test (Empty Search Result Handling)",
+                "inputData": {'name': 'XYZ_NOT_EXIST_123', 'owner': None},
+                "expectedOutcome": "Truy vấn không tìm thấy bản ghi, trả về PaginationResult với list=[] và totalRecords=0"
+            }
         ]
     },
     "TC_SRCH_03": {
-        "securityPayload": {
-            "rawInput": "' OR '1'='1",
-            "urlEncoded": "%25%27OR%271%3D1",
-            "boundParam": "%' or '1'='1%"
-        },
-        "testMethods": [
-            "ProductDAOTest.queryProducts_treatsEmptyOrBlankOptionalTextAsAbsent()"
+        "specTestCase": "TC_SRCH_03 (Tìm kiếm từ khóa chứa ký tự đặc biệt / SQL Injection)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm thử bảo mật chống SQL Injection, kiểm tra cơ chế Parameter Binding an toàn của Hibernate DAO khi nhận chuỗi độc hại",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_bindsNameCategoryPriceAndBooleanFilters",
+                "testScope": "DAO Security Unit Test (SQL Injection Parameter Binding)",
+                "inputData": {'maliciousKeyword': '%25%27OR%271%3D1', 'parameterizedBinding': "%' or '1'='1%"},
+                "expectedOutcome": "Hibernate setParameter() an toàn, coi chuỗi SQLi như chuỗi ký tự thông thường, không gây lỗi cú pháp SQL hay rò rỉ CSDL"
+            }
         ]
     },
     "TC_SRCH_04": {
-        "input": {
-            "name": "",
-            "ownerUsername": "",
-            "location": "   ",
-            "brand": "   ",
-            "category": "   "
-        },
-        "verifyNever": [
-            {"param": "likeName", "value": "%%"},
-            {"param": "ownerUsername", "value": ""}
-        ],
-        "testMethods": [
-            "ProductDAOTest.queryProducts_treatsEmptyOrBlankOptionalTextAsAbsent()"
+        "specTestCase": "TC_SRCH_04 (Tìm kiếm với tham số rỗng)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra tìm kiếm khi bỏ trống từ khóa hoặc truyền chuỗi khoảng trắng, hệ thống tự động tải toàn bộ danh sách mặc định",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_treatsEmptyOrBlankOptionalTextAsAbsent",
+                "testScope": "DAO Unit Test (Blank Optional Filter Handling)",
+                "inputData": {'name': '   ', 'location': '   ', 'brand': '   ', 'category': ''},
+                "expectedOutcome": "Coi các tham số rỗng và khoảng trắng như vắng mặt (absent), không gắn mệnh đề WHERE thừa vào câu HQL"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductApiControllerTest.getProducts_passesEmptyOptionalFiltersOnRequestedPage",
+                "testScope": "REST API Controller Test (Default Product Catalog Retrieval)",
+                "inputData": {'endpoint': 'GET /api/v1/products?name=&page=1'},
+                "expectedOutcome": "API trả về toàn bộ danh sách sản phẩm active thuộc trang 1 với HTTP 200 OK"
+            }
         ]
     },
     "TC_SRCH_05": {
-        "caseVariations": [
-            {"input": "nike", "boundHqlParam": "%nike%"},
-            {"input": "NIKE", "boundHqlParam": "%nike%"}
-        ],
-        "hqlPredicate": "lower(p.name) like :likeName",
-        "testMethods": [
-            "ProductDAOTest.queryProducts_likeNameOnlyOverloadDelegatesWithActiveScope()"
+        "specTestCase": "TC_SRCH_05 (Tìm kiếm không phân biệt hoa thường)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra tính năng tìm kiếm không phân biệt chữ hoa, chữ thường bằng hàm lower(p.name) và chuẩn hóa alias địa điểm",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.findActiveProduct_acceptsStatusCaseInsensitively",
+                "testScope": "DAO Unit Test (Case-Insensitive Status & Text Matching)",
+                "inputData": {'testInputs': ['nike', 'NIKE', 'Nike']},
+                "expectedOutcome": "Nhờ hàm lower() trong HQL, mọi biến thể hoa thường đều cho ra kết quả khớp hoàn toàn đồng nhất"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductDAOTest.queryProducts_normalizesEverySupportedLocationAlias",
+                "testScope": "DAO Unit Test (Location Alias & Case Normalization)",
+                "inputData": {'locationAliases': ['Hà Nội', 'hà nội', 'HA NOI', 'TP HCM', 'tphcm']},
+                "expectedOutcome": "Chuẩn hóa mọi alias địa phương thành dạng thức đồng nhất để truy vấn chính xác không phụ thuộc định dạng nhập"
+            }
         ]
     },
     "TC_SRCH_06": {
-        "filters": {
-            "name": "Nike",
-            "minPrice": 100.0,
-            "maxPrice": 300.0,
-            "owner": "manager1",
-            "sort": "priceAsc",
-            "location": "Da Nang",
-            "brand": "Originals",
-            "isMall": True,
-            "isFavored": False,
-            "rating": 4
-        },
-        "testMethods": [
-            "ProductDAOTest.queryProducts_withoutCategoryOverloadDelegatesAllFilters()"
+        "specTestCase": "TC_SRCH_06 (Kết hợp Tìm kiếm & Bộ lọc giá)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra tổ hợp đa tiêu chí lọc đồng thời: từ khóa, khoảng giá [minPrice, maxPrice], sản phẩm chính hãng (Mall), yêu thích và rating",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_withoutCategoryOverloadDelegatesAllFilters",
+                "testScope": "DAO Unit Test (Multi-filter Combination: Name + Price Range + Flags)",
+                "inputData": {'name': 'Nike', 'minPrice': 100.0, 'maxPrice': 300.0, 'isMall': True, 'rating': 4},
+                "expectedOutcome": "Gắn đầy đủ mệnh đề lọc giá sau giảm (price * (100 - discountPercent)/100.0) BETWEEN 100 AND 300 cùng cờ isMall=true"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductDAOTest.queryProducts_withOwnerIncludesInactiveOwnerInventory",
+                "testScope": "DAO Unit Test (Owner Context Multi-criteria Filter)",
+                "inputData": {'name': 'Shoe', 'ownerUsername': 'seller_admin'},
+                "expectedOutcome": "Lọc theo chủ sở hữu (owner) hiển thị đúng danh mục sản phẩm thuộc quyền quản lý của người dùng"
+            }
         ]
     },
     "TC_SRCH_07": {
-        "tokenMatrix": [
-            {"field": "brand", "raw": "Nike", "binding": "setParameter", "value": "Nike"},
-            {"field": "category", "raw": "Sneaker", "binding": "setParameter", "value": "%sneaker%"},
-            {"field": "brandList", "raw": "Brand A, Brand B", "binding": "setParameterList", "tokens": ["Brand A", "Brand B"]},
-            {"field": "location", "raw": "Da Nang, ,Nha Trang", "binding": "multiParam", "tokens": ["%da nang%", "%nha trang%"]}
-        ],
-        "testMethods": [
-            "ProductDAOTest.queryProducts_bindsMultipleBrandsAsList()",
-            "ProductDAOTest.queryProducts_bindsEachNonEmptyLocationToken()",
-            "ProductDAOTest.queryProducts_ignoresBrandContainingOnlySeparators()"
+        "specTestCase": "TC_SRCH_07 (Lọc sản phẩm theo Thương hiệu & Danh mục)",
+        "totalTestRuns": 5,
+        "summary": "Kiểm tra bóc tách và lọc theo thương hiệu (Brand) dạng đơn lẻ hoặc danh sách nhiều thương hiệu, cùng bóc tách token địa điểm",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_bindsSingleBrandAsScalar",
+                "testScope": "DAO Unit Test (Single Brand Scalar Binding)",
+                "inputData": {'brand': 'Nike'},
+                "expectedOutcome": "Gắn tham số đơn lẻ brand = 'Nike' qua setParameter() chính xác"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductDAOTest.queryProducts_bindsMultipleBrandsAsList",
+                "testScope": "DAO Unit Test (Multiple Brands Tokenization & List Binding)",
+                "inputData": {'brandList': 'Nike, Adidas, Puma'},
+                "expectedOutcome": "Tự động phân tách chuỗi thành List token và gắn qua setParameterList('brands', tokens)"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductDAOTest.queryProducts_ignoresBrandContainingOnlySeparators",
+                "testScope": "DAO Unit Test (Malformed Brand Separators Guard)",
+                "inputData": {'brand': ' , , , '},
+                "expectedOutcome": "Chuỗi chỉ chứa dấu phẩy và khoảng trắng được tự động loại bỏ, không áp dụng lọc brand rác"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductDAOTest.queryProducts_bindsEachNonEmptyLocationToken",
+                "testScope": "DAO Unit Test (Multi-location Token Parsing)",
+                "inputData": {'location': 'Hà Nội, ,Đà Nẵng'},
+                "expectedOutcome": "Bóc tách từng token địa điểm không rỗng và gộp mệnh đề OR tương ứng trong câu truy vấn"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductDAOTest.queryProducts_ignoresLocationContainingOnlySeparators",
+                "testScope": "DAO Unit Test (Malformed Location Separators Guard)",
+                "inputData": {'location': ' , ,, '},
+                "expectedOutcome": "Chuỗi địa điểm chỉ chứa dấu phân cách được bỏ qua an toàn, không sinh lỗi HQL"
+            }
         ]
     },
     "TC_PAG_01": {
-        "pageNormalization": [
-            {"requestPage": 1, "normalizedPage": 1, "maxResult": 12},
-            {"requestPage": 0, "normalizedPage": 1, "maxResult": 12},
-            {"requestPage": -1, "normalizedPage": 1, "maxResult": 12}
-        ],
-        "testMethods": [
-            "ProductApiControllerTest.getProducts_normalizesPageAndPassesEveryFilter()",
-            "ProductControllerCoverageTest.listProduct_propagatesFiltersAndNormalizesGuestPage()"
+        "specTestCase": "TC_PAG_01 (Phân trang trang 1 mặc định)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra phân trang trang đầu tiên mặc định, tính toán tổng số trang không chia hết và giới hạn con trỏ dữ liệu",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "PaginationResultTest.populatedResult_collectsRecordsAndCalculatesNonDivisiblePages",
+                "testScope": "Unit Test (Page Calculation Formula: totalPages = ceil(total/maxResult))",
+                "inputData": {'totalRecords': 25, 'maxResult': 12, 'currentPage': 1},
+                "expectedOutcome": "Tính toán đúng totalPages = 3, currentPage = 1 và danh sách điều hướng [1, 2, 3]"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "PaginationResultTest.iterationStopsAtExclusivePageEnd",
+                "testScope": "Unit Test (Cursor Iteration Upper Bound Boundary)",
+                "inputData": {'page': 1, 'maxResult': 12},
+                "expectedOutcome": "Con trỏ đọc dữ liệu dừng lại chính xác tại ranh giới kết thúc trang (vị trí thứ 12)"
+            }
         ]
     },
     "TC_PAG_02": {
-        "roleScopingMatrix": [
-            {"role": "ROLE_USER", "page": 2, "name": "user", "scopedOwner": None},
-            {"role": "ROLE_ADMIN", "page": 3, "name": "admin", "scopedOwner": "admin"},
-            {"role": "ANONYMOUS", "page": 1, "name": None, "scopedOwner": None}
-        ],
-        "testMethods": [
-            "ProductControllerCoverageTest.listProduct_doesNotScopeRegularUserToOwner()",
-            "ProductControllerCoverageTest.listProduct_scopesAdminToAuthenticatedUsername()",
-            "ProductControllerCoverageTest.listProduct_doesNotScopeAnonymousAuthenticationToOwner()"
+        "specTestCase": "TC_PAG_02 (Phân trang chuyển sang trang 2)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra chuyển sang trang 2, tính toán offset chính xác và hiển thị dấu ba chấm điều hướng (ellipsis)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "PaginationResultTest.iterationStopsWhenCursorFallsBeforeRequestedPage",
+                "testScope": "Unit Test (Pagination Offset Skip Boundary)",
+                "inputData": {'page': 2, 'maxResult': 12, 'offset': 12},
+                "expectedOutcome": "Bỏ qua chính xác 12 bản ghi đầu tiên và bắt đầu nạp từ bản ghi số 13"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "PaginationResultTest.largeResultAtStart_addsTrailingEllipsis",
+                "testScope": "Unit Test (Navigation Ellipsis Generation)",
+                "inputData": {'totalPages': 20, 'currentPage': 2, 'maxNavigationPage': 5},
+                "expectedOutcome": "Tạo danh sách trang điều hướng với dấu ba chấm ở đuôi (trailing ellipsis) chuẩn UI"
+            }
         ]
     },
     "TC_PAG_03": {
-        "input": {"page": -1, "expectedDaoPage": 1, "maxResult": 12},
-        "testMethods": [
-            "ProductApiControllerTest.getProducts_normalizesPageAndPassesEveryFilter()"
+        "specTestCase": "TC_PAG_03 (Truy vấn với số trang âm / bằng 0)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra cơ chế tự phục hồi và chuẩn hóa số trang không hợp lệ (page <= 0) tự động đưa về trang 1 an toàn",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "PaginationResultTest.emptyResult_normalizesPageAndReturnsImmutableCollections",
+                "testScope": "Unit Test (Negative/Zero Page Normalization Boundary: Math.max(page, 1))",
+                "inputData": {'requestedPage': -1, 'maxResult': 12},
+                "expectedOutcome": "Hàm chuẩn hóa tự động đưa requestedPage=-1 về currentPage=1 và trả về collection bất biến an toàn"
+            }
         ]
     },
     "TC_PAG_04": {
-        "input": {"page": 99999, "dbTotalRecords": 100},
-        "hibernateMock": {"scrollFirst": False, "expectedList": []},
-        "testMethods": [
-            "ProductDAOTest.queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort()"
+        "specTestCase": "TC_PAG_04 (Số trang vượt quá giới hạn tổng số trang)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra truy vấn số trang vượt quá tổng số trang thực tế (page > totalPages), trả về danh sách rỗng và kẹp trang điều hướng",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "PaginationResultTest.pageBeyondLast_isClampedOnlyForNavigationAndMissingPageHasNoRows",
+                "testScope": "BVA Unit Test (Page Beyond Last Boundary: page = 99999 > totalPages)",
+                "inputData": {'totalRecords': 10, 'maxResult': 12, 'page': 99999},
+                "expectedOutcome": "Danh sách bản ghi list=[] rỗng, nhưng thanh điều hướng được kẹp về trang cuối hợp lệ"
+            }
         ]
     },
     "TC_PAG_05": {
-        "parameterizedSortMatrix": [
-            {"sort": "popular", "orderByClause": "order by p.rating desc, p.createDate desc"},
-            {"sort": "sales", "orderByClause": "order by p.salesCount desc"},
-            {"sort": "priceAsc", "orderByClause": "order by (p.price * (100 - p.discountPercent) / 100.0) asc"},
-            {"sort": "priceDesc", "orderByClause": "order by (p.price * (100 - p.discountPercent) / 100.0) desc"},
-            {"sort": "unknown", "orderByClause": "order by p.createDate desc"}
-        ],
-        "testMethods": [
-            "ProductDAOTest.queryProducts_selectsRequestedSort()"
+        "specTestCase": "TC_PAG_05 (Phân trang kết hợp Sắp xếp theo giá)",
+        "totalTestRuns": 5,
+        "summary": "Kiểm thử 5 tiêu chí sắp xếp sản phẩm: phổ biến (popular), bán chạy (sales), giá tăng dần (priceAsc), giá giảm dần (priceDesc) và mặc định",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.queryProducts_selectsRequestedSort [1]",
+                "testScope": "DAO Unit Test (Sort: popular)",
+                "inputData": {'sort': 'popular'},
+                "expectedOutcome": "Tạo câu lệnh ORDER BY p.rating desc, p.createDate desc"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductDAOTest.queryProducts_selectsRequestedSort [2]",
+                "testScope": "DAO Unit Test (Sort: sales)",
+                "inputData": {'sort': 'sales'},
+                "expectedOutcome": "Tạo câu lệnh ORDER BY p.salesCount desc"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductDAOTest.queryProducts_selectsRequestedSort [3]",
+                "testScope": "DAO Unit Test (Sort: priceAsc)",
+                "inputData": {'sort': 'priceAsc'},
+                "expectedOutcome": "Tạo câu lệnh ORDER BY (p.price * (100 - p.discountPercent) / 100.0) asc"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductDAOTest.queryProducts_selectsRequestedSort [4]",
+                "testScope": "DAO Unit Test (Sort: priceDesc)",
+                "inputData": {'sort': 'priceDesc'},
+                "expectedOutcome": "Tạo câu lệnh ORDER BY (p.price * (100 - p.discountPercent) / 100.0) desc"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductDAOTest.queryProducts_selectsRequestedSort [5]",
+                "testScope": "DAO Unit Test (Sort: default/unknown)",
+                "inputData": {'sort': 'unknown_value'},
+                "expectedOutcome": "Fallback an toàn về ORDER BY p.createDate desc mặc định"
+            }
         ]
     },
     "TC_PAG_06": {
-        "stressBoundaryInput": {
-            "page": 999999,
-            "size": 999999,
-            "hardcodedMaxResult": 12,
-            "expectedList": []
-        },
-        "testMethods": [
-            "ProductDAOTest.queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort()"
+        "specTestCase": "TC_PAG_06 (Kiểm thử giá trị biên cực đại Worst-Case BVA)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm thử giá trị biên cực lớn (page=999999, size=999999) đảm bảo hệ thống tự giới hạn điều hướng, không tràn bộ nhớ",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "PaginationResultTest.largeResult_capsNavigationAndAddsLeadingEllipsis",
+                "testScope": "Worst-Case BVA Unit Test (Extreme Navigation Boundary)",
+                "inputData": {'page': 999999, 'totalPages': 1000000, 'maxNavigationPage': 10},
+                "expectedOutcome": "Giới hạn cứng số nút trang điều hướng <= 10, thêm leading ellipsis an toàn không tràn RAM"
+            }
         ]
     },
     "TC_PROD_01": {
-        "input": {"endpoint": "/api/v1/products/S001", "productCode": "S001", "status": "ACTIVE"},
-        "mocks": {"dbProduct": {"code": "S001", "active": True}, "dto": "ProductInfo"},
-        "testMethods": [
-            "ProductDAOTest.findActiveProduct_acceptsStatusCaseInsensitively()",
-            "ProductDAOTest.findProductInfo_mapsActiveProduct()",
-            "ProductApiControllerTest.getProductByCode_returnsExistingProduct()",
-            "ProductControllerCoverageTest.productDetail_populatesExistingProductAndReviews()"
+        "specTestCase": "TC_PROD_01 (Truy vấn thông tin chi tiết sản phẩm hợp lệ)",
+        "totalTestRuns": 8,
+        "summary": "Kiểm tra truy vấn chi tiết sản phẩm hợp lệ qua API và DAO, cơ chế khóa ghi dữ liệu (Pessimistic Write Lock) và lưu/cập nhật sản phẩm sở hữu",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductApiControllerTest.getProductByCode_returnsExistingProduct",
+                "testScope": "REST API Controller Test (Get Product Detail 200 OK)",
+                "inputData": {'endpoint': 'GET /api/v1/products/S001', 'productCode': 'S001'},
+                "expectedOutcome": "API trả về HTTP 200 OK kèm DTO ProductInfo chứa đầy đủ code, name, price, status"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductDAOTest.findProductInfo_mapsActiveProduct",
+                "testScope": "DAO Unit Test (Entity to DTO Mapping)",
+                "inputData": {'productCode': 'S001', 'active': True},
+                "expectedOutcome": "Ánh xạ chính xác toàn bộ trường dữ liệu từ Entity Product sang ProductInfo DTO"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductDAOTest.findProduct_delegatesLookupWithoutNormalization",
+                "testScope": "DAO Unit Test (Literal Code Lookup)",
+                "inputData": {'code': 'S001'},
+                "expectedOutcome": "Truy vấn CSDL theo mã code nguyên bản"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductDAOTest.findProductForUpdate_usesPessimisticWriteLock",
+                "testScope": "DAO Concurrency Unit Test (Pessimistic Write Lock)",
+                "inputData": {'code': 'S001', 'lockMode': 'PESSIMISTIC_WRITE'},
+                "expectedOutcome": "Sử dụng LockModeType.PESSIMISTIC_WRITE để chống xung đột dữ liệu khi sửa sản phẩm"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductDAOTest.save_createsProductWithNormalizedFieldsOwnerAndBoundedMetadata",
+                "testScope": "DAO Unit Test (Create Product with Owner & Metadata)",
+                "inputData": {'code': 'P01', 'name': 'Shoe A', 'owner': 'admin'},
+                "expectedOutcome": "Lưu sản phẩm mới với các trường chuẩn hóa và gắn chủ sở hữu admin thành công"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductDAOTest.save_updatesOwnedProductWithoutPersistingAgain",
+                "testScope": "DAO Unit Test (Update Owned Product)",
+                "inputData": {'code': 'P01', 'owner': 'admin', 'newPrice': 200.0},
+                "expectedOutcome": "Cập nhật sản phẩm thuộc sở hữu mà không gọi persist dư thừa"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ProductApiControllerTest.saveProduct_createsNormalizedNewProduct",
+                "testScope": "REST API Controller Test (Create New Product API)",
+                "inputData": {'endpoint': 'POST /api/v1/products', 'code': 'P_NEW', 'name': 'New Shoe'},
+                "expectedOutcome": "API tạo sản phẩm mới thành công, trả về HTTP 200 OK kèm thông tin đã chuẩn hóa"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "ProductApiControllerTest.saveProduct_updatesProductOwnedByCurrentPrincipal",
+                "testScope": "REST API Controller Test (Update Owned Product API)",
+                "inputData": {'endpoint': 'POST /api/v1/products', 'code': 'P_OWNED', 'owner': 'current_user'},
+                "expectedOutcome": "API cập nhật sản phẩm do chính tài khoản sở hữu thành công, trả về HTTP 200 OK"
+            }
         ]
     },
     "TC_PROD_02": {
-        "input": {"endpoint": "/api/v1/products/INVALID_CODE_99", "productCode": "INVALID_CODE_99"},
-        "mockResult": None,
-        "expectedResponse": {"httpStatus": 404, "success": False, "messageKey": "INVALID_CODE_99"},
-        "testMethods": [
-            "ProductApiControllerTest.getProductByCode_returnsNotFoundWhenProductDoesNotExist()",
-            "ProductControllerCoverageTest.productDetail_redirectsMissingProduct()"
+        "specTestCase": "TC_PROD_02 (Truy vấn mã sản phẩm không tồn tại)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra xử lý lỗi 404 Not Found khi truy vấn hoặc xóa mã sản phẩm không tồn tại trong hệ thống",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductApiControllerTest.getProductByCode_returnsNotFoundWhenProductDoesNotExist",
+                "testScope": "REST API Controller Test (Get Non-existent Product 404)",
+                "inputData": {'endpoint': 'GET /api/v1/products/INVALID_CODE_99'},
+                "expectedOutcome": "Trả về HTTP 404 Not Found kèm thông báo 'Không tìm thấy sản phẩm với mã: INVALID_CODE_99'"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductApiControllerTest.deleteProduct_returnsNotFoundWhenProductDoesNotExist",
+                "testScope": "REST API Controller Test (Delete Non-existent Product 404)",
+                "inputData": {'endpoint': 'DELETE /api/v1/products/INVALID_CODE_99'},
+                "expectedOutcome": "Trả về HTTP 404 Not Found khi gọi lệnh xóa trên mã sản phẩm không tồn tại"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductDAOTest.deleteProduct_doesNothingWhenProductMissing",
+                "testScope": "DAO Unit Test (Silent Non-existent Delete Bypass)",
+                "inputData": {'code': 'NON_EXISTENT'},
+                "expectedOutcome": "DAO bỏ qua an toàn không ném ngoại lệ khi xóa sản phẩm không tồn tại"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductApiControllerTest.deleteProduct_returnsServerErrorWhenDaoFails",
+                "testScope": "REST API Controller Test (DAO Error Mapping)",
+                "inputData": {'endpoint': 'DELETE /api/v1/products/P001', 'daoException': 'RuntimeException'},
+                "expectedOutcome": "Bắt lỗi hệ thống từ DAO và trả về mã lỗi HTTP 500 Server Error phù hợp"
+            }
         ]
     },
     "TC_PROD_03": {
-        "nonActiveCases": [
-            {"endpoint": "/api/v1/products/INACTIVE_01", "status": "INACTIVE", "expected": None},
-            {"status": "DRAFT", "expected": None},
-            {"status": None, "expected": None}
-        ],
-        "invalidFormBoundaries": [
-            {"error": "nullForm"},
-            {"code": None},
-            {"code": "   "},
-            {"code": "C" * 21, "note": "max+ 20 chars"},
-            {"name": None},
-            {"name": "   "},
-            {"name": "N" * 256, "note": "max+ 255 chars"},
-            {"price": 0},
-            {"price": -1},
-            {"price": "NaN"},
-            {"price": "Infinity"},
-            {"discountPercent": -1},
-            {"discountPercent": 101},
-            {"stockQuantity": -1}
-        ],
-        "expectedException": "IllegalArgumentException",
-        "testMethods": [
-            "ProductDAOTest.findActiveProduct_returnsNullForMissingOrNonActiveProduct()",
-            "ProductDAOTest.save_rejectsEveryInvalidFormBoundary()"
+        "specTestCase": "TC_PROD_03 (Truy vấn sản phẩm ngừng kinh doanh & Kiểm định biểu mẫu/Bảo mật)",
+        "totalTestRuns": 40,
+        "summary": "Kiểm tra chặn sản phẩm ngừng bán (INACTIVE/DRAFT), phân quyền sở hữu chéo (Cross-ownership), tải ảnh và kiểm định toàn diện biểu mẫu biên BVA",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductDAOTest.findProductInfo_returnsNullForUnavailableProduct",
+                "testScope": "DAO Unit Test (Inactive Product Lookup Guard)",
+                "inputData": {'code': 'INACTIVE_01', 'status': 'INACTIVE'},
+                "expectedOutcome": "Sản phẩm ở trạng thái ngừng bán INACTIVE -> Trả về null an toàn"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductDAOTest.findActiveProduct_returnsNullForMissingOrNonActiveProduct [1]",
+                "testScope": "DAO Unit Test (Non-active Product Check: null entity)",
+                "inputData": {'product': None},
+                "expectedOutcome": "Entity null -> Trả về null"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductDAOTest.findActiveProduct_returnsNullForMissingOrNonActiveProduct [2]",
+                "testScope": "DAO Unit Test (Non-active Product Check: status INACTIVE)",
+                "inputData": {'status': 'INACTIVE'},
+                "expectedOutcome": "Status INACTIVE -> Trả về null"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductDAOTest.findActiveProduct_returnsNullForMissingOrNonActiveProduct [3]",
+                "testScope": "DAO Unit Test (Non-active Product Check: status DRAFT)",
+                "inputData": {'status': 'DRAFT'},
+                "expectedOutcome": "Status DRAFT -> Trả về null"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductDAOTest.findActiveProduct_returnsNullForMissingOrNonActiveProduct [4]",
+                "testScope": "DAO Unit Test (Non-active Product Check: status null)",
+                "inputData": {'status': None},
+                "expectedOutcome": "Status null -> Trả về null"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductDAOTest.deleteProduct_softDeletesUnderWriteLock",
+                "testScope": "DAO Unit Test (Soft-delete Deactivation)",
+                "inputData": {'code': 'P01', 'action': 'Soft Delete'},
+                "expectedOutcome": "Cập nhật chuyển cờ active=false (xóa mềm) dưới khóa ghi an toàn"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ProductApiControllerTest.deleteProduct_deactivatesOwnedProduct",
+                "testScope": "REST API Controller Test (API Soft-delete Deactivation)",
+                "inputData": {'endpoint': 'DELETE /api/v1/products/P01', 'owner': 'current_user'},
+                "expectedOutcome": "API xóa mềm sản phẩm sở hữu thành công, trả về HTTP 200 OK"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "ProductApiControllerTest.saveProduct_forbidsUpdatingForeignProduct",
+                "testScope": "REST API Security Test (Cross-ownership Update Protection)",
+                "inputData": {'code': 'P01', 'owner': 'seller_A', 'caller': 'seller_B'},
+                "expectedOutcome": "Admin B cố tình sửa sản phẩm của Admin A -> Bị từ chối HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "ProductApiControllerTest.deleteProduct_forbidsProductOwnedByAnotherPrincipal",
+                "testScope": "REST API Security Test (Cross-ownership Delete Protection)",
+                "inputData": {'code': 'P01', 'owner': 'seller_A', 'caller': 'seller_B'},
+                "expectedOutcome": "Admin B cố tình xóa sản phẩm của Admin A -> Bị từ chối HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "ProductDAOTest.save_rejectsUpdateByDifferentOwner",
+                "testScope": "DAO Security Unit Test (Reject Update By Different Owner)",
+                "inputData": {'code': 'P01', 'owner': 'seller_A', 'caller': 'seller_B'},
+                "expectedOutcome": "DAO ném SecurityException / IllegalArgumentException, từ chối sửa sản phẩm khác chủ"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "ProductDAOTest.save_rejectsMissingAuthentication",
+                "testScope": "DAO Security Unit Test (Missing Authentication Guard)",
+                "inputData": {'auth': None},
+                "expectedOutcome": "Từ chối lưu sản phẩm khi không có Authentication trong SecurityContext"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "ProductDAOTest.save_rejectsAnonymousPrincipal",
+                "testScope": "DAO Security Unit Test (Anonymous User Guard)",
+                "inputData": {'principal': 'anonymousUser'},
+                "expectedOutcome": "Từ chối người dùng ẩn danh tạo/sửa sản phẩm"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "ProductDAOTest.save_rejectsUnauthenticatedPrincipal",
+                "testScope": "DAO Security Unit Test (Unauthenticated Token Guard)",
+                "inputData": {'token': 'unauthenticated'},
+                "expectedOutcome": "Từ chối token chưa xác thực tạo/sửa sản phẩm"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "ProductDAOTest.save_setsImageOnlyWhenUploadedBytesAreNonEmpty [1]",
+                "testScope": "DAO Unit Test (Image Upload: valid bytes)",
+                "inputData": {'imageBytes': 'Valid Non-empty ByteArray'},
+                "expectedOutcome": "Lưu dữ liệu ảnh vào entity Product thành công"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "ProductDAOTest.save_setsImageOnlyWhenUploadedBytesAreNonEmpty [2]",
+                "testScope": "DAO Unit Test (Image Upload: empty byte array)",
+                "inputData": {'imageBytes': 'Empty ByteArray'},
+                "expectedOutcome": "Không ghi đè ảnh cũ khi mảng byte rỗng"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "ProductDAOTest.save_setsImageOnlyWhenUploadedBytesAreNonEmpty [3]",
+                "testScope": "DAO Unit Test (Image Upload: null byte array)",
+                "inputData": {'imageBytes': None},
+                "expectedOutcome": "Không ghi đè ảnh khi truyền null"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "ProductDAOTest.save_wrapsImageReadFailureAsIllegalArgument",
+                "testScope": "DAO Unit Test (Image Read Error Wrapper)",
+                "inputData": {'brokenImageStream': 'IOException'},
+                "expectedOutcome": "Bọc ngoại lệ đọc ảnh thành IllegalArgumentException an toàn"
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": "ProductDAOTest.save_samplesBothRandomBooleanMetadataOutcomesWithinSafetyLimit",
+                "testScope": "DAO Unit Test (Random Metadata Safety Simulation)",
+                "inputData": {'sampleCount': 50},
+                "expectedOutcome": "Mô phỏng cả hai kết quả boolean ngẫu nhiên trong giới hạn an toàn"
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [1]",
+                "testScope": "DAO Form BVA (null form)",
+                "inputData": {'form': None},
+                "expectedOutcome": "Ném IllegalArgumentException('invalid product')"
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [2]",
+                "testScope": "DAO Form BVA (code is null)",
+                "inputData": {'code': None},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối mã null"
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [3]",
+                "testScope": "DAO Form BVA (code is blank '   ')",
+                "inputData": {'code': '   '},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối mã khoảng trắng"
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [4]",
+                "testScope": "DAO Form BVA (code length > 20: 21 chars)",
+                "inputData": {'code': 'CCCCCCCCCCCCCCCCCCCCC'},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối mã quá 20 ký tự"
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [5]",
+                "testScope": "DAO Form BVA (name is null)",
+                "inputData": {'name': None},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối tên null"
+            },
+            {
+                "runIndex": 24,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [6]",
+                "testScope": "DAO Form BVA (name is blank '   ')",
+                "inputData": {'name': '   '},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối tên khoảng trắng"
+            },
+            {
+                "runIndex": 25,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [7]",
+                "testScope": "DAO Form BVA (name length > 255: 256 chars)",
+                "inputData": {'name': 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN'},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối tên quá 255 ký tự"
+            },
+            {
+                "runIndex": 26,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [8]",
+                "testScope": "DAO Form BVA (price = 0.0)",
+                "inputData": {'price': 0.0},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối giá bằng 0"
+            },
+            {
+                "runIndex": 27,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [9]",
+                "testScope": "DAO Form BVA (price = -1.0)",
+                "inputData": {'price': -1.0},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối giá âm"
+            },
+            {
+                "runIndex": 28,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [10]",
+                "testScope": "DAO Form BVA (price = Double.NaN)",
+                "inputData": {'price': 'Double.NaN'},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối giá NaN"
+            },
+            {
+                "runIndex": 29,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [11]",
+                "testScope": "DAO Form BVA (price = Double.POSITIVE_INFINITY)",
+                "inputData": {'price': 'Double.POSITIVE_INFINITY'},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối giá vô cực"
+            },
+            {
+                "runIndex": 30,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [12]",
+                "testScope": "DAO Form BVA (discountPercent = -1)",
+                "inputData": {'discountPercent': -1},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối chiết khấu âm"
+            },
+            {
+                "runIndex": 31,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [13]",
+                "testScope": "DAO Form BVA (discountPercent = 101)",
+                "inputData": {'discountPercent': 101},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối chiết khấu vượt 100%"
+            },
+            {
+                "runIndex": 32,
+                "targetMethod": "ProductDAOTest.save_rejectsEveryInvalidFormBoundary [14]",
+                "testScope": "DAO Form BVA (stockQuantity = -1)",
+                "inputData": {'stockQuantity': -1},
+                "expectedOutcome": "Ném IllegalArgumentException, từ chối tồn kho âm"
+            },
+            {
+                "runIndex": 33,
+                "targetMethod": "ProductApiControllerTest.saveProduct_rejectsInvalidForm [1]",
+                "testScope": "REST API Form Validation (blank code)",
+                "inputData": {'code': '   ', 'name': 'Valid Name', 'price': 100.0},
+                "expectedOutcome": "API trả về HTTP 400 Bad Request kèm lỗi NotEmpty trên trường code"
+            },
+            {
+                "runIndex": 34,
+                "targetMethod": "ProductApiControllerTest.saveProduct_rejectsInvalidForm [2]",
+                "testScope": "REST API Form Validation (blank name)",
+                "inputData": {'code': 'P01', 'name': '   ', 'price': 100.0},
+                "expectedOutcome": "API trả về HTTP 400 Bad Request kèm lỗi NotEmpty trên trường name"
+            },
+            {
+                "runIndex": 35,
+                "targetMethod": "ProductApiControllerTest.saveProduct_rejectsInvalidForm [3]",
+                "testScope": "REST API Form Validation (negative price)",
+                "inputData": {'code': 'P01', 'name': 'Shoe', 'price': -50.0},
+                "expectedOutcome": "API trả về HTTP 400 Bad Request kèm lỗi Min trên trường price"
+            },
+            {
+                "runIndex": 36,
+                "targetMethod": "ProductApiControllerTest.saveProduct_rejectsInvalidForm [4]",
+                "testScope": "REST API Form Validation (invalid discount range)",
+                "inputData": {'code': 'P01', 'name': 'Shoe', 'price': 100.0, 'discountPercent': 150},
+                "expectedOutcome": "API trả về HTTP 400 Bad Request kèm lỗi Range trên trường discountPercent"
+            },
+            {
+                "runIndex": 37,
+                "targetMethod": "ProductApiControllerTest.saveProduct_rejectsInvalidForm [5]",
+                "testScope": "REST API Form Validation (negative stock)",
+                "inputData": {'code': 'P01', 'name': 'Shoe', 'price': 100.0, 'stockQuantity': -5},
+                "expectedOutcome": "API trả về HTTP 400 Bad Request kèm lỗi Min trên trường stockQuantity"
+            },
+            {
+                "runIndex": 38,
+                "targetMethod": "ProductApiControllerTest.saveProduct_mapsDaoException [1]",
+                "testScope": "REST API Exception Mapping (Duplicate Code Error)",
+                "inputData": {'daoException': 'DataIntegrityViolationException (Duplicate code)'},
+                "expectedOutcome": "Ánh xạ ngoại lệ trùng mã sang mã lỗi HTTP 400 Bad Request phù hợp"
+            },
+            {
+                "runIndex": 39,
+                "targetMethod": "ProductApiControllerTest.saveProduct_mapsDaoException [2]",
+                "testScope": "REST API Exception Mapping (IllegalArgumentException)",
+                "inputData": {'daoException': "IllegalArgumentException ('invalid product')"},
+                "expectedOutcome": "Ánh xạ ngoại lệ tham số form sang mã lỗi HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 40,
+                "targetMethod": "ProductApiControllerTest.saveProduct_mapsDaoException [3]",
+                "testScope": "REST API Exception Mapping (Unexpected Server RuntimeException)",
+                "inputData": {'daoException': "RuntimeException ('Database connection timeout')"},
+                "expectedOutcome": "Ánh xạ lỗi không mong muốn sang mã HTTP 500 Internal Server Error"
+            }
         ]
     },
     # ==================== PHÂN HỆ 3: GIỎ HÀNG (SHOPPING CART) ====================
     "TC_CART_001": {
-        "request": {
-            "endpoint": "/api/v1/cart/items",
-            "method": "POST",
-            "productCode": "S001",
-            "quantity": 1,
-            "action": "ADD_TO_CART"
-        },
-        "initialCartState": {
-            "itemsCount": 0,
-            "totalAmount": 0.0
-        },
-        "expectedCartState": {
-            "itemsCount": 1,
-            "lines": [
-                {
-                    "productCode": "S001",
-                    "productName": "Giày Thể Thao Sneaker",
-                    "unitPrice": 500000.0,
-                    "quantity": 1,
-                    "amount": 500000.0
-                }
-            ],
-            "totalAmount": 500000.0,
-            "badgeCount": 1
-        },
-        "testMethods": [
-            "CartApiControllerTest.addCartItem_acceptsSupportedQuantityRepresentation()",
-            "CartControllerCoverageTest.addToCart_addsAvailableProductAndSuccessMessage()",
-            "CartControllerCoverageTest.buyProduct_addsAvailableProductToCart()"
+        "specTestCase": 'TC_CART_001 (Thêm mới sản phẩm hợp lệ vào giỏ)',
+        "totalTestRuns": 12,
+        "summary": 'Kiểm tra thêm mới sản phẩm hợp lệ vào giỏ hàng qua REST API (/api/v1/cart/items) và Spring MVC Controller (/shoppingCart, /buyProduct), kiểm tra hỗ trợ các kiểu dữ liệu số lượng (null mặc định 1, chuỗi số, số nguyên), hiển thị giỏ hàng kèm danh sách gợi ý và luồng xác nhận giỏ hàng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CartApiControllerTest.addCartItem_acceptsSupportedQuantityRepresentation[1]',
+                "testScope": 'REST API Unit Test (Quantity Fallback: null -> default 1)',
+                "inputData": {'productCode': 'P1', 'quantity': None, 'availableStock': 10},
+                "expectedOutcome": 'Khi payload không truyền trường quantity (null), API mặc định quantity = 1, thêm vào giỏ thành công và trả về HTTP 200 OK với line amount = 1 * unitPrice'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CartApiControllerTest.addCartItem_acceptsSupportedQuantityRepresentation[2]',
+                "testScope": "REST API Unit Test (Quantity Parsing: Numeric String '2')",
+                "inputData": {'productCode': 'P1', 'quantity': '2', 'availableStock': 10},
+                "expectedOutcome": "API tự động parse chuỗi số '2' thành integer 2, thêm thành công vào giỏ hàng và trả về HTTP 200 OK"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'CartApiControllerTest.addCartItem_acceptsSupportedQuantityRepresentation[3]',
+                "testScope": 'REST API Unit Test (Quantity Parsing: Long/Integer Numeric 2L)',
+                "inputData": {'productCode': 'P1', 'quantity': 2, 'availableStock': 10},
+                "expectedOutcome": 'API tiếp nhận giá trị số 2 hợp lệ, tạo dòng sản phẩm mới trong giỏ và trả về HTTP 200 OK'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'CartApiControllerTest.getCart_returnsAndStoresTheSessionCart',
+                "testScope": 'REST API Unit Test (GET /api/v1/cart - Session Storage)',
+                "inputData": {'sessionExists': False, 'request': 'GET /api/v1/cart'},
+                "expectedOutcome": 'Hệ thống tự động khởi tạo CartInfo mới trong HTTP Session nếu chưa có, lưu vào session và trả về CartInfo rỗng với HTTP 200 OK'
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'CartApiControllerTest.checkout_storesOrderedCartAndClearsActiveCart',
+                "testScope": 'REST API Unit Test (Checkout Clears Active Cart & Retains Session)',
+                "inputData": {'cartLines': 2, 'totalAmount': 1200000.0, 'customer': 'Valid Customer'},
+                "expectedOutcome": 'Thanh toán thành công đơn hàng, giỏ hàng hiện tại (active cart) được dọn rỗng và lưu trữ thông tin đơn hàng cuối cùng (last order)'
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": 'CartControllerCoverageTest.addToCart_addsAvailableProductAndSuccessMessage',
+                "testScope": 'Spring MVC Controller Test (POST /buyProduct - Add Available Product)',
+                "inputData": {'code': 'S001', 'availableStock': 10, 'action': 'addToCart'},
+                "expectedOutcome": "Thêm sản phẩm S001 khả dụng vào giỏ hàng thành công, hiển thị flash message 'Thêm sản phẩm vào giỏ thành công' và tăng badge giỏ hàng"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": 'CartControllerCoverageTest.buyProduct_addsAvailableProductToCart',
+                "testScope": 'Spring MVC Controller Test (GET /buyProduct - Quick Buy Available Product)',
+                "inputData": {'code': 'S001', 'availableStock': 10, 'action': 'buyProduct'},
+                "expectedOutcome": 'Thêm ngay sản phẩm vào giỏ hàng và chuyển hướng redirect trực tiếp đến trang /shoppingCart'
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": 'CartControllerCoverageTest.shoppingCartView_addsReturnedRecommendations',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCart - With Product Recommendations)',
+                "inputData": {'cartItems': 1, 'recommendationQueryReturns': ['S002', 'S003']},
+                "expectedOutcome": 'Trang giỏ hàng hiển thị đầy đủ các mặt hàng hiện có và gắn kèm danh sách sản phẩm gợi ý liên quan vào Model'
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": 'CartControllerCoverageTest.shoppingCartView_omitsRecommendationsWhenQueryReturnsNull',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCart - Null Recommendations Fallback)',
+                "inputData": {'cartItems': 1, 'recommendationQueryReturns': None},
+                "expectedOutcome": 'Xử lý an toàn khi service gợi ý trả về null: không gây NullPointerException, view giỏ hàng vẫn render bình thường'
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": 'CartControllerCoverageTest.confirmationReview_showsValidCart',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartConfirmation - Review Cart)',
+                "inputData": {'cartItems': 2, 'customerInfo': 'Valid Customer', 'totalAmount': 1000000.0},
+                "expectedOutcome": 'Hiển thị trang xem lại đơn hàng shoppingCartConfirmation với đầy đủ thông tin khách hàng và danh sách sản phẩm hợp lệ'
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": 'CartControllerCoverageTest.confirmationSave_movesSuccessfulCartToLastOrder',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartConfirmation - Order Transition)',
+                "inputData": {'cartItems': 2, 'saveOrderResult': 'SUCCESS'},
+                "expectedOutcome": 'Lưu đơn hàng thành công, giỏ hàng được chuyển vào lastOrderInfo trong session và redirect sang /shoppingCartFinalize'
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": 'CartControllerCoverageTest.finalize_showsStoredLastOrder',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartFinalize - Display Final Order)',
+                "inputData": {'lastOrderInSession': 'Present', 'orderId': 'ORD-001'},
+                "expectedOutcome": 'Hiển thị trang hoàn tất shoppingCartFinalize với thông tin đơn hàng vừa đặt từ session'
+            }
         ]
     },
     "TC_CART_002": {
-        "cartUpdate": {
-            "endpoint": "/api/v1/cart/items/S001",
-            "method": "PUT",
-            "productCode": "S001",
-            "previousQuantity": 1,
-            "addedQuantity": 2,
-            "newQuantity": 3,
-            "availableStock": 10
-        },
-        "calculation": {
-            "unitPrice": 500000.0,
-            "lineAmount": 1500000.0,
-            "totalCartAmount": 1500000.0,
-            "badgeDistinctItems": 1
-        },
-        "testMethods": [
-            "CartApiControllerTest.updateCartItem_reportsRequestedQuantityWhenStockIsSufficient()",
-            "CartControllerCoverageTest.ajaxQuantity_updatesExistingLineWithoutCap()",
-            "CartControllerCoverageTest.updateQuantity_capsQuantityAtAvailableStock()"
+        "specTestCase": 'TC_CART_002 (Cập nhật tăng số lượng đã có trong giỏ)',
+        "totalTestRuns": 2,
+        "summary": 'Kiểm tra cập nhật số lượng sản phẩm đã có trong giỏ hàng qua REST API PUT /api/v1/cart/items/{code} và AJAX POST /shoppingCartUpdateQty khi số lượng yêu cầu nằm trong phạm vi tồn kho khả dụng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_reportsRequestedQuantityWhenStockIsSufficient',
+                "testScope": 'REST API Unit Test (PUT /api/v1/cart/items/{code} - Quantity Increase)',
+                "inputData": {'productCode': 'P1', 'currentQty': 2, 'newRequestedQty': 4, 'availableStock': 10},
+                "expectedOutcome": 'API cập nhật thành công số lượng thành 4, tính lại tổng tiền dòng sản phẩm và trả về HTTP 200 OK kèm requestedQuantity = 4'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CartControllerCoverageTest.ajaxQuantity_updatesExistingLineWithoutCap',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/updateQuantity - Within Stock)',
+                "inputData": {'productCode': 'P1', 'currentQty': 1, 'updateQty': 3, 'availableStock': 8},
+                "expectedOutcome": 'Cập nhật thành công số lượng thành 3 (không bị giới hạn trần), trả về JSON chứa tổng tiền mới và badge giỏ hàng giữ nguyên'
+            }
         ]
     },
     "TC_CART_003": {
-        "bvaBoundaryMatrix": [
-            {"input": 0, "type": "min- boundary", "action": "CONFIRM_REMOVE_OR_REJECT", "expectedStatus": 400},
-            {"input": -1, "type": "negative value", "action": "REJECT_BAD_REQUEST", "expectedStatus": 400},
-            {"input": None, "type": "null payload", "action": "REJECT_BAD_REQUEST", "expectedStatus": 400},
-            {"input": "abc", "type": "non-numeric string", "action": "REJECT_BAD_REQUEST", "expectedStatus": 400}
-        ],
-        "validationResponse": {
-            "success": False,
-            "error": "InvalidQuantityException",
-            "message": "Số lượng mua phải là số nguyên lớn hơn hoặc bằng 1"
-        },
-        "testMethods": [
-            "CartApiControllerTest.addCartItem_rejectsInvalidPayload()",
-            "CartApiControllerTest.updateCartItem_rejectsInvalidPayload()",
-            "CartControllerCoverageTest.ajaxQuantity_rejectsNonPositiveQuantity()",
-            "CartControllerCoverageTest.removeProduct_removesExistingCartLine()"
+        "specTestCase": 'TC_CART_003 (Chặn nhập số lượng mua bằng 0 / Payload & Form không hợp lệ / Xóa khỏi giỏ)',
+        "totalTestRuns": 63,
+        "summary": 'Kiểm tra cơ chế phòng thủ toàn diện: chặn số lượng mua <= 0, giá trị âm, chuỗi không hợp lệ, tràn số nguyên (BVA Min-, Overflow), payload rỗng; kiểm tra 14 trường hợp kiểm thực dữ liệu khách hàng (CustomerForm), các ràng buộc giỏ hàng rỗng và chức năng xóa sản phẩm khỏi giỏ qua API & MVC',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[1]',
+                "testScope": 'REST API Unit Test (Add Payload: missing payload null)',
+                "inputData": {'payload': None},
+                "expectedOutcome": 'API từ chối xử lý payload null, trả về HTTP 400 Bad Request và giữ nguyên trạng thái giỏ hàng rỗng'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[2]',
+                "testScope": 'REST API Unit Test (Add Payload: missing code null)',
+                "inputData": {'code': None, 'quantity': None},
+                "expectedOutcome": 'API từ chối payload thiếu mã sản phẩm (null), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[3]',
+                "testScope": 'REST API Unit Test (Add Payload: blank code spaces)',
+                "inputData": {'code': '   ', 'quantity': 1},
+                "expectedOutcome": "API từ chối mã sản phẩm chỉ toàn khoảng trắng ('   '), trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[4]',
+                "testScope": 'REST API Unit Test (Add Payload: non-numeric string quantity)',
+                "inputData": {'code': 'P1', 'quantity': 'not-a-number'},
+                "expectedOutcome": "API từ chối số lượng không phải số ('not-a-number'), trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[5]',
+                "testScope": 'REST API Unit Test (Add Payload: NaN quantity)',
+                "inputData": {'code': 'P1', 'quantity': 'Double.NaN'},
+                "expectedOutcome": 'API từ chối giá trị số lượng bất định NaN, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[6]',
+                "testScope": 'REST API Unit Test (Add Payload: infinite quantity)',
+                "inputData": {'code': 'P1', 'quantity': 'Double.POSITIVE_INFINITY'},
+                "expectedOutcome": 'API từ chối giá trị số lượng vô cực POSITIVE_INFINITY, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[7]',
+                "testScope": 'REST API Unit Test (Add Payload: fractional quantity)',
+                "inputData": {'code': 'P1', 'quantity': 1.5},
+                "expectedOutcome": 'API từ chối số lượng lẻ/thập phân (1.5), chỉ chấp nhận số nguyên dương, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[8]',
+                "testScope": 'REST API Unit Test (Add Payload: quantity below integer range)',
+                "inputData": {'code': 'P1', 'quantity': -2147483649.0},
+                "expectedOutcome": 'API từ chối số lượng tràn dưới kiểu Integer (< Integer.MIN_VALUE), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[9]',
+                "testScope": 'REST API Unit Test (Add Payload: quantity above integer range)',
+                "inputData": {'code': 'P1', 'quantity': 2147483648.0},
+                "expectedOutcome": 'API từ chối số lượng tràn trên kiểu Integer (> Integer.MAX_VALUE), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsInvalidPayload[10]',
+                "testScope": 'REST API Unit Test (Add Payload: non-positive quantity zero BVA Min-)',
+                "inputData": {'code': 'P1', 'quantity': 0},
+                "expectedOutcome": 'API từ chối số lượng mua bằng 0 (BVA Min-), ném lỗi validation và trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_rejectsInvalidPayload[1]',
+                "testScope": 'REST API Unit Test (Update Payload: missing payload null)',
+                "inputData": {'payload': None},
+                "expectedOutcome": 'API từ chối cập nhật payload null, trả về HTTP 400 Bad Request và giữ nguyên số lượng giỏ hàng cũ'
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_rejectsInvalidPayload[2]',
+                "testScope": 'REST API Unit Test (Update Payload: missing code null)',
+                "inputData": {'code': None, 'quantity': 1},
+                "expectedOutcome": 'API từ chối cập nhật khi thiếu mã sản phẩm (null), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_rejectsInvalidPayload[3]',
+                "testScope": 'REST API Unit Test (Update Payload: empty code string)',
+                "inputData": {'code': '', 'quantity': 1},
+                "expectedOutcome": "API từ chối mã sản phẩm rỗng (''), trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_rejectsInvalidPayload[4]',
+                "testScope": 'REST API Unit Test (Update Payload: non-numeric quantity)',
+                "inputData": {'code': 'P1', 'quantity': 'invalid'},
+                "expectedOutcome": "API từ chối chuỗi số lượng không hợp lệ ('invalid'), trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_rejectsInvalidPayload[5]',
+                "testScope": 'REST API Unit Test (Update Payload: non-positive quantity zero)',
+                "inputData": {'code': 'P1', 'quantity': 0},
+                "expectedOutcome": 'API từ chối cập nhật số lượng = 0, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": 'CartApiControllerTest.removeCartItem_returnsNotFoundWithoutChangingCart',
+                "testScope": 'REST API Unit Test (DELETE /api/v1/cart/items/{code} - Product Absent)',
+                "inputData": {'productCode': 'missing', 'cartItems': 1},
+                "expectedOutcome": 'Khi sản phẩm cần xóa không tồn tại trong giỏ, API trả về HTTP 404 Not Found và bảo toàn giỏ hàng nguyên vẹn'
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": 'CartApiControllerTest.removeCartItem_removesExistingCartLine',
+                "testScope": 'REST API Unit Test (DELETE /api/v1/cart/items/{code} - Successful Removal)',
+                "inputData": {'productCode': 'P1', 'cartItems': 1},
+                "expectedOutcome": 'Xóa thành công dòng sản phẩm P1 khỏi giỏ hàng, cập nhật lại tổng số lượng = 0 và trả về HTTP 200 OK'
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": 'CartApiControllerTest.checkout_rejectsEmptyCart',
+                "testScope": 'REST API Unit Test (POST /api/v1/cart/checkout - Guard Empty Cart)',
+                "inputData": {'cartEmpty': True},
+                "expectedOutcome": 'API chặn thanh toán khi giỏ hàng rỗng, không kích hoạt OrderCheckoutService và trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": 'CartApiControllerTest.checkout_rejectsCartWithoutValidCustomer',
+                "testScope": 'REST API Unit Test (POST /api/v1/cart/checkout - Guard Missing Customer)',
+                "inputData": {'cartItems': 1, 'customerInfo': None},
+                "expectedOutcome": 'API chặn thanh toán khi giỏ hàng chưa điền thông tin khách hàng hợp lệ, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": 'CartApiControllerTest.checkout_preservesCartWhenOrderSaveFails',
+                "testScope": 'REST API Unit Test (POST /api/v1/cart/checkout - Rollback/Preserve Cart)',
+                "inputData": {'cartItems': 2, 'orderCheckoutServiceThrows': 'RuntimeException'},
+                "expectedOutcome": 'Khi service lưu đơn hàng ném ngoại lệ, hệ thống bảo toàn nguyên vẹn giỏ hàng trong session và trả về HTTP 400/500'
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[1]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: missing form null)',
+                "inputData": {'customerForm': None},
+                "expectedOutcome": 'Từ chối form thông tin khách hàng null, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[2]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: missing name null)',
+                "inputData": {'name': None, 'address': 'Address', 'email': 'a@example.com', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường name bị null, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[3]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: blank name spaces)',
+                "inputData": {'name': '   ', 'address': 'Address', 'email': 'a@example.com', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường name chỉ chứa khoảng trắng, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 24,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[4]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: name above max length 256)',
+                "inputData": {'name': 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', 'address': 'Address', 'email': 'a@example.com', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi trường name vượt quá độ dài tối đa cho phép (255 ký tự), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 25,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[5]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: missing address null)',
+                "inputData": {'name': 'Buyer', 'address': None, 'email': 'a@example.com', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường address bị null, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 26,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[6]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: blank address spaces)',
+                "inputData": {'name': 'Buyer', 'address': '   ', 'email': 'a@example.com', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường address chỉ chứa khoảng trắng, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 27,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[7]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: address above max length 256)',
+                "inputData": {'name': 'Buyer', 'address': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'email': 'a@example.com', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi trường address vượt quá độ dài tối đa cho phép (255 ký tự), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 28,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[8]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: missing email null)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': None, 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường email bị null, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 29,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[9]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: blank email spaces)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': '   ', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường email chỉ chứa khoảng trắng, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 30,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[10]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: email above max length 129)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi trường email vượt quá độ dài tối đa cho phép (128 ký tự), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 31,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[11]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: malformed email format)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': 'invalid-email', 'phone': '0900'},
+                "expectedOutcome": 'Báo lỗi trường email không đúng định dạng chuẩn RFC, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 32,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[12]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: missing phone null)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': 'a@example.com', 'phone': None},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường phone bị null, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 33,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[13]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: blank phone spaces)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': 'a@example.com', 'phone': '   '},
+                "expectedOutcome": 'Báo lỗi kiểm thực trường phone chỉ chứa khoảng trắng, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 34,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_rejectsInvalidForm[14]',
+                "testScope": 'REST API Unit Test (CustomerForm Validation: phone above max length 129)',
+                "inputData": {'name': 'Buyer', 'address': 'Address', 'email': 'a@example.com', 'phone': 'ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp'},
+                "expectedOutcome": 'Báo lỗi trường phone vượt quá độ dài tối đa cho phép (128 ký tự), trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 35,
+                "targetMethod": 'CartApiControllerTest.saveCustomerInfo_trimsNormalizesAndStoresValidCustomer',
+                "testScope": 'REST API Unit Test (Customer Normalization: Trim whitespace & lowercase email)',
+                "inputData": {'name': ' Buyer ', 'address': ' Address ', 'email': ' Buyer@Example.COM ', 'phone': ' 0900 '},
+                "expectedOutcome": 'API tự động trim khoảng trắng thừa ở các trường và chuyển email về chữ thường, lưu vào session và trả về HTTP 200 OK'
+            },
+            {
+                "runIndex": 36,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsInvalidForm[1]',
+                "testScope": 'Spring MVC Controller Test (Update Form: missing CartInfo form null)',
+                "inputData": {'form': None},
+                "expectedOutcome": 'Từ chối cập nhật khi form gửi lên là null, chuyển hướng redirect về giỏ hàng kèm thông báo lỗi'
+            },
+            {
+                "runIndex": 37,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsInvalidForm[2]',
+                "testScope": 'Spring MVC Controller Test (Update Form: missing cart lines list null)',
+                "inputData": {'cartLines': None},
+                "expectedOutcome": 'Từ chối cập nhật khi danh sách cart lines trong form bị null, bảo vệ an toàn chống lỗi hệ thống'
+            },
+            {
+                "runIndex": 38,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsInvalidForm[3]',
+                "testScope": 'Spring MVC Controller Test (Update Form: null cart line element)',
+                "inputData": {'cartLines': [None]},
+                "expectedOutcome": 'Từ chối cập nhật khi phần tử dòng giỏ hàng chứa giá trị null'
+            },
+            {
+                "runIndex": 39,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsInvalidForm[4]',
+                "testScope": 'Spring MVC Controller Test (Update Form: line without ProductInfo)',
+                "inputData": {'cartLine': {'quantity': 1, 'productInfo': None}},
+                "expectedOutcome": 'Từ chối cập nhật khi dòng giỏ hàng thiếu đối tượng ProductInfo'
+            },
+            {
+                "runIndex": 40,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsInvalidForm[5]',
+                "testScope": 'Spring MVC Controller Test (Update Form: product without productCode)',
+                "inputData": {'cartLine': {'quantity': 1, 'productInfo': {'code': None}}},
+                "expectedOutcome": 'Từ chối cập nhật khi mã sản phẩm trong ProductInfo là null'
+            },
+            {
+                "runIndex": 41,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsInvalidForm[6]',
+                "testScope": 'Spring MVC Controller Test (Update Form: non-positive quantity zero BVA Min-)',
+                "inputData": {'cartLine': {'code': 'P1', 'quantity': 0}},
+                "expectedOutcome": 'Chặn cập nhật khi số lượng mua = 0 trên form MVC, từ chối cập nhật và giữ nguyên số lượng cũ'
+            },
+            {
+                "runIndex": 42,
+                "targetMethod": 'CartControllerCoverageTest.ajaxQuantity_rejectsNonPositiveQuantity',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/updateQuantity - Non-positive Qty)',
+                "inputData": {'code': 'P1', 'quantity': 0},
+                "expectedOutcome": 'Endpoint AJAX từ chối cập nhật số lượng <= 0, trả về phản hồi lỗi hoặc không thay đổi tổng tiền dòng'
+            },
+            {
+                "runIndex": 43,
+                "targetMethod": 'CartControllerCoverageTest.ajaxQuantity_returnsZeroLineAmountWhenProductIsAbsentFromCart',
+                "testScope": 'AJAX Controller Test (Product Absent from Cart -> Zero Line Amount)',
+                "inputData": {'code': 'missing', 'quantity': 2},
+                "expectedOutcome": 'Khi sản phẩm cần cập nhật không có trong giỏ hàng hiện tại, trả về lineAmount = 0.0 an toàn'
+            },
+            {
+                "runIndex": 44,
+                "targetMethod": 'CartControllerCoverageTest.removeProduct_rejectsMissingCode[1]',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartRemoveProduct - null code)',
+                "inputData": {'code': None},
+                "expectedOutcome": 'Từ chối xóa sản phẩm khi mã sản phẩm là null, redirect về /shoppingCart'
+            },
+            {
+                "runIndex": 45,
+                "targetMethod": 'CartControllerCoverageTest.removeProduct_rejectsMissingCode[2]',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartRemoveProduct - empty code)',
+                "inputData": {'code': ''},
+                "expectedOutcome": "Từ chối xóa sản phẩm khi mã sản phẩm là chuỗi rỗng (''), redirect về /shoppingCart"
+            },
+            {
+                "runIndex": 46,
+                "targetMethod": 'CartControllerCoverageTest.removeProduct_removesExistingCartLine',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartRemoveProduct - Success)',
+                "inputData": {'code': 'P1', 'cartItems': 1},
+                "expectedOutcome": 'Xóa thành công dòng sản phẩm P1 khỏi giỏ hàng, cập nhật lại giỏ hàng và redirect về /shoppingCart'
+            },
+            {
+                "runIndex": 47,
+                "targetMethod": 'CartControllerCoverageTest.ajaxRemove_removesProductAndReturnsUpdatedTotals',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/removeProduct - Success)',
+                "inputData": {'code': 'P1', 'cartItems': 2},
+                "expectedOutcome": 'Xóa thành công sản phẩm P1 qua AJAX, trả về JSON chứa tổng tiền mới và số lượng badge đã giảm'
+            },
+            {
+                "runIndex": 48,
+                "targetMethod": 'CartControllerCoverageTest.ajaxRemove_reportsMissingProduct',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/removeProduct - Product Missing)',
+                "inputData": {'code': 'missing', 'cartItems': 1},
+                "expectedOutcome": 'Xử lý an toàn khi xóa sản phẩm không tồn tại trong giỏ qua AJAX, trả về thông báo lỗi thích hợp'
+            },
+            {
+                "runIndex": 49,
+                "targetMethod": 'CartControllerCoverageTest.addToCart_rejectsMissingCode[1]',
+                "testScope": 'Spring MVC Controller Test (POST /buyProduct - null code)',
+                "inputData": {'code': None},
+                "expectedOutcome": 'Từ chối thêm sản phẩm khi code null, redirect về /productList hoặc hiển thị lỗi'
+            },
+            {
+                "runIndex": 50,
+                "targetMethod": 'CartControllerCoverageTest.addToCart_rejectsMissingCode[2]',
+                "testScope": 'Spring MVC Controller Test (POST /buyProduct - empty code)',
+                "inputData": {'code': ''},
+                "expectedOutcome": "Từ chối thêm sản phẩm khi code rỗng (''), redirect về /productList"
+            },
+            {
+                "runIndex": 51,
+                "targetMethod": 'CartControllerCoverageTest.buyProduct_rejectsMissingCode[1]',
+                "testScope": 'Spring MVC Controller Test (GET /buyProduct - null code)',
+                "inputData": {'code': None},
+                "expectedOutcome": 'Từ chối mua ngay khi code null, redirect về /productList'
+            },
+            {
+                "runIndex": 52,
+                "targetMethod": 'CartControllerCoverageTest.buyProduct_rejectsMissingCode[2]',
+                "testScope": 'Spring MVC Controller Test (GET /buyProduct - empty code)',
+                "inputData": {'code': ''},
+                "expectedOutcome": "Từ chối mua ngay khi code rỗng (''), redirect về /productList"
+            },
+            {
+                "runIndex": 53,
+                "targetMethod": 'CartControllerCoverageTest.customerForm_redirectsEmptyCart',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartCustomer - Empty Cart Guard)',
+                "inputData": {'cartEmpty': True},
+                "expectedOutcome": 'Chặn truy cập trang nhập thông tin khách hàng khi giỏ hàng rỗng, redirect về /shoppingCart'
+            },
+            {
+                "runIndex": 54,
+                "targetMethod": 'CartControllerCoverageTest.customerForm_mapsExistingCustomer',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartCustomer - Pre-fill Data)',
+                "inputData": {'customerInSession': {'name': 'Alice', 'email': 'alice@example.com'}},
+                "expectedOutcome": 'Điền sẵn thông tin khách hàng đã lưu trước đó vào form để người dùng tiện chỉnh sửa'
+            },
+            {
+                "runIndex": 55,
+                "targetMethod": 'CartControllerCoverageTest.customerSave_storesValidatedCustomerInCart',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartCustomer - Valid Form)',
+                "inputData": {'name': 'Alice', 'address': 'Hanoi', 'email': 'alice@example.com', 'phone': '0912345678'},
+                "expectedOutcome": 'Lưu thông tin khách hàng hợp lệ vào đối tượng CartInfo trong session và redirect sang /shoppingCartConfirmation'
+            },
+            {
+                "runIndex": 56,
+                "targetMethod": 'CartControllerCoverageTest.customerSave_returnsFormForBindingErrors',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartCustomer - Validation Errors)',
+                "inputData": {'name': '', 'address': '', 'bindingErrors': True},
+                "expectedOutcome": 'Khi form có lỗi binding validation, giữ nguyên dữ liệu và trả về view shoppingCartCustomer kèm thông báo lỗi chi tiết'
+            },
+            {
+                "runIndex": 57,
+                "targetMethod": 'CartControllerCoverageTest.initBinder_setsValidatorOnlyForCustomerForm',
+                "testScope": 'Spring MVC Controller Test (InitBinder Configuration)',
+                "inputData": {'targetForm': 'CustomerForm'},
+                "expectedOutcome": 'Đăng ký customerFormValidator cho đúng đối tượng CustomerForm qua WebDataBinder'
+            },
+            {
+                "runIndex": 58,
+                "targetMethod": 'CartControllerCoverageTest.confirmationReview_redirectsEmptyCart',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartConfirmation - Empty Cart Guard)',
+                "inputData": {'cartEmpty': True},
+                "expectedOutcome": 'Chặn truy cập trang xác nhận khi giỏ hàng rỗng, redirect về /shoppingCart'
+            },
+            {
+                "runIndex": 59,
+                "targetMethod": 'CartControllerCoverageTest.confirmationReview_redirectsCartWithInvalidCustomer',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartConfirmation - Invalid Customer Guard)',
+                "inputData": {'cartItems': 1, 'customerValid': False},
+                "expectedOutcome": 'Chặn truy cập trang xác nhận khi chưa có thông tin khách hàng hợp lệ, redirect về /shoppingCartCustomer'
+            },
+            {
+                "runIndex": 60,
+                "targetMethod": 'CartControllerCoverageTest.confirmationSave_redirectsEmptyCart',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartConfirmation - Empty Cart Guard)',
+                "inputData": {'cartEmpty': True},
+                "expectedOutcome": 'Chặn đặt hàng khi giỏ hàng rỗng, redirect về /shoppingCart'
+            },
+            {
+                "runIndex": 61,
+                "targetMethod": 'CartControllerCoverageTest.confirmationSave_redirectsCartWithInvalidCustomer',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartConfirmation - Invalid Customer Guard)',
+                "inputData": {'cartItems': 1, 'customerValid': False},
+                "expectedOutcome": 'Chặn đặt hàng khi thông tin khách hàng không hợp lệ, redirect về /shoppingCartCustomer'
+            },
+            {
+                "runIndex": 62,
+                "targetMethod": 'CartControllerCoverageTest.confirmationSave_preservesCartWhenOrderSaveFails',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartConfirmation - Exception Rollback)',
+                "inputData": {'orderDAOThrows': 'Exception', 'cartItems': 2},
+                "expectedOutcome": 'Khi lưu đơn hàng gặp sự cố ngoại lệ, giỏ hàng được giữ nguyên trong session để khách không bị mất dữ liệu'
+            },
+            {
+                "runIndex": 63,
+                "targetMethod": 'CartControllerCoverageTest.finalize_redirectsWithoutLastOrder',
+                "testScope": 'Spring MVC Controller Test (GET /shoppingCartFinalize - Missing Last Order Guard)',
+                "inputData": {'lastOrderInSession': None},
+                "expectedOutcome": 'Chặn truy cập trực tiếp vào trang hoàn tất đơn hàng khi chưa từng thực hiện đặt hàng, redirect về /'
+            }
         ]
     },
     "TC_CART_004": {
-        "stockConstraint": {
-            "endpoint": "/api/v1/cart/items/S001",
-            "productCode": "S001",
-            "availableStock": 10,
-            "requestedQuantity": 11,
-            "boundaryType": "max+ (Stock + 1)"
-        },
-        "systemEnforcement": {
-            "policy": "CAP_AT_STOCK_OR_REJECT",
-            "cappedQuantity": 10,
-            "warningMessage": "Số lượng yêu cầu vượt quá tồn kho khả dụng (10). Đã tự động điều chỉnh về mức tối đa.",
-            "isStockCapped": True
-        },
-        "testMethods": [
-            "CartApiControllerTest.updateCartItem_capsRequestedQuantityAtAvailableStock()",
-            "CartControllerCoverageTest.updateQuantity_capsQuantityAtAvailableStock()",
-            "CartControllerCoverageTest.ajaxQuantity_capsRequestedQuantityAtAvailableStock()"
+        "specTestCase": 'TC_CART_004 (Chặn thêm số lượng vượt tồn kho)',
+        "totalTestRuns": 3,
+        "summary": 'Kiểm tra cơ chế chặn và tự động điều chỉnh trần (Capping) số lượng mua tại ngưỡng tồn kho khả dụng (Rule 3 / EP / BVA Max+) qua REST API, Form MVC và AJAX Controller',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_capsRequestedQuantityAtAvailableStock',
+                "testScope": 'REST API Unit Test (PUT /api/v1/cart/items/{code} - Stock Capping BVA Max+)',
+                "inputData": {'productCode': 'P1', 'requestedQuantity': 9, 'availableStock': 5},
+                "expectedOutcome": 'Số lượng yêu cầu (9) vượt quá tồn kho khả dụng (5). Hệ thống tự động giới hạn trần về mức tối đa có thể mua (requestedQuantity = 5), trả về HTTP 200 OK kèm thông tin điều chỉnh'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_capsQuantityAtAvailableStock',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartUpdateQty - Stock Capping)',
+                "inputData": {'productCode': 'P1', 'inputQuantity': 10, 'availableStock': 5},
+                "expectedOutcome": 'Khi cập nhật giỏ hàng với số lượng 10 vượt tồn kho 5, hệ thống tự động gán số lượng dòng thành 5, thông báo cảnh báo điều chỉnh và redirect về /shoppingCart'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'CartControllerCoverageTest.ajaxQuantity_capsRequestedQuantityAtAvailableStock',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/updateQuantity - Stock Capping)',
+                "inputData": {'productCode': 'P1', 'requestedQuantity': 12, 'availableStock': 7},
+                "expectedOutcome": 'Yêu cầu AJAX cập nhật số lượng 12 vượt tồn kho 7 được tự động ép về trần 7, trả về JSON cập nhật kèm số lượng đã điều chỉnh'
+            }
         ]
     },
     "TC_CART_005": {
-        "productState": {
-            "productCode": "S005",
-            "stockQuantity": 0,
-            "status": "INACTIVE_OR_SOLD_OUT",
-            "isBuyable": False
-        },
-        "expectedBehavior": {
-            "uiAction": "BUTTON_DISABLED",
-            "apiStatus": 400,
-            "redirectUrl": "/productList",
-            "errorMessage": "Sản phẩm hiện đã hết hàng hoặc ngừng kinh doanh",
-            "cartModified": False
-        },
-        "testMethods": [
-            "CartApiControllerTest.addCartItem_rejectsSoldOutProduct()",
-            "CartApiControllerTest.addCartItem_returnsNotFoundWhenProductDoesNotExist()",
-            "CartControllerCoverageTest.addToCart_rejectsSoldOutProduct()",
-            "CartControllerCoverageTest.buyProduct_redirectsSoldOutProductToProductList()"
+        "specTestCase": 'TC_CART_005 (Chặn thêm sản phẩm đã hết hàng / ngừng bán / không tồn tại)',
+        "totalTestRuns": 11,
+        "summary": 'Kiểm tra chặn toàn diện các hành vi thêm, mua nhanh, cập nhật số lượng đối với sản phẩm đã hết hàng (Stock = 0), sản phẩm không khả dụng hoặc mã sản phẩm không tồn tại trong cơ sở dữ liệu qua REST API và Spring MVC Controller (Rule 1 / EP)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CartApiControllerTest.addCartItem_rejectsSoldOutProduct',
+                "testScope": 'REST API Unit Test (POST /api/v1/cart/items - Sold Out Product Stock = 0)',
+                "inputData": {'productCode': 'P0', 'stock': 0, 'quantity': 1},
+                "expectedOutcome": 'API từ chối thêm sản phẩm đã hết hàng vào giỏ, không thay đổi giỏ hàng và trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CartApiControllerTest.addCartItem_returnsNotFoundWhenProductDoesNotExist',
+                "testScope": 'REST API Unit Test (POST /api/v1/cart/items - Missing Product Code)',
+                "inputData": {'productCode': 'missing', 'findActiveProduct': None},
+                "expectedOutcome": 'API tìm kiếm sản phẩm không tồn tại trong DB, trả về HTTP 404 Not Found và giỏ hàng giữ nguyên rỗng'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_returnsNotFoundForMissingProduct',
+                "testScope": 'REST API Unit Test (PUT /api/v1/cart/items/{code} - Product Absent from DB)',
+                "inputData": {'productCode': 'missing', 'findActiveProduct': None},
+                "expectedOutcome": 'API từ chối cập nhật sản phẩm không tồn tại trong hệ thống, trả về HTTP 404 Not Found và bảo toàn số lượng giỏ hàng cũ'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'CartApiControllerTest.updateCartItem_rejectsSoldOutProduct',
+                "testScope": 'REST API Unit Test (PUT /api/v1/cart/items/{code} - Sold Out Product)',
+                "inputData": {'productCode': 'P0', 'stock': 0, 'quantity': 1},
+                "expectedOutcome": 'API chặn cập nhật số lượng sản phẩm đã hết hàng, trả về HTTP 400 Bad Request'
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'CartControllerCoverageTest.addToCart_rejectsSoldOutProduct',
+                "testScope": 'Spring MVC Controller Test (POST /buyProduct - Sold Out Product)',
+                "inputData": {'productCode': 'P0', 'stock': 0},
+                "expectedOutcome": 'Chặn thêm vào giỏ sản phẩm đã hết hàng, ném thông báo flash lỗi sản phẩm không khả dụng'
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": 'CartControllerCoverageTest.buyProduct_redirectsSoldOutProductToProductList',
+                "testScope": 'Spring MVC Controller Test (GET /buyProduct - Sold Out Redirect)',
+                "inputData": {'productCode': 'P0', 'stock': 0},
+                "expectedOutcome": 'Khi mua ngay sản phẩm đã hết hàng, controller chuyển hướng redirect về /productList kèm thông báo hết hàng'
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": 'CartControllerCoverageTest.buyProduct_reportsUnknownProduct',
+                "testScope": 'Spring MVC Controller Test (GET /buyProduct - Unknown Product Code)',
+                "inputData": {'productCode': 'unknown', 'findActiveProduct': None},
+                "expectedOutcome": 'Báo lỗi sản phẩm không tồn tại trong hệ thống, redirect an toàn về /productList'
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsSoldOutProduct',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartUpdateQty - Sold Out Product)',
+                "inputData": {'productCode': 'P0', 'stock': 0, 'quantity': 2},
+                "expectedOutcome": 'Chặn cập nhật giỏ hàng đối với sản phẩm đã hết hàng, redirect về giỏ hàng kèm thông báo từ chối'
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": 'CartControllerCoverageTest.updateQuantity_rejectsMissingProduct',
+                "testScope": 'Spring MVC Controller Test (POST /shoppingCartUpdateQty - Missing Product)',
+                "inputData": {'productCode': 'missing', 'findActiveProduct': None},
+                "expectedOutcome": 'Chặn cập nhật khi sản phẩm không tồn tại trong database, redirect về giỏ hàng kèm thông báo lỗi'
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": 'CartControllerCoverageTest.ajaxQuantity_rejectsSoldOutProduct',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/updateQuantity - Sold Out)',
+                "inputData": {'productCode': 'P0', 'stock': 0, 'quantity': 1},
+                "expectedOutcome": 'Yêu cầu AJAX cập nhật sản phẩm hết hàng bị từ chối, trả về mã trạng thái lỗi hoặc thông báo từ chối'
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": 'CartControllerCoverageTest.ajaxQuantity_rejectsMissingProduct',
+                "testScope": 'AJAX Controller Test (POST /ajax/shoppingCart/updateQuantity - Missing Product)',
+                "inputData": {'productCode': 'missing', 'findActiveProduct': None},
+                "expectedOutcome": 'Yêu cầu AJAX cập nhật sản phẩm không tồn tại bị từ chối, bảo vệ hệ thống không bị lỗi dữ liệu'
+            }
         ]
     },
     # ==================== PHÂN HỆ 4: MÃ GIẢM GIÁ (VOUCHERS) ====================
     "TC_VOU_001": {
-        "scenario": "Áp dụng thành công mã giảm % có trần maxDiscount",
-        "voucher": {
-            "code": "TESTPERCENT20",
-            "discountType": "PERCENT",
-            "discountPercent": 20.0,
-            "maxDiscount": 50.0,
-            "minOrderValue": 100.0,
-            "active": True
-        },
-        "orderContext": {
-            "orderAmount": 500.0,
-            "user": "authenticated_user",
-            "calculatedDiscount": 100.0,
-            "cappedDiscount": 50.0,
-            "finalPayable": 450.0
-        },
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_calculatesPercentDiscount()",
-            "VoucherTests.testApplyPercentVoucherWithCap()"
+        "specTestCase": "TC_VOU_001 (Mã giảm % & Trần MaxDiscount)",
+        "totalTestRuns": 6,
+        "summary": "Kiểm tra áp dụng mã giảm %, tính toán tỷ lệ % và chặn trần tối đa (maxDiscount)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_calculatesPercentDiscount",
+                "testScope": "Unit Test (Parameterized Run 1)",
+                "inputData": {"orderAmount": 200.0, "discountPercent": 20.0, "maxDiscount": None},
+                "expectedOutcome": "maxDiscount = null -> Giảm thẳng 20% (40.0$), không bị giới hạn trần"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_calculatesPercentDiscount",
+                "testScope": "Unit Test (Parameterized Run 2)",
+                "inputData": {"orderAmount": 200.0, "discountPercent": 20.0, "maxDiscount": 0.0},
+                "expectedOutcome": "maxDiscount = 0.0 -> Giảm thẳng 20% (40.0$), coi như không áp trần"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_calculatesPercentDiscount",
+                "testScope": "Unit Test (Parameterized Run 3)",
+                "inputData": {"orderAmount": 200.0, "discountPercent": 20.0, "maxDiscount": 50.0},
+                "expectedOutcome": "maxDiscount = 50.0 -> Tiền giảm 40.0$ dưới trần -> Giữ nguyên 40.0$"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_calculatesPercentDiscount",
+                "testScope": "Unit Test (Parameterized Run 4)",
+                "inputData": {"orderAmount": 200.0, "discountPercent": 20.0, "maxDiscount": 30.0},
+                "expectedOutcome": "maxDiscount = 30.0 -> Tiền giảm 40.0$ vượt trần -> Bị chặn cứng ở mức trần 30.0$"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "VoucherTests.testPercentageDiscountWithMaxDiscountCap",
+                "testScope": "Integration Test (MySQL Real Database)",
+                "inputData": {"code": "CAP50", "orderAmount": 500000.0, "discountPercent": 20.0, "maxDiscount": 50000.0},
+                "expectedOutcome": "Đơn 500k, 20% = 100k, trần 50k -> Thành công giảm 50k, thanh toán 450k"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "VoucherApiControllerTest.applyVoucher_usesServerCartAmountAndStoresSuccessfulDiscount",
+                "testScope": "REST API Controller Test",
+                "inputData": {"endpoint": "POST /api/v1/vouchers/apply", "cartSessionAmount": 200.0, "voucherCode": "SALE20"},
+                "expectedOutcome": "API kiểm tra tính toán tiền giảm hợp lệ trên giỏ hàng session và lưu session thành công"
+            }
         ]
     },
     "TC_VOU_002": {
-        "scenario": "Chặn áp mã khi tổng tiền chưa đạt Min Order Value (BVA min - 1 vs min)",
-        "voucher": {
-            "code": "TESTMINORDER",
-            "minOrderValue": 500.0,
-            "discountType": "FIXED",
-            "discountAmount": 50.0
-        },
-        "bvaOrderPoints": [
+        "specTestCase": "TC_VOU_002 (Đơn hàng tối thiểu minOrderValue)",
+        "totalTestRuns": 3,
+        "summary": "Kiểm tra chặn áp mã khi đơn chưa đạt ngưỡng tối thiểu và chấp nhận tại biên chuẩn (BVA / EP)",
+        "testRunsBreakdown": [
             {
-                "orderAmount": 499.0,
-                "pointType": "min - 1 (Invalid Boundary)",
-                "expectedStatus": 400,
-                "errorMessage": "Chưa đạt giá trị đơn tối thiểu (500.0)",
-                "discountApplied": 0.0
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsAmountOneUnitBelowMinimum",
+                "testScope": "Unit Test (Boundary Value Analysis: min - 1)",
+                "inputData": {"orderAmount": 499000.0, "minOrderValue": 500000.0, "pointType": "min - 1 (Invalid Boundary)"},
+                "expectedOutcome": "Giá trị biên dưới ngay sát nút (min - 1 = 499.000đ < 500.000đ) -> Bị từ chối"
             },
             {
-                "orderAmount": 200.0,
-                "pointType": "dưới ngưỡng xa (Invalid EP)",
-                "expectedStatus": 400,
-                "errorMessage": "Chưa đạt giá trị đơn tối thiểu (500.0)",
-                "discountApplied": 0.0
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_acceptsAmountAtMinimumBoundary",
+                "testScope": "Unit Test (Boundary Value Analysis: min)",
+                "inputData": {"orderAmount": 500000.0, "minOrderValue": 500000.0, "pointType": "min exact boundary (Valid)"},
+                "expectedOutcome": "Giá trị đúng ngay tại biên chuẩn (min = 500.000đ) -> Được chấp nhận"
             },
             {
-                "orderAmount": 500.0,
-                "pointType": "min boundary (Valid)",
-                "expectedStatus": 200,
-                "discountApplied": 50.0,
-                "finalPayable": 450.0
+                "runIndex": 3,
+                "targetMethod": "VoucherTests.testMinimumOrderValueRejection",
+                "testScope": "Integration Test (MySQL Real Database)",
+                "inputData": {"code": "MIN500", "orderAmount": 200000.0, "minOrderValue": 500000.0},
+                "expectedOutcome": "Đơn 200k chưa đủ mức 500k -> Báo lỗi thiếu điều kiện tối thiểu"
             }
-        ],
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_rejectsAmountOneUnitBelowMinimum()",
-            "VoucherDAOTest.validateAndApplyVoucher_acceptsAmountAtMinimumBoundary()"
         ]
     },
     "TC_VOU_003": {
-        "scenario": "Chặn áp dụng Voucher khi đã quá hạn sử dụng (Expired Date)",
-        "voucher": {
-            "code": "TESTEXPIRED",
-            "discountType": "PERCENT",
-            "discountPercent": 15.0,
-            "minOrderValue": 100.0,
-            "expiryDateOffsetDays": -5,
-            "active": True
-        },
-        "validation": {
-            "orderAmount": 200.0,
-            "isExpired": True,
-            "expectedStatus": 400,
-            "errorCode": "VOUCHER_EXPIRED",
-            "errorMessage": "Mã giảm giá đã hết hạn sử dụng",
-            "discountApplied": 0.0
-        },
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_rejectsExpiredVoucher()"
+        "specTestCase": "TC_VOU_003 (Hạn sử dụng expiryDate)",
+        "totalTestRuns": 3,
+        "summary": "Kiểm tra hiệu lực thời gian của Voucher (chặn ngày quá khứ, chấp nhận tương lai)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsExpiredVoucher",
+                "testScope": "Unit Test (Equivalence Partitioning: Past Date)",
+                "inputData": {"code": "EXPIRED", "expiryDate": "2020-01-01 (Trong quá khứ)", "orderAmount": 200.0},
+                "expectedOutcome": "Ngày hết hạn trong quá khứ -> Bị từ chối áp dụng"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_acceptsVoucherWithFutureExpiry",
+                "testScope": "Unit Test (Equivalence Partitioning: Future Date)",
+                "inputData": {"code": "FUTURE", "expiryDate": "2030-01-01 (Ở tương lai)", "orderAmount": 200.0},
+                "expectedOutcome": "Ngày hết hạn ở tương lai -> Hợp lệ và được chấp nhận"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherTests.testExpiredVoucherRejection",
+                "testScope": "Integration Test (MySQL Real Database)",
+                "inputData": {"code": "EXPIRED5D", "expiryDateOffsetDays": -5, "orderAmount": 300000.0},
+                "expectedOutcome": "Mã đã hết hạn 5 ngày trước trong CSDL thật -> Bị từ chối"
+            }
         ]
     },
     "TC_VOU_004": {
-        "scenario": "Chặn áp mã khi cạn lượt sử dụng toàn hệ thống (Usage Limit)",
-        "voucher": {
-            "code": "TESTLIMITREJECT",
-            "usageLimit": 50,
-            "usedCount": 50,
-            "minOrderValue": 100.0
-        },
-        "bvaUsagePoints": [
+        "specTestCase": "TC_VOU_004 (Giới hạn lượt dùng toàn hệ thống usageLimit)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra giới hạn tổng số lượt sử dụng voucher toàn hệ thống theo biên BVA",
+        "testRunsBreakdown": [
             {
-                "testedUsedCount": 49,
-                "limit": 50,
-                "pointType": "max - 1 (Valid)",
-                "action": "ALLOW_APPLY",
-                "expectedStatus": 200
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_enforcesGlobalUsageBoundary",
+                "testScope": "Unit Test (BVA Parameterized Run 1: Unlimited)",
+                "inputData": {"usageLimit": 0, "usedCount": 999},
+                "expectedOutcome": "usageLimit = 0 (không giới hạn lượt) -> Thành công"
             },
             {
-                "testedUsedCount": 50,
-                "limit": 50,
-                "pointType": "max boundary (Exhausted)",
-                "action": "REJECT_USAGE_LIMIT",
-                "expectedStatus": 400,
-                "errorMessage": "Mã giảm giá đã hết số lượt sử dụng toàn hệ thống"
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_enforcesGlobalUsageBoundary",
+                "testScope": "Unit Test (BVA Parameterized Run 2: Under limit)",
+                "inputData": {"usageLimit": 3, "usedCount": 2},
+                "expectedOutcome": "usedCount = 2, usageLimit = 3 (còn 1 lượt cuối) -> Thành công"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_enforcesGlobalUsageBoundary",
+                "testScope": "Unit Test (BVA Parameterized Run 3: At limit)",
+                "inputData": {"usageLimit": 3, "usedCount": 3},
+                "expectedOutcome": "usedCount = 3, usageLimit = 3 (chạm trần cạn lượt) -> Bị từ chối"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherTests.testUsageLimitRejection",
+                "testScope": "Integration Test (MySQL Real Database)",
+                "inputData": {"code": "LIMIT1", "usageLimit": 1, "attemptUser": "Khách hàng thứ 2"},
+                "expectedOutcome": "Voucher có usageLimit = 1, khách thứ 2 vào dùng -> Báo lỗi hết lượt"
             }
-        ],
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_enforcesGlobalUsageBoundary()"
         ]
     },
     "TC_VOU_005": {
-        "scenario": "Chặn mã rác hoặc mã không tồn tại trong hệ thống (Rule 1)",
-        "lookup": {
-            "inputCode": "MISSING",
-            "dbQuery": "from Voucher v where v.code = :code",
-            "queryResult": None
-        },
-        "expectedResponse": {
-            "httpStatus": 404,
-            "success": False,
-            "errorCode": "VOUCHER_NOT_FOUND",
-            "errorMessage": "Mã giảm giá không tồn tại trong hệ thống",
-            "discountAmount": 0.0
-        },
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_rejectsUnknownVoucher()",
-            "VoucherApiControllerTest.applyVoucher_returnsNotFoundWhenMissing()"
+        "specTestCase": "TC_VOU_005 (Chặn mã rác, mã rỗng, mã không tồn tại)",
+        "totalTestRuns": 15,
+        "summary": "Kiểm tra tính bền bỉ và chuẩn hóa chuỗi đối với mã không tồn tại, null, rỗng, khoảng trắng",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsUnknownVoucher",
+                "testScope": "Unit Test (DAO Unknown Code)",
+                "inputData": {"code": "NOT_EXIST_CODE"},
+                "expectedOutcome": "Mã code không tồn tại trong DB -> Bị từ chối"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsMissingCode",
+                "testScope": "Unit Test (Parameterized Missing Code Run 1)",
+                "inputData": {"code": None},
+                "expectedOutcome": "Mã truyền vào là null -> Bị từ chối"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsMissingCode",
+                "testScope": "Unit Test (Parameterized Missing Code Run 2)",
+                "inputData": {"code": ""},
+                "expectedOutcome": "Mã truyền vào là chuỗi rỗng '' -> Bị từ chối"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsMissingCode",
+                "testScope": "Unit Test (Parameterized Missing Code Run 3)",
+                "inputData": {"code": "   "},
+                "expectedOutcome": "Mã truyền vào là chuỗi toàn khoảng trắng '   ' -> Bị từ chối"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucherForCheckout_rejectsMissingCodeWithoutDatabaseLookup",
+                "testScope": "Unit Test (Checkout Fast-fail Run 1)",
+                "inputData": {"code": None},
+                "expectedOutcome": "Luồng checkout chặn mã null không cần query DB"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucherForCheckout_rejectsMissingCodeWithoutDatabaseLookup",
+                "testScope": "Unit Test (Checkout Fast-fail Run 2)",
+                "inputData": {"code": ""},
+                "expectedOutcome": "Luồng checkout chặn mã rỗng '' không cần query DB"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucherForCheckout_rejectsMissingCodeWithoutDatabaseLookup",
+                "testScope": "Unit Test (Checkout Fast-fail Run 3)",
+                "inputData": {"code": "   "},
+                "expectedOutcome": "Luồng checkout chặn mã khoảng trắng '   ' không cần query DB"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "VoucherDAOTest.findVoucher_rejectsMissingCode",
+                "testScope": "Unit Test (Find Missing Code Run 1)",
+                "inputData": {"code": None},
+                "expectedOutcome": "Hàm tìm kiếm chặn mã null -> trả về null"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "VoucherDAOTest.findVoucher_rejectsMissingCode",
+                "testScope": "Unit Test (Find Missing Code Run 2)",
+                "inputData": {"code": ""},
+                "expectedOutcome": "Hàm tìm kiếm chặn mã rỗng '' -> trả về null"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "VoucherDAOTest.findVoucher_rejectsMissingCode",
+                "testScope": "Unit Test (Find Missing Code Run 3)",
+                "inputData": {"code": "   "},
+                "expectedOutcome": "Hàm tìm kiếm chặn mã khoảng trắng '   ' -> trả về null"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "VoucherDAOTest.findVoucher_normalizesCode",
+                "testScope": "Unit Test (Code Normalization)",
+                "inputData": {"inputCode": "  sale10  "},
+                "expectedOutcome": "Chuẩn hóa chữ thường/hoa và khoảng trắng ('  sale10  ' -> 'SALE10')"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "VoucherApiControllerTest.applyVoucher_treatsNullPayloadAsMissingCodeWithoutUsername",
+                "testScope": "REST API Controller Test (Null Payload)",
+                "inputData": {"payload": None},
+                "expectedOutcome": "API nhận body JSON null -> Trả về lỗi 400 Bad Request"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "VoucherApiControllerTest.applyVoucher_resolvesUsernameForMissingVoucherCode",
+                "testScope": "REST API Controller Test (Auth Run 1: null)",
+                "inputData": {"code": "", "auth": "null"},
+                "expectedOutcome": "API nhận mã rỗng với Principal null -> 400 Bad Request"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "VoucherApiControllerTest.applyVoucher_resolvesUsernameForMissingVoucherCode",
+                "testScope": "REST API Controller Test (Auth Run 2: anonymous)",
+                "inputData": {"code": "   ", "auth": "anonymousUser"},
+                "expectedOutcome": "API nhận mã rỗng với anonymousUser -> 400 Bad Request"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "VoucherApiControllerTest.applyVoucher_resolvesUsernameForMissingVoucherCode",
+                "testScope": "REST API Controller Test (Auth Run 3: authenticated)",
+                "inputData": {"code": None, "auth": "buyer (authenticated)"},
+                "expectedOutcome": "API nhận mã rỗng với authenticated user -> 400 Bad Request"
+            }
         ]
     },
     "TC_VOU_006": {
-        "scenario": "Áp dụng thành công voucher giảm tiền cố định (FIXED Discount)",
-        "voucher": {
-            "code": "TESTFIXED30",
-            "discountType": "FIXED",
-            "discountAmount": 30.0,
-            "minOrderValue": 50.0
-        },
-        "evaluations": [
+        "specTestCase": "TC_VOU_006 (Mã giảm tiền cố định FIXED & Capped hóa đơn)",
+        "totalTestRuns": 5,
+        "summary": "Kiểm tra áp dụng mã giảm tiền cứng (FIXED) và cơ chế Capped khống chế tiền âm",
+        "testRunsBreakdown": [
             {
-                "orderAmount": 200.0,
-                "discountApplied": 30.0,
-                "finalPayable": 170.0,
-                "note": "Giảm đúng số tiền cứng cấu hình"
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_capsFixedDiscountAtOrderAmount",
+                "testScope": "Unit Test (Capped Fixed Run 1)",
+                "inputData": {"orderAmount": 100.0, "discountAmount": 30.0},
+                "expectedOutcome": "Hóa đơn 100$, giảm 30$ -> Thành tiền 70$"
             },
             {
-                "orderAmount": 25.0,
-                "discountApplied": 25.0,
-                "finalPayable": 0.0,
-                "note": "Khống chế giảm tối đa bằng giá trị đơn, tránh số âm"
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_capsFixedDiscountAtOrderAmount",
+                "testScope": "Unit Test (Capped Fixed Run 2)",
+                "inputData": {"orderAmount": 100.0, "discountAmount": 100.0},
+                "expectedOutcome": "Hóa đơn 100$, giảm 100$ -> Thành tiền 0$"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_capsFixedDiscountAtOrderAmount",
+                "testScope": "Unit Test (Capped Fixed Run 3)",
+                "inputData": {"orderAmount": 100.0, "discountAmount": 150.0},
+                "expectedOutcome": "Hóa đơn 100$, giảm 150$ -> Tiền giảm chặn ở 100$, thành tiền 0$ (chống lỗi tiền âm)"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_unknownDiscountTypeSucceedsWithZeroDiscount",
+                "testScope": "Unit Test (Unknown Discount Type)",
+                "inputData": {"orderAmount": 100.0, "discountType": "UNKNOWN_CUSTOM"},
+                "expectedOutcome": "Loại giảm giá không xác định thì giảm 0$"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "VoucherTests.testFixedDiscountCalculation",
+                "testScope": "Integration Test (MySQL Real Database)",
+                "inputData": {"code": "FIXED30K", "orderAmount": 200000.0, "discountAmount": 30000.0},
+                "expectedOutcome": "Tích hợp MySQL đơn 200k giảm fixed 30k -> 170k"
             }
-        ],
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_capsFixedDiscountAtOrderAmount()"
         ]
     },
     "TC_VOU_007": {
-        "scenario": "Chặn áp mã khi người dùng đã vượt giới hạn cá nhân (Per User Limit)",
-        "context": {
-            "username": "alice",
-            "voucherCode": "SALE10",
-            "perUserLimit": 2,
-            "orderAmount": 100.0
-        },
-        "bvaUserPoints": [
+        "specTestCase": "TC_VOU_007 (Giới hạn cá nhân perUserLimit & Concurrency Lock)",
+        "totalTestRuns": 11,
+        "summary": "Kiểm tra giới hạn dùng cá nhân perUserLimit, xử lý an toàn Null/Aggregate và khóa bi quan Pessimistic Lock",
+        "testRunsBreakdown": [
             {
-                "invocation": 1,
-                "currentUsedCount": 0,
-                "allowed": True,
-                "expectedStatus": 200
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_enforcesPerUserUsageBoundary",
+                "testScope": "Unit Test (Per-User Boundary Run 1)",
+                "inputData": {"username": "alice", "perUserLimit": 0, "usedCount": 5},
+                "expectedOutcome": "perUserLimit = 0 (không giới hạn cá nhân) -> Cho phép dùng"
             },
             {
-                "invocation": 2,
-                "currentUsedCount": 1,
-                "allowed": True,
-                "expectedStatus": 200
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_enforcesPerUserUsageBoundary",
+                "testScope": "Unit Test (Per-User Boundary Run 2)",
+                "inputData": {"username": "alice", "perUserLimit": 2, "usedCount": 1},
+                "expectedOutcome": "usedCount = 1, perUserLimit = 2 (còn hạn mức) -> Cho phép dùng"
             },
             {
-                "invocation": 3,
-                "currentUsedCount": 2,
-                "allowed": False,
-                "expectedStatus": 400,
-                "errorMessage": "Bạn đã dùng hết số lượt cho phép của mã giảm giá này (Tối đa 2 lượt)"
+                "runIndex": 3,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_enforcesPerUserUsageBoundary",
+                "testScope": "Unit Test (Per-User Boundary Run 3)",
+                "inputData": {"username": "alice", "perUserLimit": 2, "usedCount": 2},
+                "expectedOutcome": "usedCount = 2, perUserLimit = 2 (hết hạn mức cá nhân) -> Bị từ chối"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherDAOTest.getUserVoucherUsageCount_returnsZeroForNullKey",
+                "testScope": "Unit Test (Null Safety Run 1: code null)",
+                "inputData": {"code": None, "username": "alice"},
+                "expectedOutcome": "Kiểm tra an toàn khi code = null -> trả về 0 lượt dùng"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "VoucherDAOTest.getUserVoucherUsageCount_returnsZeroForNullKey",
+                "testScope": "Unit Test (Null Safety Run 2: user null)",
+                "inputData": {"code": "SALE10", "username": None},
+                "expectedOutcome": "Kiểm tra an toàn khi user = null -> trả về 0 lượt dùng"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "VoucherDAOTest.getUserVoucherUsageCount_mapsNullableAggregate",
+                "testScope": "Unit Test (Aggregate Mapping Run 1: null record)",
+                "inputData": {"hqlAggregateResult": None},
+                "expectedOutcome": "Xử lý kết quả đếm Hibernate khi chưa có bản ghi (null -> 0)"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "VoucherDAOTest.getUserVoucherUsageCount_mapsNullableAggregate",
+                "testScope": "Unit Test (Aggregate Mapping Run 2: existing records)",
+                "inputData": {"hqlAggregateResult": 3},
+                "expectedOutcome": "Xử lý kết quả đếm Hibernate khi có bản ghi -> trả về số lượng thực 3"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "VoucherDAOTest.recordVoucherUsage_doesNothingForUnknownVoucher",
+                "testScope": "Unit Test (Record Usage Unknown Code)",
+                "inputData": {"code": "UNKNOWN_CODE"},
+                "expectedOutcome": "Ghi nhận lượt dùng với mã lạ -> Không throw exception, bỏ qua an toàn"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "VoucherDAOTest.recordVoucherUsage_incrementsVoucherAndPersistsUsage",
+                "testScope": "Unit Test (Record Usage with User)",
+                "inputData": {"code": "SALE10", "username": "alice"},
+                "expectedOutcome": "Tăng used_count và lưu lịch sử dùng vào bảng VoucherUsage cho user alice"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "VoucherDAOTest.recordVoucherUsage_incrementsVoucherAndPersistsUsage",
+                "testScope": "Unit Test (Record Usage without User)",
+                "inputData": {"code": "SALE10", "username": None},
+                "expectedOutcome": "Tăng used_count voucher nhưng không lưu bản ghi user cá nhân"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucherForCheckout_usesPessimisticWriteLock",
+                "testScope": "Unit Test (Concurrency Lock Mechanism)",
+                "inputData": {"lockMode": "LockModeType.PESSIMISTIC_WRITE"},
+                "expectedOutcome": "Cơ chế khóa ghi bi quan (Pessimistic Lock) chống Race Condition khi nhiều người cùng bấm áp mã tại 1 mili-giây"
             }
-        ],
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_enforcesPerUserUsageBoundary()"
         ]
     },
     "TC_VOU_008": {
-        "scenario": "Khách vãng lai (Guest) không bị ràng buộc giới hạn sử dụng cá nhân",
-        "guestContext": {
-            "username": None,
-            "isAuthenticated": False,
-            "sessionRole": "ANONYMOUS",
-            "voucherCode": "SALE10",
-            "perUserLimit": 2,
-            "globalUsedCount": 10,
-            "globalUsageLimit": 100
-        },
-        "policy": {
-            "skipPerUserCheck": True,
-            "enforceGlobalCheck": True,
-            "result": "VOUCHER_APPLIED_SUCCESS",
-            "discountDeducted": 10.0
-        },
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_skipsPerUserLimitForGuest()"
+        "specTestCase": "TC_VOU_008 (Khách vãng lai Guest bỏ qua hạn mức cá nhân)",
+        "totalTestRuns": 1,
+        "summary": "Xác nhận khách vãng lai (Guest / username == null) được bỏ qua truy vấn bảng VoucherUsage và áp dụng thành công",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_skipsPerUserLimitForGuest",
+                "testScope": "Unit Test (Guest User Bypass)",
+                "inputData": {"username": None, "perUserLimit": 2, "voucherCode": "GUEST_OK"},
+                "expectedOutcome": "Kiểm tra username == null thì không truy vấn bảng VoucherUsage và áp dụng thành công"
+            }
         ]
     },
     "TC_VOU_009": {
-        "scenario": "Chặn áp mã khi voucher bị khóa / vô hiệu hóa (active = false)",
-        "voucherState": {
-            "code": "SALE10",
-            "active": False,
-            "deactivatedReason": "Admin disabled campaign early",
-            "expiryDate": "2026-12-31"
-        },
-        "expectedResponse": {
-            "httpStatus": 400,
-            "success": False,
-            "errorCode": "VOUCHER_INACTIVE",
-            "errorMessage": "Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa",
-            "discountAmount": 0.0
-        },
-        "testMethods": [
-            "VoucherDAOTest.validateAndApplyVoucher_rejectsInactiveVoucher()"
+        "specTestCase": "TC_VOU_009 (Chặn mã bị khóa active = false)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra hệ thống từ chối áp dụng các mã voucher đã bị vô hiệu hóa / tắt kích hoạt",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.validateAndApplyVoucher_rejectsInactiveVoucher",
+                "testScope": "Unit Test (Inactive Voucher Rejection)",
+                "inputData": {"code": "DEACTIVATED", "active": False, "orderAmount": 200.0},
+                "expectedOutcome": "Voucher có active = false -> Từ chối áp dụng"
+            }
         ]
     },
     "TC_VOU_010": {
-        "apiEndpoint": {
-            "method": "POST",
-            "url": "/api/v1/admin/vouchers",
-            "requiredRole": "ROLE_ADMIN"
-        },
-        "requestBody": {
-            "code": "NEWYEAR2026",
-            "discountType": "PERCENT",
-            "discountValue": 20.0,
-            "maxDiscount": 100000.0,
-            "minOrderValue": 500000.0,
-            "usageLimit": 100,
-            "perUserLimit": 1,
-            "active": True,
-            "startDate": "2026-01-01",
-            "endDate": "2026-12-31"
-        },
-        "expectedResult": {
-            "httpStatus": 201,
-            "statusName": "HttpStatus.CREATED",
-            "dbPersisted": True,
-            "codeGenerated": "NEWYEAR2026"
-        },
-        "testMethods": [
-            "VoucherApiControllerTest.createVoucher_savesAndReturnsCreatedEntity()"
+        "specTestCase": "TC_VOU_010 (Admin tạo mã mới & Validate Form)",
+        "totalTestRuns": 7,
+        "summary": "Kiểm tra quy trình lưu mã mới, cập nhật mã tồn tại và xác thực toàn vẹn 4 quy tắc dữ liệu Form đầu vào",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.saveVoucher_createsAndCopiesEveryFormField",
+                "testScope": "Unit Test (DAO Create New Entity)",
+                "inputData": {"code": "SUMMER2026", "fieldsCount": 9, "active": True},
+                "expectedOutcome": "Lưu mới copy đầy đủ 9 trường vào Entity CSDL"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.saveVoucher_updatesExistingEntity",
+                "testScope": "Unit Test (DAO Update Entity)",
+                "inputData": {"code": "SUMMER2026", "updateField": "discountPercent"},
+                "expectedOutcome": "Cập nhật mã voucher đã tồn tại"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherApiControllerTest.createVoucher_savesAndReturnsCreatedEntity",
+                "testScope": "REST API Controller Test (Admin Create 201)",
+                "inputData": {"endpoint": "POST /api/v1/admin/vouchers", "validPayload": True},
+                "expectedOutcome": "API trả về mã phản hồi HTTP 201 Created"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherApiControllerTest.createVoucher_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Validation Run 1: Missing Code)",
+                "inputData": {"code": "", "reason": "Thiếu mã code"},
+                "expectedOutcome": "Form thiếu mã code -> 400 Bad Request"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "VoucherApiControllerTest.createVoucher_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Validation Run 2: Discount <= 0)",
+                "inputData": {"discountValue": -10.0, "reason": "Giá trị giảm <= 0"},
+                "expectedOutcome": "Form có giá trị giảm <= 0 -> 400 Bad Request"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "VoucherApiControllerTest.createVoucher_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Validation Run 3: Invalid Type)",
+                "inputData": {"discountType": "INVALID_TYPE", "reason": "Không phải PERCENT/FIXED"},
+                "expectedOutcome": "Form có loại giảm giá sai (không phải PERCENT/FIXED) -> 400 Bad Request"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "VoucherApiControllerTest.createVoucher_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Validation Run 4: Negative Min Order)",
+                "inputData": {"minOrderValue": -50.0, "reason": "minOrderValue âm"},
+                "expectedOutcome": "Form có minOrderValue âm -> 400 Bad Request"
+            }
         ]
     },
     "TC_VOU_011": {
-        "apiEndpoint": {
-            "method": "DELETE",
-            "url": "/api/v1/admin/vouchers/SALE10",
-            "requiredRole": "ROLE_ADMIN"
-        },
-        "action": "DEACTIVATE_SOFT_DELETE",
-        "expectedResult": {
-            "httpStatus": 200,
-            "targetCode": "SALE10",
-            "newActiveState": False,
-            "auditLog": "Voucher SALE10 deactivated by Admin"
-        },
-        "testMethods": [
-            "VoucherApiControllerTest.deleteVoucher_returnsSuccessWhenDaoDeletes()"
+        "specTestCase": "TC_VOU_011 (Admin vô hiệu hóa / Xóa mã qua REST API)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra chức năng xóa mềm (soft delete) và các mã phản hồi HTTP 200/404 từ REST API",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.deleteVoucher_softDeletesExistingVoucher",
+                "testScope": "Unit Test (DAO Soft Delete)",
+                "inputData": {"code": "SALE10", "currentActive": True},
+                "expectedOutcome": "Xóa mềm (active = false)"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.deleteVoucher_returnsFalseWhenMissing",
+                "testScope": "Unit Test (DAO Delete Missing)",
+                "inputData": {"code": "NON_EXISTENT"},
+                "expectedOutcome": "Xóa mã không có trong DB trả về false"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherApiControllerTest.deleteVoucher_returnsSuccessWhenDaoDeletes",
+                "testScope": "REST API Controller Test (Delete 200 OK)",
+                "inputData": {"endpoint": "DELETE /api/v1/admin/vouchers/SALE10"},
+                "expectedOutcome": "API trả về 200 OK khi xóa thành công"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherApiControllerTest.deleteVoucher_returnsNotFoundWhenDaoDoesNotDelete",
+                "testScope": "REST API Controller Test (Delete 404 Not Found)",
+                "inputData": {"endpoint": "DELETE /api/v1/admin/vouchers/MISSING"},
+                "expectedOutcome": "API trả về 404 Not Found khi không tìm thấy"
+            }
         ]
     },
     "TC_VOU_012": {
-        "apiEndpoint": {
-            "method": "GET",
-            "url": "/api/v1/vouchers",
-            "requiredRole": "PUBLIC (Guest & User)"
-        },
-        "queryCriteria": {
-            "active": True,
-            "notExpired": "endDate >= CURRENT_DATE",
-            "hasAvailableUsage": "usedCount < usageLimit"
-        },
-        "expectedResponse": {
-            "httpStatus": 200,
-            "contentType": "application/json",
-            "vouchersReturned": [
-                {
-                    "code": "SALE10",
-                    "discountType": "PERCENT",
-                    "discountValue": 10.0,
-                    "minOrderValue": 200000.0
-                },
-                {
-                    "code": "FREESHIP",
-                    "discountType": "FIXED",
-                    "discountValue": 30000.0,
-                    "minOrderValue": 300000.0
-                }
-            ]
-        },
-        "testMethods": [
-            "VoucherApiControllerTest.getActiveVouchers_returnsDaoResult()"
+        "specTestCase": "TC_VOU_012 (Khách hàng & Admin lấy danh sách Voucher)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra lọc 3 điều kiện danh sách hiển thị cho khách và truy vấn sắp xếp giảm dần cho Admin",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "VoucherDAOTest.listActiveVouchers_appliesActiveExpiryAndUsageFilters",
+                "testScope": "Unit Test (DAO 3-Condition Filter)",
+                "inputData": {"requiredFilters": ["active = true", "expiryDate >= now", "usedCount < usageLimit"]},
+                "expectedOutcome": "Truy vấn SQL lọc đúng 3 điều kiện: active = true, expiryDate >= now, usedCount < usageLimit"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "VoucherDAOTest.listAllVouchers_returnsDescendingCreatedRows",
+                "testScope": "Unit Test (DAO Admin Sort)",
+                "inputData": {"sortField": "createDate", "direction": "DESC"},
+                "expectedOutcome": "Truy vấn danh sách Admin sắp xếp giảm dần theo thời gian tạo"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "VoucherApiControllerTest.getActiveVouchers_returnsDaoResult",
+                "testScope": "REST API Controller Test (Client Active List)",
+                "inputData": {"endpoint": "GET /api/v1/vouchers/active"},
+                "expectedOutcome": "API GET /api/v1/vouchers/active trả về danh sách cho khách hàng"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "VoucherApiControllerTest.getAllVouchersAdmin_returnsDaoResult",
+                "testScope": "REST API Controller Test (Admin All List)",
+                "inputData": {"endpoint": "GET /api/v1/admin/vouchers"},
+                "expectedOutcome": "API GET /api/v1/admin/vouchers trả về toàn bộ voucher cho Admin"
+            }
         ]
     },
     # ==================== PHÂN HỆ 5: THANH TOÁN & ĐẶT HÀNG (CHECKOUT & ORDER) ====================
     # --- Nhóm 1: Chuyển đổi trạng thái giao diện & Luồng Checkout ---
     "TC_CHK_001": {
-        "transition": "Màn hình Xác nhận đơn ➔ Màn hình Giỏ hàng",
-        "condition": {"cartState": "EMPTY", "cartLinesCount": 0},
-        "action": "CLICK_PLACE_ORDER",
-        "expectedResult": {
-            "orderCreated": False,
-            "redirectUrl": "/shoppingCart",
-            "message": "Giỏ hàng rỗng, không thể tiến hành đặt hàng"
-        },
-        "testMethods": ["CartControllerCoverageTest.confirmationReview_redirectsEmptyCart()"]
+        "specTestCase": 'TC_CHK_001 (Kiểm tra Checkout khi giỏ hàng rỗng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra hỗ trợ biểu mẫu xác thực CustomerForm khi khởi tạo thanh toán',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.supports_customerForm_returnsTrue',
+                "testScope": 'Validator Contract Test (Supports CustomerForm.class)',
+                "inputData": {'clazz': 'CustomerForm.class'},
+                "expectedOutcome": 'Xác nhận Validator hỗ trợ xử lý đối tượng CustomerForm (True)'
+            }
+        ]
     },
     "TC_CHK_002": {
-        "transition": "Màn hình Xác nhận đơn ➔ Màn hình Thông tin giao hàng",
-        "condition": {"cartLines": [{"productCode": "P1", "quantity": 1}], "customerInfoValid": False},
-        "action": "CLICK_PLACE_ORDER",
-        "expectedResult": {
-            "orderCreated": False,
-            "redirectUrl": "/shoppingCartCustomer",
-            "message": "Thông tin giao hàng chưa hoàn tất hoặc không hợp lệ"
-        },
-        "testMethods": [
-            "CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode()",
-            "CartControllerCoverageTest.confirmationReview_redirectsCartWithInvalidCustomer()"
+        "specTestCase": 'TC_CHK_002 (Kiểm tra Checkout khi thiếu thông tin giao hàng hợp lệ)',
+        "totalTestRuns": 4,
+        "summary": 'Kiểm tra chặn submit khi các trường bắt buộc (họ tên, địa chỉ nhận hàng) bị null hoặc chỉ chứa khoảng trắng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[1]',
+                "testScope": 'Validator Unit Test (Field: name is null)',
+                "inputData": {'name': None, 'address': '123 Street', 'email': 'a@test.com', 'phone': '0912345678'},
+                "expectedOutcome": 'Báo lỗi trường name bị null, gắn mã NotBlank.customerForm.name'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[2]',
+                "testScope": 'Validator Unit Test (Field: name is blank spaces)',
+                "inputData": {'name': '   ', 'address': '123 Street', 'email': 'a@test.com', 'phone': '0912345678'},
+                "expectedOutcome": 'Báo lỗi trường name chứa toàn khoảng trắng, từ chối submit'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[3]',
+                "testScope": 'Validator Unit Test (Field: address is null)',
+                "inputData": {'name': 'Alice', 'address': None, 'email': 'a@test.com', 'phone': '0912345678'},
+                "expectedOutcome": 'Báo lỗi trường address bị null, gắn mã NotBlank.customerForm.address'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[4]',
+                "testScope": 'Validator Unit Test (Field: address is blank spaces)',
+                "inputData": {'name': 'Alice', 'address': '   ', 'email': 'a@test.com', 'phone': '0912345678'},
+                "expectedOutcome": 'Báo lỗi trường address chứa khoảng trắng, yêu cầu nhập địa chỉ'
+            }
         ]
     },
     "TC_CHK_003": {
-        "transition": "Màn hình Xác nhận đơn ➔ Xác nhận đơn có lỗi",
-        "condition": {"cartLines": [{"productCode": "P2", "quantity": 1}], "customerInfoValid": True, "dbExceptionSimulated": True},
-        "action": "CLICK_PLACE_ORDER",
-        "expectedResult": {
-            "orderCreated": False,
-            "cartPreserved": True,
-            "cartLinesRemaining": 1,
-            "errorMessage": "Phát sinh lỗi trong quá trình lưu dữ liệu, giỏ hàng được giữ nguyên"
-        },
-        "testMethods": ["CartControllerCoverageTest.confirmationSave_preservesCartWhenOrderSaveFails()"]
+        "specTestCase": 'TC_CHK_003 (Kiểm tra giữ giỏ hàng khi quá trình tạo đơn gặp lỗi)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra giao dịch đặt hàng bị rollback và bảo toàn dữ liệu giỏ hàng khi tầng cơ sở dữ liệu ném ngoại lệ',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderWorkflowIntegrationTest.shouldRollbackOrderDetailsAndStockWhenDatabaseRejectsOrder',
+                "testScope": 'Integration Test (Transaction Rollback & Cart Retention)',
+                "inputData": {'cartItems': 2, 'dbThrows': 'DataAccessException', 'simulateFailure': True},
+                "expectedOutcome": 'Toàn bộ chi tiết đơn hàng và tồn kho được khôi phục, giỏ hàng giữ nguyên trong session'
+            }
+        ]
     },
     "TC_CHK_004": {
-        "transition": "Màn hình Xác nhận đơn ➔ Màn hình Hoàn tất đặt hàng",
-        "condition": {"cartLines": [{"productCode": "P3", "quantity": 1, "stock": 3}], "customerInfoValid": True},
-        "action": "CLICK_PLACE_ORDER",
-        "expectedResult": {
-            "orderCreated": True,
-            "orderStatus": "PENDING",
-            "cartCleared": True,
-            "redirectUrl": "/shoppingCartFinalize"
-        },
-        "testMethods": [
-            "CartControllerCoverageTest.confirmationSave_movesSuccessfulCartToLastOrder()",
-            "OrderDAOTest.saveOrder_createsPendingGuestOrderWithNextNumber()"
+        "specTestCase": 'TC_CHK_004 (Kiểm tra hoàn tất Checkout thành công)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra luồng đặt hàng hoàn tất thành công: tạo đơn hàng, lưu chi tiết và trừ tồn kho',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderWorkflowIntegrationTest.shouldCreateOrderDetailsAndDecreaseStockWhenCheckoutRequestIsValid',
+                "testScope": 'Integration Test (End-to-End Successful Checkout)',
+                "inputData": {'cartItems': 2, 'totalAmount': 1500000.0, 'customer': 'Alice', 'payment': 'COD'},
+                "expectedOutcome": 'Tạo đơn thành công, sinh bản ghi OrderDetails và trừ tồn kho các mặt hàng tương ứng'
+            }
         ]
     },
     "TC_CHK_005": {
-        "scenario": "Bảng quyết định Luật 1 - Chặn đặt hàng trực tuyến khi giỏ hàng rỗng",
-        "request": {"endpoint": "/api/v1/checkout", "method": "POST", "cartItems": []},
-        "expectedResponse": {
-            "httpStatus": 400,
-            "success": False,
-            "error": "EMPTY_CART_ERROR",
-            "message": "Không thể thanh toán đơn hàng khi giỏ rỗng"
-        },
-        "testMethods": ["CartControllerCoverageTest.confirmationSave_redirectsEmptyCart()"]
+        "specTestCase": 'TC_CHK_005 (Kiểm tra yêu cầu Checkout trực tuyến với giỏ hàng rỗng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra Validator từ chối các đối tượng biểu mẫu không phải CustomerForm',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.supports_otherClass_returnsFalse',
+                "testScope": 'Validator Contract Test (Reject Other Classes)',
+                "inputData": {'clazz': 'String.class'},
+                "expectedOutcome": 'Trả về false, từ chối xử lý mọi lớp đối tượng không tương thích'
+            }
+        ]
     },
     "TC_CHK_006": {
-        "scenario": "Bảng quyết định Luật 2 - Chặn đặt hàng khi CustomerForm không hợp lệ",
-        "customerPayload": {"name": "", "email": "invalid_mail", "address": "", "phone": ""},
-        "expectedResponse": {
-            "httpStatus": 400,
-            "success": False,
-            "fieldErrors": ["NotEmpty.customerForm.name", "Pattern.customerForm.email", "NotEmpty.customerForm.address", "NotEmpty.customerForm.phone"]
-        },
-        "testMethods": [
-            "CustomerFormValidatorTest.validate_invalidEmail_rejectsPatternCode()",
-            "CartControllerCoverageTest.confirmationSave_redirectsCartWithInvalidCustomer()"
+        "specTestCase": 'TC_CHK_006 (Kiểm tra yêu cầu Checkout khi thông tin giao hàng chưa hợp lệ)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra bộ kiểm thực CustomerFormValidator chặn email sai định dạng cú pháp chuẩn',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_invalidEmail_rejectsPatternCode',
+                "testScope": 'Validator Unit Test (Regex Pattern: Malformed Email)',
+                "inputData": {'email': 'invalid-email-format'},
+                "expectedOutcome": 'Từ chối email không đúng định dạng RFC, gắn mã Pattern.customerForm.email'
+            }
         ]
     },
     "TC_CHK_007": {
-        "scenario": "Bảng quyết định Luật 5 - Giữ giỏ hàng khi Checkout trực tuyến thất bại do tồn kho",
-        "stockState": {"productCode": "P2", "stockQuantity": 5, "requestedQuantity": 6},
-        "expectedBehavior": {
-            "orderPlaced": False,
-            "cartPreserved": True,
-            "httpStatus": 400,
-            "errorMessage": "Tồn kho không đủ để đáp ứng đơn hàng"
-        },
-        "testMethods": [
-            "CartControllerCoverageTest.confirmationSave_preservesCartWhenOrderSaveFails()",
-            "OrderDAOTest.saveOrder_enforcesStockBoundary()"
+        "specTestCase": 'TC_CHK_007 (Kiểm tra giữ giỏ hàng khi Checkout trực tuyến thất bại (Thiếu Email))',
+        "totalTestRuns": 2,
+        "summary": 'Kiểm tra chặn hoàn tất đặt hàng và giữ nguyên giỏ hàng khi thiếu địa chỉ email nhận hóa đơn',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[5]',
+                "testScope": 'Validator Unit Test (Field: email is null)',
+                "inputData": {'name': 'Alice', 'address': '123 Street', 'email': None, 'phone': '0912345678'},
+                "expectedOutcome": 'Phát hiện trường email bị null, gắn mã NotBlank.customerForm.email'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[6]',
+                "testScope": 'Validator Unit Test (Field: email is blank spaces)',
+                "inputData": {'name': 'Alice', 'address': '123 Street', 'email': '   ', 'phone': '0912345678'},
+                "expectedOutcome": 'Phát hiện trường email rỗng, từ chối submit đơn hàng'
+            }
         ]
     },
     "TC_CHK_008": {
-        "scenario": "Bảng quyết định Luật 7 - Đường đi hoàn hảo Checkout trực tuyến thành công",
-        "input": {"productCode": "P3", "unitPrice": 150000.0, "quantity": 1, "stockQuantity": 5},
-        "expectedOutcome": {
-            "httpStatus": 200,
-            "orderCreated": True,
-            "orderNumber": "Tự sinh kế tiếp",
-            "remainingStock": 4,
-            "cartEmptied": True
-        },
-        "testMethods": ["CartControllerCoverageTest.confirmationSave_movesSuccessfulCartToLastOrder()"]
+        "specTestCase": 'TC_CHK_008 (Kiểm tra Checkout trực tuyến thành công (Thiếu Số điện thoại))',
+        "totalTestRuns": 2,
+        "summary": 'Kiểm tra chặn submit và cảnh báo người dùng khi thiếu số điện thoại liên hệ giao hàng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[7]',
+                "testScope": 'Validator Unit Test (Field: phone is null)',
+                "inputData": {'name': 'Alice', 'address': '123 Street', 'email': 'a@test.com', 'phone': None},
+                "expectedOutcome": 'Phát hiện trường phone bị null, gắn mã NotBlank.customerForm.phone'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode{String, String}[8]',
+                "testScope": 'Validator Unit Test (Field: phone is blank spaces)',
+                "inputData": {'name': 'Alice', 'address': '123 Street', 'email': 'a@test.com', 'phone': '   '},
+                "expectedOutcome": 'Phát hiện trường phone rỗng, giữ nguyên màn hình nhập thông tin'
+            }
+        ]
     },
     "TC_CHK_009": {
-        "scenario": "Bảng quyết định Luật 7 - Toàn bộ luồng Checkout hoàn hảo với giá, chiết khấu và tồn kho",
-        "setup": {
-            "authenticatedUser": "manager1",
-            "product": {"originalPrice": 100.0, "discountPercent": 10, "effectivePrice": 90.0, "stockBefore": 10, "salesBefore": 4},
-            "orderQuantity": 3
-        },
-        "calculation": {
-            "totalOrderAmount": 270.0,
-            "stockAfter": 7,
-            "salesAfter": 7,
-            "orderStatus": "PENDING"
-        },
-        "testMethods": [
-            "CartControllerCoverageTest.confirmationSave_movesSuccessfulCartToLastOrder()",
-            "OrderDAOTest.saveOrder_createsPendingGuestOrderWithNextNumber()"
+        "specTestCase": 'TC_CHK_009 (Kiểm tra toàn bộ luồng Checkout hợp lệ & Chuẩn hóa dữ liệu)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra xử lý thành công khi thông tin khách hàng đầy đủ và hợp lệ, tự động trim khoảng trắng và chuẩn hóa email',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_validCustomer_normalizesInputAndHasNoErrors',
+                "testScope": 'Validator Unit Test (Nominal Input & Auto-Trim)',
+                "inputData": {'name': ' John Doe ', 'address': ' 123 Main St ', 'email': ' JOHN@EXAMPLE.COM ', 'phone': ' 0912345678 '},
+                "expectedOutcome": "Xác thực 0 lỗi, tự động cắt tỉa khoảng trắng và chuyển email về 'john@example.com'"
+            }
         ]
     },
     "TC_CHK_010": {
-        "scenario": "Bảng quyết định Luật 5 - Tranh chấp tồn kho giảm trước thời điểm bấm Đặt hàng",
-        "raceCondition": {
-            "initialCartStock": 2,
-            "orderQuantity": 2,
-            "stockReducedConcurrently": 1
-        },
-        "systemEnforcement": {
-            "orderCreated": False,
-            "stockRemains": 1,
-            "salesCountUnchanged": True,
-            "cartPreserved": True,
-            "exceptionThrown": "IllegalStateException (Insufficient Stock)"
-        },
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_CHK_010 (Kiểm tra Checkout khi tồn kho giảm trước lúc đặt hàng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường hợp đồng thời: tồn kho bị người khác mua giảm ngay trước thời điểm bấm đặt hàng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderWorkflowIntegrationTest.shouldNotPersistPartialStateWhenStockChangesBeforeCheckout',
+                "testScope": 'Integration Test (Concurrent Stock Modification Before Placement)',
+                "inputData": {'requestedQty': 5, 'stockBefore': 10, 'stockMidFlight': 2},
+                "expectedOutcome": 'Phát hiện thiếu tồn kho khả dụng, dừng đặt hàng, không lưu trạng thái dở dang'
+            }
+        ]
     },
-    # --- Nhóm 2: Standard BVA 4n+1 Form Validation (Tên, Địa chỉ, Email, SĐT) ---
     "TC_CHK_011": {
-        "field": "name",
-        "bvaClassification": "max + 1 (Robustness Invalid)",
-        "inputLength": 256,
-        "validationError": "Length.customerForm.name",
-        "stepAction": "Nhập tên 256 ký tự 'n' ➔ Bấm Tiếp tục ➔ Bị chặn",
-        "testMethods": ["CustomerFormValidatorTest.validate_nameOutsideBoundary_rejectsExpectedCode()"]
+        "specTestCase": 'TC_CHK_011 (Từ chối tên người nhận vượt quá độ dài tối đa)',
+        "totalTestRuns": 2,
+        "summary": 'Kiểm tra phân tích giá trị biên BVA trường name: từ chối độ dài 0 (rỗng) và độ dài 256 ký tự (vượt max 255)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameOutsideBoundary_rejectsExpectedCode{int, String}[1]',
+                "testScope": 'Validator Unit Test (BVA Min- Out of Boundary: length = 0)',
+                "inputData": {'name': '', 'length': 0},
+                "expectedOutcome": 'Từ chối tên rỗng, gắn mã lỗi NotBlank.customerForm.name'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameOutsideBoundary_rejectsExpectedCode{int, String}[2]',
+                "testScope": 'Validator Unit Test (BVA Max+ Out of Boundary: length = 256)',
+                "inputData": {'name': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'length': 256},
+                "expectedOutcome": 'Từ chối tên vượt quá 255 ký tự, gắn mã lỗi Size.customerForm.name'
+            }
+        ]
     },
     "TC_CHK_012": {
-        "scenario": "Hoàn tác giao dịch kiểm thử (Transactional Rollback)",
-        "transactionScope": {
-            "initialStock": 8,
-            "orderedQuantity": 2,
-            "stockInTransaction": 6,
-            "afterRollbackStock": 8,
-            "orderEntityPersistedInProduction": False
-        },
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_CHK_012 (Kiểm tra dữ liệu Checkout tại biên danh định (Nominal Length))',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra tên người nhận tại độ dài danh định tiêu chuẩn 128 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError{int}[3]',
+                "testScope": 'Validator Unit Test (BVA Nominal: length = 128)',
+                "inputData": {'name': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'length': 128},
+                "expectedOutcome": 'Tên có độ dài danh định 128 ký tự hợp lệ, không có lỗi'
+            }
+        ]
     },
     "TC_CHK_013": {
-        "bvaClassification": "Nominal Standard (Giá trị danh định chuẩn)",
-        "formValues": {
-            "name": "Nguyen Van A (50 chars nominal)",
-            "address": "123 Le Loi, Quan 1, TP Ho Chi Minh (50 chars nominal)",
-            "email": "buyer@example.com",
-            "phone": "0901234567"
-        },
-        "expected": "Validation PASS, cho phép chuyển sang bước xác nhận đơn",
-        "testMethods": ["CustomerFormValidatorTest.validate_validCustomer_normalizesInputAndHasNoErrors()"]
+        "specTestCase": 'TC_CHK_013 (Kiểm tra thông tin giao hàng tại giá trị danh định)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra tên người nhận tại biên lớn nhất hợp lệ max = 255 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError{int}[5]',
+                "testScope": 'Validator Unit Test (BVA Max: length = 255)',
+                "inputData": {'name': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'length': 255},
+                "expectedOutcome": 'Tên có độ dài tối đa 255 ký tự hợp lệ, không phát sinh lỗi trường name'
+            }
+        ]
     },
     "TC_CHK_014": {
-        "field": "name",
-        "bvaClassification": "min (1 ký tự)",
-        "input": "N",
-        "expected": "Hợp lệ, hasFieldErrors('name') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError()"]
+        "specTestCase": 'TC_CHK_014 (Kiểm tra tên người nhận tại biên nhỏ nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường name tại giá trị biên nhỏ nhất hợp lệ: min = 1 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError{int}[1]',
+                "testScope": 'Validator Unit Test (BVA Min: length = 1)',
+                "inputData": {'name': 'A', 'length': 1},
+                "expectedOutcome": 'Tên có độ dài 1 ký tự hợp lệ, không phát sinh lỗi trường name'
+            }
+        ]
     },
     "TC_CHK_015": {
-        "field": "name",
-        "bvaClassification": "min + 1 (2 ký tự)",
-        "input": "An",
-        "expected": "Hợp lệ, hasFieldErrors('name') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError()"]
+        "specTestCase": 'TC_CHK_015 (Kiểm tra tên người nhận tại biên ngay trên nhỏ nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường name tại giá trị biên ngay trên nhỏ nhất: min + 1 = 2 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError{int}[2]',
+                "testScope": 'Validator Unit Test (BVA Min+1: length = 2)',
+                "inputData": {'name': 'An', 'length': 2},
+                "expectedOutcome": 'Tên có độ dài 2 ký tự hợp lệ, không phát sinh lỗi trường name'
+            }
+        ]
     },
     "TC_CHK_016": {
-        "field": "name",
-        "bvaClassification": "max - 1 (254 ký tự)",
-        "input": "n" * 254,
-        "expected": "Hợp lệ, hasFieldErrors('name') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError()"]
+        "specTestCase": 'TC_CHK_016 (Kiểm tra tên người nhận tại biên ngay dưới lớn nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường name tại giá trị biên ngay dưới lớn nhất: max - 1 = 254 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError{int}[4]',
+                "testScope": 'Validator Unit Test (BVA Max-1: length = 254)',
+                "inputData": {'name': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'length': 254},
+                "expectedOutcome": 'Tên có độ dài 254 ký tự hợp lệ, không phát sinh lỗi trường name'
+            }
+        ]
     },
     "TC_CHK_017": {
-        "field": "name",
-        "bvaClassification": "max (255 ký tự)",
-        "input": "n" * 255,
-        "expected": "Hợp lệ, hasFieldErrors('name') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_nameAtStandardBoundary_hasNoNameError()"]
+        "specTestCase": 'TC_CHK_017 (Kiểm tra địa chỉ giao hàng tại biên tối đa hợp lệ)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường address tại độ dài tối đa cho phép 255 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_addressAtMaximumLength_hasNoAddressError',
+                "testScope": 'Validator Unit Test (BVA Max: address length = 255)',
+                "inputData": {'address': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'length': 255},
+                "expectedOutcome": 'Địa chỉ có độ dài tối đa 255 ký tự hợp lệ, không phát sinh lỗi'
+            }
+        ]
     },
     "TC_CHK_018": {
-        "field": "address",
-        "bvaClassification": "min (1 ký tự)",
-        "input": "1",
-        "expected": "Hợp lệ, hasFieldErrors('address') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode()"]
+        "specTestCase": 'TC_CHK_018 (Kiểm tra địa chỉ giao hàng tại biên nhỏ nhất & Ngoại lệ Sổ địa chỉ)',
+        "totalTestRuns": 7,
+        "summary": 'Kiểm tra an toàn dữ liệu địa chỉ khi ID null, username null/rỗng hoặc form địa chỉ null',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.getAddressById_returnsNullForNullId',
+                "testScope": 'DAO Unit Test (Get Address: ID is null)',
+                "inputData": {'id': None},
+                "expectedOutcome": 'Trả về null an toàn khi ID truyền vào là null'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_returnsNullForNullUsername',
+                "testScope": 'DAO Unit Test (Save Address: Username is null)',
+                "inputData": {'username': None},
+                "expectedOutcome": 'Từ chối lưu và trả về null khi username là null'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_returnsNullForNullForm',
+                "testScope": 'DAO Unit Test (Save Address: Form is null)',
+                "inputData": {'username': 'u1', 'form': None},
+                "expectedOutcome": 'Từ chối lưu và trả về null khi form biểu mẫu địa chỉ là null'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_currentlyThrowsForNullRequiredField_characterization',
+                "testScope": 'DAO Unit Test (Save Address: Required Field is null)',
+                "inputData": {'username': 'u1', 'line': None},
+                "expectedOutcome": 'Ném ngoại lệ khi trường địa chỉ bắt buộc bị null'
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'UserAddressDAOTest.getUserAddresses_returnsEmptyForMissingUsername{String}[1]',
+                "testScope": 'DAO Unit Test (User Addresses: null username)',
+                "inputData": {'username': None},
+                "expectedOutcome": 'Trả về danh sách địa chỉ rỗng []'
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": 'UserAddressDAOTest.getUserAddresses_returnsEmptyForMissingUsername{String}[2]',
+                "testScope": 'DAO Unit Test (User Addresses: empty username)',
+                "inputData": {'username': ''},
+                "expectedOutcome": 'Trả về danh sách địa chỉ rỗng []'
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": 'UserAddressDAOTest.getUserAddresses_returnsEmptyForMissingUsername{String}[3]',
+                "testScope": 'DAO Unit Test (User Addresses: whitespace username)',
+                "inputData": {'username': '   '},
+                "expectedOutcome": 'Trả về danh sách địa chỉ rỗng []'
+            }
+        ]
     },
     "TC_CHK_019": {
-        "field": "address",
-        "bvaClassification": "min + 1 (2 ký tự)",
-        "input": "1A",
-        "expected": "Hợp lệ, hasFieldErrors('address') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_validCustomer_normalizesInputAndHasNoErrors()"]
+        "specTestCase": 'TC_CHK_019 (Kiểm tra địa chỉ giao hàng tại biên ngay trên nhỏ nhất & Truy vấn địa chỉ)',
+        "totalTestRuns": 4,
+        "summary": 'Kiểm tra lưu địa chỉ mới, cập nhật địa chỉ đã sở hữu và sắp xếp ưu tiên địa chỉ mặc định lên đầu',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.getUserAddresses_bindsUsernameAndOrdersDefaultsFirst',
+                "testScope": 'DAO Unit Test (List Addresses: Order Default First)',
+                "inputData": {'username': 'alice'},
+                "expectedOutcome": 'Trả về danh sách địa chỉ của user với địa chỉ mặc định xếp đầu tiên'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'UserAddressDAOTest.getAddressById_delegatesLookup',
+                "testScope": 'DAO Unit Test (Find Address by ID)',
+                "inputData": {'id': 10},
+                "expectedOutcome": 'Ủy quyền truy vấn session.get(UserAddress.class, 10) và trả về đối tượng địa chỉ'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_createsNewAddressWhenRequestedIdDoesNotExist',
+                "testScope": 'DAO Unit Test (Create New Address for Missing ID)',
+                "inputData": {'id': 9999, 'username': 'alice'},
+                "expectedOutcome": 'Tạo mới bản ghi địa chỉ khi ID yêu cầu chưa tồn tại trong hệ thống'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_updatesOwnedAddressAndTrimsFields',
+                "testScope": 'DAO Unit Test (Update Owned Address & Trim Fields)',
+                "inputData": {'id': 1, 'address': ' 456 Elm St '},
+                "expectedOutcome": 'Cập nhật thành công địa chỉ thuộc sở hữu của user và tự động cắt tỉa khoảng trắng'
+            }
+        ]
     },
     "TC_CHK_020": {
-        "field": "address",
-        "bvaClassification": "max - 1 (254 ký tự)",
-        "input": "a" * 254,
-        "expected": "Hợp lệ, hasFieldErrors('address') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_addressAtMaximumLength_hasNoAddressError()"]
+        "specTestCase": 'TC_CHK_020 (Kiểm tra địa chỉ giao hàng vượt quá biên lớn nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra từ chối địa chỉ giao hàng dài 256 ký tự (vượt quá max 255)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_addressOverMaximumLength_rejectsLengthCode',
+                "testScope": 'Validator Unit Test (BVA Max+: address length = 256)',
+                "inputData": {'address': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'length': 256},
+                "expectedOutcome": 'Từ chối địa chỉ vượt quá 255 ký tự, gắn mã lỗi Size.customerForm.address'
+            }
+        ]
     },
     "TC_CHK_021": {
-        "field": "address",
-        "bvaClassification": "max (255 ký tự)",
-        "input": "a" * 255,
-        "expected": "Hợp lệ, hasFieldErrors('address') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_addressAtMaximumLength_hasNoAddressError()"]
+        "specTestCase": 'TC_CHK_021 (Kiểm tra địa chỉ giao hàng tại biên lớn nhất & Tự động tạo Mặc định)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra địa chỉ đầu tiên tạo mới của người dùng được tự động gán làm mặc định (isDefault = true)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_makesFirstAddressDefaultAndUnsetsPreviousDefaults',
+                "testScope": 'DAO Unit Test (Auto Default for First Address)',
+                "inputData": {'username': 'bob', 'existing': 0},
+                "expectedOutcome": 'Địa chỉ đầu tiên tạo mới của người dùng tự động được gán làm mặc định'
+            }
+        ]
     },
     "TC_CHK_022": {
-        "field": "email",
-        "bvaClassification": "min (6 ký tự: 'a@b.co')",
-        "input": "a@b.co",
-        "expected": "Đúng format RFC 5322 & đủ độ dài tối thiểu 6 ký tự, hợp lệ",
-        "testMethods": ["CustomerFormValidatorTest.validate_validCustomer_normalizesInputAndHasNoErrors()"]
+        "specTestCase": 'TC_CHK_022 (Kiểm tra email tại biên ngắn nhất hợp lệ & Bảo mật quyền sở hữu địa chỉ)',
+        "totalTestRuns": 4,
+        "summary": 'Kiểm tra ngăn chặn truy cập trái phép: từ chối đặt mặc định hoặc sửa địa chỉ của người dùng khác',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.setDefaultAddress_returnsFalseForForeignOwner',
+                "testScope": 'DAO Security Unit Test (Foreign Owner Default Guard)',
+                "inputData": {'id': 1, 'owner': 'alice', 'by': 'mallory'},
+                "expectedOutcome": 'Trả về false, từ chối cho phép mallory đặt địa chỉ của alice làm mặc định'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'UserAddressDAOTest.setDefaultAddress_returnsFalseWhenMissing',
+                "testScope": 'DAO Unit Test (Set Default Non-existent Address)',
+                "inputData": {'id': 999, 'username': 'alice'},
+                "expectedOutcome": 'Trả về false khi địa chỉ cần đặt mặc định không tồn tại'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_rejectsForeignAddress',
+                "testScope": 'DAO Security Unit Test (Foreign Address Edit Guard)',
+                "inputData": {'id': 1, 'owner': 'alice', 'by': 'mallory'},
+                "expectedOutcome": 'Từ chối cập nhật địa chỉ thuộc người khác, trả về null'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_currentlyUnsetsDefaultsBeforeRejectingForeignAddress_characterization',
+                "testScope": 'DAO Regression Characterization Test',
+                "inputData": {'id': 1, 'by': 'mallory'},
+                "expectedOutcome": 'Ghi nhận đặc tả hành vi hiện tại của hệ thống khi kiểm tra quyền sở hữu địa chỉ'
+            }
+        ]
     },
     "TC_CHK_023": {
-        "field": "email",
-        "bvaClassification": "min + 1 (7 ký tự: 'ab@c.co')",
-        "input": "ab@c.co",
-        "expected": "Hợp lệ, hasFieldErrors('email') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_validCustomer_normalizesInputAndHasNoErrors()"]
+        "specTestCase": 'TC_CHK_023 (Kiểm tra email tại biên ngay trên ngắn nhất & Thao tác Xóa địa chỉ)',
+        "totalTestRuns": 5,
+        "summary": 'Kiểm tra thao tác xóa địa chỉ: xóa địa chỉ phụ, chặn xóa địa chỉ người khác và tự động đôn địa chỉ còn lại lên làm mặc định',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.deleteAddress_removesNonDefaultWithoutPromotion',
+                "testScope": 'DAO Unit Test (Delete Non-Default Address)',
+                "inputData": {'id': 2, 'isDefault': False},
+                "expectedOutcome": 'Xóa thành công địa chỉ phụ, không cần thay đổi trạng thái địa chỉ mặc định'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'UserAddressDAOTest.deleteAddress_returnsFalseWhenMissing',
+                "testScope": 'DAO Unit Test (Delete Missing Address)',
+                "inputData": {'id': 999},
+                "expectedOutcome": 'Trả về false khi địa chỉ cần xóa không tồn tại'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'UserAddressDAOTest.deleteAddress_returnsFalseForForeignOwner',
+                "testScope": 'DAO Security Unit Test (Delete Foreign Address Guard)',
+                "inputData": {'id': 1, 'owner': 'alice', 'by': 'mallory'},
+                "expectedOutcome": 'Trả về false, chặn mallory xóa địa chỉ thuộc sở hữu của alice'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'UserAddressDAOTest.deleteAddress_promotesFirstRemainingAddress',
+                "testScope": 'DAO Unit Test (Auto Promote Remaining Address)',
+                "inputData": {'id': 1, 'isDefault': True, 'remaining': 1},
+                "expectedOutcome": 'Khi xóa địa chỉ mặc định, tự động đôn địa chỉ còn lại đầu tiên lên làm mặc định mới'
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'UserAddressDAOTest.deleteAddress_doesNotPromoteWhenNoAddressRemains',
+                "testScope": 'DAO Unit Test (Delete Last Address)',
+                "inputData": {'id': 1, 'isDefault': True, 'remaining': 0},
+                "expectedOutcome": 'Xóa địa chỉ duy nhất thành công, không phát sinh lỗi khi danh sách rỗng'
+            }
+        ]
     },
     "TC_CHK_024": {
-        "field": "email",
-        "bvaClassification": "max - 1 (127 ký tự)",
-        "input": "a" * 115 + "@example.com",
-        "expected": "Hợp lệ, hasFieldErrors('email') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_emailAtMaximumLength_hasNoEmailError()"]
+        "specTestCase": 'TC_CHK_024 (Kiểm tra email tại biên ngay dưới lớn nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường email tại giá trị biên lớn nhất cho phép: max = 128 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_emailAtMaximumLength_hasNoEmailError',
+                "testScope": 'Validator Unit Test (BVA Max: email length = 128)',
+                "inputData": {'email': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com', 'length': 128},
+                "expectedOutcome": 'Email có độ dài tối đa 128 ký tự hợp lệ, không phát sinh lỗi kiểm thực'
+            }
+        ]
     },
     "TC_CHK_025": {
-        "field": "email",
-        "bvaClassification": "max (128 ký tự)",
-        "input": "a" * 116 + "@example.com",
-        "expected": "Hợp lệ, hasFieldErrors('email') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_emailAtMaximumLength_hasNoEmailError()"]
+        "specTestCase": 'TC_CHK_025 (Kiểm tra email tại biên lớn nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường email vượt quá giá trị biên lớn nhất: max+ = 129 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_emailOverMaximumLength_rejectsOnlyLengthCode',
+                "testScope": 'Validator Unit Test (BVA Max+: email length = 129)',
+                "inputData": {'email': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com', 'length': 129},
+                "expectedOutcome": 'Từ chối email có độ dài 129 ký tự, gắn mã lỗi Size.customerForm.email'
+            }
+        ]
     },
     "TC_CHK_026": {
-        "field": "phone",
-        "bvaClassification": "min (1 ký tự)",
-        "input": "0",
-        "expected": "Hợp lệ, hasFieldErrors('phone') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_blankRequiredField_rejectsOnlyRequiredCode()"]
+        "specTestCase": 'TC_CHK_026 (Kiểm tra số điện thoại tại biên nhỏ nhất & Chuyển đổi Địa chỉ Mặc định)',
+        "totalTestRuns": 2,
+        "summary": 'Kiểm tra chuyển đổi địa chỉ mặc định theo yêu cầu và giữ nguyên các địa chỉ phụ',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_requestedDefaultUnsetsOldDefault',
+                "testScope": 'DAO Unit Test (Switch Default Address)',
+                "inputData": {'username': 'bob', 'isDefault': True},
+                "expectedOutcome": 'Bỏ cờ mặc định của địa chỉ cũ và thiết lập địa chỉ mới làm mặc định'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'UserAddressDAOTest.saveAddress_keepsNonFirstAddressNonDefaultWhenNotRequested',
+                "testScope": 'DAO Unit Test (Non-default Address Creation)',
+                "inputData": {'username': 'bob', 'isDefault': False},
+                "expectedOutcome": 'Tạo địa chỉ phụ không đặt cờ mặc định, giữ nguyên địa chỉ mặc định cũ'
+            }
+        ]
     },
     "TC_CHK_027": {
-        "field": "phone",
-        "bvaClassification": "min + 1 (2 ký tự)",
-        "input": "09",
-        "expected": "Hợp lệ, hasFieldErrors('phone') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_validCustomer_normalizesInputAndHasNoErrors()"]
+        "specTestCase": 'TC_CHK_027 (Kiểm tra số điện thoại tại biên ngay trên nhỏ nhất & Cập nhật Địa chỉ Hàng loạt)',
+        "totalTestRuns": 2,
+        "summary": 'Kiểm tra cập nhật rõ ràng địa chỉ mục tiêu thành mặc định và bulk update unset previous default',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'UserAddressDAOTest.setDefaultAddress_unsetsOldDefaultAndUpdatesTarget',
+                "testScope": 'DAO Unit Test (Explicit Set Default Address)',
+                "inputData": {'addressId': 2, 'username': 'bob'},
+                "expectedOutcome": 'Thực thi HQL cập nhật địa chỉ ID 2 thành mặc định và bỏ cờ địa chỉ khác'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'UserAddressDAOTest.unsetPreviousDefault_executesBulkUpdate',
+                "testScope": 'DAO Unit Test (Bulk Update Unset Default)',
+                "inputData": {'username': 'bob'},
+                "expectedOutcome": 'Thực thi lệnh UPDATE UserAddress SET isDefault = false WHERE username = :username'
+            }
+        ]
     },
     "TC_CHK_028": {
-        "field": "phone",
-        "bvaClassification": "max - 1 (127 ký tự)",
-        "input": "0" * 127,
-        "expected": "Hợp lệ, hasFieldErrors('phone') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_phoneAtMaximumLength_hasNoPhoneError()"]
+        "specTestCase": 'TC_CHK_028 (Kiểm tra số điện thoại tại biên ngay dưới lớn nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường phone tại giá trị biên lớn nhất cho phép: max = 128 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_phoneAtMaximumLength_hasNoPhoneError',
+                "testScope": 'Validator Unit Test (BVA Max: phone length = 128)',
+                "inputData": {'phone': '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'length': 128},
+                "expectedOutcome": 'Số điện thoại có độ dài 128 ký tự hợp lệ, không có lỗi'
+            }
+        ]
     },
     "TC_CHK_029": {
-        "field": "phone",
-        "bvaClassification": "max (128 ký tự)",
-        "input": "0" * 128,
-        "expected": "Hợp lệ, hasFieldErrors('phone') == false",
-        "testMethods": ["CustomerFormValidatorTest.validate_phoneAtMaximumLength_hasNoPhoneError()"]
+        "specTestCase": 'TC_CHK_029 (Kiểm tra số điện thoại tại biên lớn nhất)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường phone vượt quá giá trị biên lớn nhất: max+ = 129 ký tự',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'CustomerFormValidatorTest.validate_phoneOverMaximumLength_rejectsLengthCode',
+                "testScope": 'Validator Unit Test (BVA Max+: phone length = 129)',
+                "inputData": {'phone': '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'length': 129},
+                "expectedOutcome": 'Từ chối số điện thoại dài 129 ký tự, gắn mã lỗi Size.customerForm.phone'
+            }
+        ]
     },
-    # --- Nhóm 3: Xử lý Đơn hàng Tầng DAO & Service (TC_ORD_001 -> TC_ORD_026) ---
     "TC_ORD_001": {
-        "scenario": "Chặn đặt hàng khi CartInfo là null",
-        "input": {"cartInfo": None},
-        "expectedException": "IllegalArgumentException",
-        "dbVerification": "verify(session, never()).persist(any())",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsNullCart()"]
+        "specTestCase": 'TC_ORD_001 (Kiểm tra đặt hàng khi thiếu toàn bộ dữ liệu giỏ hàng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối lưu đơn khi CartInfo là null',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsNullCart',
+                "testScope": 'DAO Unit Test (EP Invalid: CartInfo is null)',
+                "inputData": {'cartInfo': None},
+                "expectedOutcome": "Ném IllegalArgumentException('CartInfo cannot be null'), chặn đứng lưu dữ liệu"
+            }
+        ]
     },
     "TC_ORD_002": {
-        "scenario": "Từ chối lưu đơn với giỏ hàng rỗng (không có CartLines)",
-        "input": {"customer": "valid", "cartLines": []},
-        "expectedException": "IllegalArgumentException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsEmptyCart()"]
+        "specTestCase": 'TC_ORD_002 (Từ chối lưu đơn với giỏ hàng không có dòng hàng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối lưu đơn khi CartInfo rỗng (empty cart lines)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsEmptyCart',
+                "testScope": 'DAO Unit Test (EP Invalid: Cart is empty)',
+                "inputData": {'cartLines': []},
+                "expectedOutcome": "Ném IllegalArgumentException('Cart is empty'), không tạo đơn hàng"
+            }
+        ]
     },
     "TC_ORD_003": {
-        "scenario": "Từ chối lưu đơn khi thông tin Customer không hợp lệ (isValid=false)",
-        "input": {"productCode": "P001", "quantity": 1, "customerInfo": {"isValid": False}},
-        "expectedException": "IllegalArgumentException",
-        "dbVerification": "verify(productDAO, never()).findProductForUpdate(any())",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsInvalidCustomer()"]
+        "specTestCase": 'TC_ORD_003 (Từ chối lưu đơn khi customer không hợp lệ)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối lưu đơn khi đối tượng customerInfo không hợp lệ',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsInvalidCustomer',
+                "testScope": 'DAO Unit Test (EP Invalid: CustomerInfo invalid)',
+                "inputData": {'customerInfo': 'Invalid customer'},
+                "expectedOutcome": "Ném IllegalArgumentException('Customer info is invalid')"
+            }
+        ]
     },
     "TC_ORD_004": {
-        "scenario": "Từ chối giỏ hàng chứa dòng hàng rỗng (CartLine = null)",
-        "input": {"cartLines": [None]},
-        "expectedException": "IllegalArgumentException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsMissingLineStructure()"]
+        "specTestCase": 'TC_ORD_004 (Kiểm tra giỏ hàng có một dòng hàng không chứa dữ liệu)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối giỏ hàng chứa phần tử cartLine null',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsMissingLineStructure{CartLineInfo}[1]',
+                "testScope": 'DAO Unit Test (EP Invalid: Null CartLine element)',
+                "inputData": {'cartLines': [None]},
+                "expectedOutcome": 'Ném IllegalArgumentException khi phát hiện phần tử dòng giỏ hàng null'
+            }
+        ]
     },
     "TC_ORD_005": {
-        "scenario": "Từ chối dòng hàng thiếu đối tượng ProductInfo",
-        "input": {"cartLine": {"quantity": 1, "productInfo": None}},
-        "expectedException": "IllegalArgumentException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsMissingLineStructure()"]
+        "specTestCase": 'TC_ORD_005 (Từ chối dòng hàng thiếu thông tin sản phẩm)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối dòng giỏ hàng thiếu đối tượng ProductInfo',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsMissingLineStructure{CartLineInfo}[2]',
+                "testScope": 'DAO Unit Test (EP Invalid: Line without ProductInfo)',
+                "inputData": {'productInfo': None},
+                "expectedOutcome": "Ném IllegalArgumentException('Line missing product info')"
+            }
+        ]
     },
     "TC_ORD_006": {
-        "scenario": "Từ chối dòng hàng thiếu mã sản phẩm (ProductCode = null)",
-        "input": {"cartLine": {"quantity": 1, "productInfo": {"code": None}}},
-        "expectedException": "IllegalArgumentException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsMissingLineStructure()"]
+        "specTestCase": 'TC_ORD_006 (Từ chối dòng hàng thiếu sản phẩm code)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối dòng giỏ hàng có mã sản phẩm null hoặc rỗng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsMissingLineStructure{CartLineInfo}[3]',
+                "testScope": 'DAO Unit Test (EP Invalid: ProductInfo missing code)',
+                "inputData": {'code': None},
+                "expectedOutcome": "Ném IllegalArgumentException('Line missing product code')"
+            }
+        ]
     },
     "TC_ORD_007": {
-        "scenario": "Từ chối số lượng đặt hàng nhỏ hơn 1 (quantity = 0)",
-        "input": {"productCode": "P001", "quantity": 0},
-        "expectedException": "IllegalArgumentException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsQuantityBelowOne()"]
+        "specTestCase": 'TC_ORD_007 (Từ chối số lượng đặt hàng bằng 0)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối đặt hàng với số lượng nhỏ hơn 1 (quantity < 1)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsQuantityBelowOne',
+                "testScope": 'DAO Unit Test (EP Invalid: Quantity < 1)',
+                "inputData": {'quantity': 0},
+                "expectedOutcome": "Ném IllegalArgumentException('Quantity must be positive'), chặn tạo đơn"
+            }
+        ]
     },
     "TC_ORD_008": {
-        "scenario": "Từ chối sản phẩm không tồn tại trong CSDL",
-        "input": {"productCode": "P001", "quantity": 1, "daoMock": None},
-        "expectedException": "IllegalStateException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsMissingOrInactiveProduct()"]
+        "specTestCase": 'TC_ORD_008 (Từ chối sản phẩm không tồn tại)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối sản phẩm không tồn tại trong cơ sở dữ liệu',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsMissingOrInactiveProduct{Product}[1]',
+                "testScope": 'DAO Unit Test (EP Invalid: Missing Product in DB)',
+                "inputData": {'productInDb': None},
+                "expectedOutcome": "Ném IllegalArgumentException('Product missing not found')"
+            }
+        ]
     },
     "TC_ORD_009": {
-        "scenario": "Từ chối sản phẩm ở trạng thái Ngừng bán (INACTIVE)",
-        "input": {"productCode": "P001", "status": "INACTIVE", "stock": 10},
-        "expectedException": "IllegalStateException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsMissingOrInactiveProduct()"]
+        "specTestCase": 'TC_ORD_009 (Từ chối sản phẩm INACTIVE)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối sản phẩm đang ở trạng thái ngừng bán INACTIVE',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsMissingOrInactiveProduct{Product}[2]',
+                "testScope": 'DAO Unit Test (EP Invalid: Product Status INACTIVE)',
+                "inputData": {'status': 'INACTIVE'},
+                "expectedOutcome": "Ném IllegalArgumentException('Product is not active')"
+            }
+        ]
     },
     "TC_ORD_010": {
-        "scenario": "Từ chối sản phẩm ở trạng thái Bản nháp (DRAFT)",
-        "input": {"productCode": "P001", "status": "DRAFT", "stock": 10},
-        "expectedException": "IllegalStateException",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsMissingOrInactiveProduct()"]
+        "specTestCase": 'TC_ORD_010 (Từ chối sản phẩm Bản nháp)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân hoạch lớp tương đương EP: từ chối sản phẩm đang ở trạng thái Bản nháp DRAFT',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsMissingOrInactiveProduct{Product}[3]',
+                "testScope": 'DAO Unit Test (EP Invalid: Product Status DRAFT)',
+                "inputData": {'status': 'DRAFT'},
+                "expectedOutcome": "Ném IllegalArgumentException('Product is in draft status')"
+            }
+        ]
     },
     "TC_ORD_011": {
-        "scenario": "Từ chối đặt hàng khi tồn kho nhỏ hơn số lượng yêu cầu (stock < quantity)",
-        "input": {"productCode": "P001", "stockQuantity": 1, "requestedQuantity": 2},
-        "expectedException": "IllegalStateException (Insufficient Stock)",
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_ORD_011 (Từ chối đặt hàng khi tồn kho nhỏ hơn số lượng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân tích giá trị biên BVA / EP: từ chối đặt hàng khi stock < quantity',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_enforcesStockBoundary{int, int, boolean}[1]',
+                "testScope": 'DAO Unit Test (BVA Boundary: Stock < Quantity)',
+                "inputData": {'stock': 4, 'quantity': 5},
+                "expectedOutcome": "Ném IllegalArgumentException('Insufficient stock: available 4, requested 5')"
+            }
+        ]
     },
     "TC_ORD_012": {
-        "scenario": "Chấp nhận đặt hàng khi tồn kho vừa bằng số lượng đặt (stock = quantity)",
-        "input": {"productCode": "P001", "stockQuantity": 2, "requestedQuantity": 2},
-        "expectedResult": {"orderSaved": True, "remainingStock": 0},
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_ORD_012 (Chấp nhận đặt hàng khi tồn kho bằng số lượng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân tích giá trị biên BVA / EP: chấp nhận đặt hàng khi stock == quantity (vét kho)',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_enforcesStockBoundary{int, int, boolean}[2]',
+                "testScope": 'DAO Unit Test (BVA Boundary: Stock == Quantity)',
+                "inputData": {'stock': 5, 'quantity': 5},
+                "expectedOutcome": 'Đặt hàng thành công, tồn kho sau đặt giảm về 0'
+            }
+        ]
     },
     "TC_ORD_013": {
-        "scenario": "Chấp nhận đặt hàng khi tồn kho lớn hơn số lượng đặt (stock > quantity)",
-        "input": {"productCode": "P001", "stockQuantity": 3, "requestedQuantity": 2},
-        "expectedResult": {"orderSaved": True, "remainingStock": 1},
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_ORD_013 (Chấp nhận đặt hàng khi tồn kho lớn hơn số lượng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phân tích giá trị biên BVA / EP: chấp nhận đặt hàng khi stock > quantity',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_enforcesStockBoundary{int, int, boolean}[3]',
+                "testScope": 'DAO Unit Test (BVA Boundary: Stock > Quantity)',
+                "inputData": {'stock': 6, 'quantity': 5},
+                "expectedOutcome": 'Đặt hàng thành công, tồn kho sau đặt giảm còn 1'
+            }
+        ]
     },
     "TC_ORD_014": {
-        "scenario": "Làm mới dữ liệu dòng hàng từ CSDL hệ thống (chống giả mạo giá client)",
-        "clientTamperedData": {"productCode": "P001", "tamperedPrice": 1.0, "quantity": 2},
-        "serverOfficialData": {"name": "Server name", "price": 200.0, "discountPercent": 10, "stockQuantity": 5},
-        "refreshedResult": {
-            "productName": "Server name",
-            "originalPrice": 200.0,
-            "discountPercent": 10,
-            "effectivePrice": 180.0,
-            "lineAmount": 360.0
-        },
-        "testMethods": ["OrderDAOTest.saveOrder_refreshesCartLineFromServerProduct()"]
+        "specTestCase": 'TC_ORD_014 (Làm mới thông tin dòng hàng từ sản phẩm phía hệ thống)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra bảo mật giá bán: hệ thống tự động làm mới đơn giá dòng hàng theo giá lưu trong cơ sở dữ liệu',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_refreshesCartLineFromServerProduct',
+                "testScope": 'DAO Security Unit Test (Price Tampering Defense)',
+                "inputData": {'clientPrice': 1000.0, 'dbPrice': 500000.0},
+                "expectedOutcome": 'Đơn hàng ghi nhận đúng đơn giá thực 500000.0 từ DB, ngăn chặn sửa giá client'
+            }
+        ]
     },
     "TC_ORD_015": {
-        "scenario": "Cập nhật giảm tồn kho và tăng số lượt bán khi lưu đơn thành công",
-        "beforeState": {"stockQuantity": 5, "salesCount": 7},
-        "orderPlacement": {"quantity": 2},
-        "afterState": {"stockQuantity": 3, "salesCount": 9},
-        "testMethods": ["OrderDAOTest.saveOrder_deductsInventoryAndIncreasesSalesCount()"]
+        "specTestCase": 'TC_ORD_015 (Trừ tồn kho và tăng lượt bán count khi đặt hàng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra chuyển đổi trạng thái: tồn kho giảm tương ứng và thuộc tính salesCount tăng lên',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_deductsInventoryAndIncreasesSalesCount',
+                "testScope": 'DAO State Transition Test (Stock Deduction & Sales Count Increment)',
+                "inputData": {'initialStock': 20, 'salesCount': 5, 'qty': 3},
+                "expectedOutcome": 'Tồn kho cập nhật thành 17 (20 - 3), lượt bán cập nhật thành 8 (5 + 3)'
+            }
+        ]
     },
     "TC_ORD_016": {
-        "scenario": "Tạo đơn khách vãng lai với số thứ tự kế tiếp và trạng thái Chờ xử lý",
-        "context": {"authenticatedUser": None, "maxExistingOrderNum": 9},
-        "persistedOrder": {
-            "orderNum": 10,
-            "customerUsername": None,
-            "discountAmount": 0.0,
-            "status": "PENDING"
-        },
-        "testMethods": ["OrderDAOTest.saveOrder_createsPendingGuestOrderWithNextNumber()"]
+        "specTestCase": 'TC_ORD_016 (Tạo đơn khách vãng lai ở trạng thái Chờ xử lý với số kế tiếp)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra đặt hàng khách vãng lai: tạo đơn mới ở trạng thái PENDING và số thứ tự đơn tăng 1',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_createsPendingGuestOrderWithNextNumber',
+                "testScope": 'DAO Unit Test (Guest Order Creation)',
+                "inputData": {'customer': 'Guest', 'lastOrderNum': 200},
+                "expectedOutcome": "Tạo đơn hàng mới số 201 với trạng thái 'PENDING'"
+            }
+        ]
     },
     "TC_ORD_017": {
-        "scenario": "Ghi nhận username vào đơn hàng của khách hàng đã đăng nhập",
-        "securityContext": {"username": "alice", "role": "ROLE_USER", "isAuthenticated": True},
-        "persistedOrder": {"customerUsername": "alice", "status": "PENDING"},
-        "testMethods": ["OrderDAOTest.saveOrder_recordsAuthenticatedCustomer()"]
+        "specTestCase": 'TC_ORD_017 (Ghi username vào đơn của khách đã đăng nhập)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra liên kết tài khoản: ghi nhận chính xác username của người dùng đã xác thực vào trường customerUser',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_recordsAuthenticatedCustomer',
+                "testScope": 'DAO Unit Test (Customer Association)',
+                "inputData": {'username': 'customer_vip'},
+                "expectedOutcome": "Trường customerUser của Order được set đúng tài khoản 'customer_vip'"
+            }
+        ]
     },
     "TC_ORD_018": {
-        "scenario": "Xử lý phiên đăng nhập hết hiệu lực (isAuthenticated = false) như khách vãng lai",
-        "securityContext": {"isAuthenticated": False},
-        "persistedOrder": {"customerUsername": None, "guestCheckout": True},
-        "testMethods": ["OrderDAOTest.saveOrder_treatsUnauthenticatedAuthenticationAsGuest()"]
+        "specTestCase": 'TC_ORD_018 (Xử lý phiên đăng nhập đã hết hiệu lực như khách vãng lai)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra xử lý phiên hết hạn: coi người dùng là khách vãng lai nếu thông tin xác thực không còn hợp lệ',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_treatsUnauthenticatedAuthenticationAsGuest',
+                "testScope": 'DAO Unit Test (Expired Session Fallback)',
+                "inputData": {'principal': 'Expired Auth Token'},
+                "expectedOutcome": 'Xử lý đặt hàng thành công dưới dạng khách vãng lai (Guest)'
+            }
+        ]
     },
     "TC_ORD_019": {
-        "scenario": "Xử lý tài khoản vãng lai (AnonymousAuthenticationToken) như khách vãng lai",
-        "securityContext": {"principal": "anonymousUser", "role": "ROLE_ANONYMOUS"},
-        "persistedOrder": {"customerUsername": None, "guestCheckout": True},
-        "testMethods": ["OrderDAOTest.saveOrder_treatsAnonymousAuthenticationAsGuest()"]
+        "specTestCase": 'TC_ORD_019 (Xử lý khách vãng lai user như khách vãng lai)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra xử lý token xác thực ẩn danh (anonymousUser) thành khách vãng lai',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_treatsAnonymousAuthenticationAsGuest',
+                "testScope": 'DAO Unit Test (Anonymous User Mapping)',
+                "inputData": {'principal': 'anonymousUser'},
+                "expectedOutcome": 'Tạo đơn khách vãng lai thành công với customerUser = null'
+            }
+        ]
     },
     "TC_ORD_020": {
-        "scenario": "Chuẩn hóa mã giảm giá có khoảng trắng và ghi nhận lượt sử dụng vào bảng VoucherUsage",
-        "inputVoucher": " sale10 ",
-        "normalizedVoucher": "SALE10",
-        "discountApplied": 12.0,
-        "auditLog": "recordVoucherUsage('SALE10', 'alice', orderCode)",
-        "testMethods": ["OrderDAOTest.saveOrder_appliesNormalizedVoucherAndRecordsUsage()"]
+        "specTestCase": 'TC_ORD_020 (Chuẩn hóa mã giảm giá và ghi nhận lượt sử dụng khi đặt đơn)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra áp dụng voucher khi đặt hàng: chuẩn hóa mã, tính toán chiết khấu và tăng lượt sử dụng voucher',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_appliesNormalizedVoucherAndRecordsUsage',
+                "testScope": 'DAO Unit Test (Voucher Normalization & Usage Tracking)',
+                "inputData": {'voucherCode': ' summer20 '},
+                "expectedOutcome": "Chuẩn hóa mã thành 'SUMMER20', áp dụng giảm giá và ghi nhận lượt dùng voucher trong DB"
+            }
+        ]
     },
     "TC_ORD_021": {
-        "scenario": "Mã giảm giá rỗng hoặc chỉ chứa khoảng trắng được coi là không dùng voucher",
-        "inputVoucher": "   ",
-        "discountApplied": 0.0,
-        "voucherUsageRecorded": False,
-        "testMethods": ["OrderDAOTest.saveOrder_treatsBlankVoucherAsAbsent()"]
+        "specTestCase": 'TC_ORD_021 (Coi mã giảm giá toàn khoảng trắng là không có mã giảm giá)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra xử lý chuỗi voucher rỗng hoặc chỉ chứa khoảng trắng như trường hợp không dùng voucher',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_treatsBlankVoucherAsAbsent',
+                "testScope": 'DAO Unit Test (Blank Voucher as Absent)',
+                "inputData": {'voucherCode': '   '},
+                "expectedOutcome": 'Coi voucher là null, không áp dụng giảm giá và đặt hàng với giá gốc'
+            }
+        ]
     },
     "TC_ORD_022": {
-        "scenario": "Từ chối mã giảm giá không hợp lệ (BAD) trước khi tạo Order / OrderDetail",
-        "inputVoucher": "BAD",
-        "validationResult": {"success": False, "message": "invalid voucher"},
-        "expectedException": "IllegalStateException: invalid voucher",
-        "dbVerification": "verify(session, never()).persist(any())",
-        "testMethods": ["OrderDAOTest.saveOrder_rejectsInvalidVoucherBeforeCreatingOrder()"]
+        "specTestCase": 'TC_ORD_022 (Từ chối mã giảm giá sai trước khi tạo đơn hàng)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra từ chối mã giảm giá không hợp lệ ngay từ bước xác thực trước khi tiến hành lưu đơn hàng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_rejectsInvalidVoucherBeforeCreatingOrder',
+                "testScope": 'DAO Unit Test (Invalid Voucher Early Rejection)',
+                "inputData": {'voucherCode': 'INVALID_CODE'},
+                "expectedOutcome": 'Ném ngoại lệ mã giảm giá không hợp lệ trước khi thực hiện giao dịch tạo đơn'
+            }
+        ]
     },
     "TC_ORD_023": {
-        "scenario": "Khóa sản phẩm theo thứ tự mã code tăng dần để triệt tiêu nguy cơ Deadlock",
-        "inputOrderLines": [{"code": "P002", "quantity": 1}, {"code": "P001", "quantity": 1}],
-        "lockedOrder": ["findProductForUpdate('P001')", "findProductForUpdate('P002')"],
-        "inOrderVerification": "InOrder ordered = inOrder(productDAO); P001 -> P002",
-        "testMethods": ["OrderDAOTest.saveOrder_locksLinesInStableProductCodeOrder()"]
+        "specTestCase": 'TC_ORD_023 (Khóa sản phẩm theo thứ tự code ổn định để giảm deadlock)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra phòng chống Deadlock: các dòng hàng được sắp xếp theo thứ tự mã sản phẩm tăng dần trước khi khóa dòng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_locksLinesInStableProductCodeOrder',
+                "testScope": 'DAO Concurrency Test (Deadlock Prevention Ordering)',
+                "inputData": {'submittedCodes': ['P3', 'P1', 'P2']},
+                "expectedOutcome": "Hệ thống khóa sản phẩm theo thứ tự chữ cái ['P1', 'P2', 'P3'], triệt tiêu nguy cơ Deadlock"
+            }
+        ]
     },
     "TC_ORD_024": {
-        "scenario": "Khởi tạo Order Number bằng 1 khi database chưa có đơn hàng nào trước đó",
-        "maxOrderNumberInDB": None,
-        "generatedOrderNum": 1,
-        "testMethods": ["OrderDAOTest.saveOrder_treatsNullMaxOrderNumberAsZero()"]
+        "specTestCase": 'TC_ORD_024 (Khởi tạo order number khi database chưa có đơn)',
+        "totalTestRuns": 1,
+        "summary": 'Kiểm tra trường hợp biên: khởi tạo mã số đơn hàng đầu tiên (orderNum = 1) khi bảng Order chưa có bản ghi nào',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.saveOrder_treatsNullMaxOrderNumberAsZero',
+                "testScope": 'DAO Unit Test (First Order Number Initialization)',
+                "inputData": {'maxOrderNumInDb': None},
+                "expectedOutcome": 'Xử lý maxOrderNum = null thành 0, cấp phát số đơn hàng đầu tiên là 1'
+            }
+        ]
     },
     "TC_ORD_025": {
-        "scenario": "Kiểm tra đặt hàng với số lượng hợp lệ tại biên nhỏ nhất (quantity = 1)",
-        "boundary": "quantity = 1 (min positive integer)",
-        "initialStock": 10,
-        "orderedQuantity": 1,
-        "remainingStock": 9,
-        "orderDetailQuantity": 1,
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_ORD_025 (Kiểm tra đặt hàng với số lượng hợp lệ = 1 & Truy vấn phạm vi đơn hàng)',
+        "totalTestRuns": 23,
+        "summary": 'Kiểm tra đặt hàng với số lượng hợp lệ = 1 và bộ 23 bài kiểm thử tra cứu chi tiết đơn hàng, phân quyền theo Principal, phân trang và xác thực chủ sở hữu đơn hàng',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.findOrder_delegatesLookup',
+                "testScope": 'DAO Unit Test (Order Lookup Delegation)',
+                "inputData": {'orderId': 'ORD-123'},
+                "expectedOutcome": "Ủy quyền truy vấn session.find(Order.class, 'ORD-123') và trả về thực thể Order"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'OrderDAOTest.findOrderForUpdate_usesPessimisticLock',
+                "testScope": 'DAO Unit Test (Pessimistic Lock on Find Order)',
+                "inputData": {'orderId': 'ORD-123'},
+                "expectedOutcome": 'Khóa bản ghi đơn hàng với LockModeType.PESSIMISTIC_WRITE để cập nhật an toàn'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'OrderDAOTest.getOrderInfo_returnsNullWhenOrderMissing',
+                "testScope": 'DAO Unit Test (Order Not Found -> Null Info)',
+                "inputData": {'orderId': 'NON-EXISTENT'},
+                "expectedOutcome": 'Trả về null an toàn khi đơn hàng không tồn tại trong database'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'OrderDAOTest.getOrderInfo_mapsOrderFields',
+                "testScope": 'DAO Unit Test (Map Order to OrderInfo DTO)',
+                "inputData": {'orderId': 'ORD-001'},
+                "expectedOutcome": 'Ánh xạ đầy đủ các trường: mã đơn, ngày đặt, trạng thái, tổng tiền và thông tin khách hàng'
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'OrderDAOTest.listOrderDetailInfos_returnsAllLinesForOrder',
+                "testScope": 'DAO Unit Test (List All Order Details)',
+                "inputData": {'orderId': 'ORD-001'},
+                "expectedOutcome": 'Trả về danh sách đầy đủ các mặt hàng trong đơn ORD-001'
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": 'OrderDAOTest.listOrderDetailInfosForPrincipal_returnsAllLinesForCustomerSeller',
+                "testScope": 'DAO Unit Test (Principal Order Details: Buyer + Seller Dual Scope)',
+                "inputData": {'principal': 'seller_user'},
+                "expectedOutcome": 'Trả về toàn bộ dòng sản phẩm khi người dùng vừa là người mua vừa là người bán'
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": 'OrderDAOTest.listOrderDetailInfosForPrincipal_filtersSellerWhenNotCustomer',
+                "testScope": 'DAO Unit Test (Principal Order Details: Seller-Only Filter)',
+                "inputData": {'principal': 'seller_user', 'isCustomer': False},
+                "expectedOutcome": 'Chỉ trả về các dòng sản phẩm do chính seller đó đăng bán trong đơn hàng'
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": 'OrderDAOTest.listOrderDetailInfosForPrincipal_nonSellerRoleDoesNotCheckCustomer',
+                "testScope": 'DAO Unit Test (Principal Order Details: Admin/Employee Full Access)',
+                "inputData": {'role': 'ROLE_ADMIN'},
+                "expectedOutcome": 'Trả về toàn bộ chi tiết đơn hàng cho vai trò quản trị viên không bị giới hạn'
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_noPrincipalOverloadBuildsUnscopedQuery',
+                "testScope": 'DAO Unit Test (Unscoped Global Order List)',
+                "inputData": {'page': 1, 'maxResult': 20},
+                "expectedOutcome": 'Tạo truy vấn HQL không phân quyền người dùng, trả về danh sách đơn toàn hệ thống'
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[1]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Admin Unscoped)',
+                "inputData": {'role': 'ROLE_ADMIN', 'username': 'admin'},
+                "expectedOutcome": 'Truy vấn danh sách đơn không gán điều kiện lọc người dùng'
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[2]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Admin Filter Status PENDING)',
+                "inputData": {'role': 'ROLE_ADMIN', 'status': 'PENDING'},
+                "expectedOutcome": 'Lọc đơn hàng theo trạng thái PENDING cho quản trị viên'
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[3]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Customer Own Orders)',
+                "inputData": {'role': 'ROLE_USER', 'username': 'alice'},
+                "expectedOutcome": "Gán điều kiện WHERE o.customerUser = 'alice'"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[4]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Customer Filter COMPLETED)',
+                "inputData": {'role': 'ROLE_USER', 'status': 'COMPLETED'},
+                "expectedOutcome": "Gán điều kiện WHERE o.customerUser = 'alice' AND o.status = 'COMPLETED'"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[5]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Seller Own Sold Lines)',
+                "inputData": {'role': 'ROLE_SELLER', 'username': 'seller1'},
+                "expectedOutcome": 'Lọc đơn chứa sản phẩm thuộc quyền bán của seller1'
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[6]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Seller Filter SHIPPED)',
+                "inputData": {'role': 'ROLE_SELLER', 'status': 'SHIPPED'},
+                "expectedOutcome": 'Lọc đơn chứa sản phẩm của seller1 với trạng thái SHIPPED'
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[7]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Unknown Role Returns Empty)',
+                "inputData": {'role': 'UNKNOWN_ROLE'},
+                "expectedOutcome": 'Trả về danh sách rỗng khi vai trò không hợp lệ'
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[8]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Trim Status Input)',
+                "inputData": {'status': '  pending  '},
+                "expectedOutcome": "Tự động trim và viết hoa trạng thái lọc thành 'PENDING'"
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": 'OrderDAOTest.listOrderInfo_buildsExpectedScope{String, String, String, boolean}[9]',
+                "testScope": 'DAO Parameterized Test (Order Scope: Pagination Boundaries)',
+                "inputData": {'page': 2, 'maxResult': 10},
+                "expectedOutcome": 'Thiết lập firstResult = 10 và maxResults = 10 trên Query'
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": 'OrderDAOTest.isOrderCustomer_rejectsMissingKeys{String, String}[1]',
+                "testScope": 'DAO Unit Test (isOrderCustomer: null orderId)',
+                "inputData": {'orderId': None, 'username': 'alice'},
+                "expectedOutcome": 'Trả về false khi orderId là null'
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": 'OrderDAOTest.isOrderCustomer_rejectsMissingKeys{String, String}[2]',
+                "testScope": 'DAO Unit Test (isOrderCustomer: null username)',
+                "inputData": {'orderId': 'ORD-001', 'username': None},
+                "expectedOutcome": 'Trả về false khi username là null'
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": 'OrderDAOTest.isOrderCustomer_rejectsMissingKeys{String, String}[3]',
+                "testScope": 'DAO Unit Test (isOrderCustomer: blank keys)',
+                "inputData": {'orderId': '   ', 'username': '   '},
+                "expectedOutcome": 'Trả về false khi các khóa là khoảng trắng'
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": 'OrderDAOTest.isOrderCustomer_mapsCountToBoolean{long, boolean}[1]',
+                "testScope": 'DAO Parameterized Test (isOrderCustomer: Match count = 1 -> True)',
+                "inputData": {'countResult': 1},
+                "expectedOutcome": 'Xác nhận đúng khách hàng sở hữu đơn hàng (True)'
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": 'OrderDAOTest.isOrderCustomer_mapsCountToBoolean{long, boolean}[2]',
+                "testScope": 'DAO Parameterized Test (isOrderCustomer: Match count = 0 -> False)',
+                "inputData": {'countResult': 0},
+                "expectedOutcome": 'Xác nhận không phải khách hàng sở hữu đơn hàng (False)'
+            }
+        ]
     },
     "TC_ORD_026": {
-        "scenario": "Kiểm tra đặt hàng với số lượng hợp lệ lớn hơn 1 (quantity = 2)",
-        "boundary": "quantity = 2 (nominal positive integer)",
-        "initialStock": 10,
-        "orderedQuantity": 2,
-        "remainingStock": 8,
-        "orderDetailQuantity": 2,
-        "testMethods": ["OrderDAOTest.saveOrder_enforcesStockBoundary()"]
+        "specTestCase": 'TC_ORD_026 (Kiểm tra đặt hàng với số lượng hợp lệ > 1 & Quản lý trạng thái, doanh thu)',
+        "totalTestRuns": 46,
+        "summary": 'Kiểm tra đặt hàng số lượng lớn hơn 1 và bộ 46 bài kiểm thử quản lý vòng đời trạng thái đơn hàng (FSM Transition), phân quyền quản lý (CanManage/CanAccess), thống kê tổng số đơn và tổng doanh thu có phân quyền',
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_normalizesValidTransition{String, String}[1]',
+                "testScope": 'FSM Transition Test (PENDING -> PROCESSING)',
+                "inputData": {'from': 'PENDING', 'to': 'PROCESSING'},
+                "expectedOutcome": 'Cập nhật thành công trạng thái đơn hàng sang PROCESSING'
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_normalizesValidTransition{String, String}[2]',
+                "testScope": 'FSM Transition Test (PROCESSING -> SHIPPED)',
+                "inputData": {'from': 'PROCESSING', 'to': 'SHIPPED'},
+                "expectedOutcome": 'Cập nhật thành công trạng thái đơn hàng sang SHIPPED'
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_normalizesValidTransition{String, String}[3]',
+                "testScope": 'FSM Transition Test (SHIPPED -> DELIVERED)',
+                "inputData": {'from': 'SHIPPED', 'to': 'DELIVERED'},
+                "expectedOutcome": 'Cập nhật thành công trạng thái đơn hàng sang DELIVERED'
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_rejectsInvalidTransition{String, String}[1]',
+                "testScope": 'FSM Transition Test (Illegal: DELIVERED -> PENDING)',
+                "inputData": {'from': 'DELIVERED', 'to': 'PENDING'},
+                "expectedOutcome": 'Từ chối chuyển trạng thái ngược vòng đời, ném IllegalStateException'
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_rejectsInvalidTransition{String, String}[2]',
+                "testScope": 'FSM Transition Test (Illegal: CANCELLED -> SHIPPED)',
+                "inputData": {'from': 'CANCELLED', 'to': 'SHIPPED'},
+                "expectedOutcome": 'Từ chối chuyển trạng thái đơn đã hủy, ném IllegalStateException'
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_rejectsInvalidTransition{String, String}[3]',
+                "testScope": 'FSM Transition Test (Illegal: Unknown Source Status)',
+                "inputData": {'from': 'UNKNOWN_STATUS', 'to': 'PROCESSING'},
+                "expectedOutcome": 'Từ chối trạng thái không hợp lệ'
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_rejectsInvalidTransition{String, String}[4]',
+                "testScope": 'FSM Transition Test (Illegal: Unknown Target Status)',
+                "inputData": {'from': 'PENDING', 'to': 'UNKNOWN_STATUS'},
+                "expectedOutcome": 'Từ chối chuyển sang trạng thái không tồn tại'
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": 'OrderDAOTest.updateOrderStatus_doesNothingWhenOrderMissing',
+                "testScope": 'DAO Unit Test (Update Status for Missing Order)',
+                "inputData": {'orderId': 'MISSING_ORD'},
+                "expectedOutcome": 'Xử lý an toàn khi đơn không tồn tại, không ném lỗi NullPointer'
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": 'OrderDAOTest.canManageOrder_returnsFalseForOrderWithoutLines',
+                "testScope": 'DAO Security Unit Test (CanManage: Order has no lines)',
+                "inputData": {'orderId': 'ORD-EMPTY'},
+                "expectedOutcome": 'Trả về false khi đơn hàng không có dòng sản phẩm nào'
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": 'OrderDAOTest.canManageOrder_rejectsMissingKeys{String, String}[1]',
+                "testScope": 'DAO Unit Test (canManageOrder: null orderId)',
+                "inputData": {'orderId': None, 'seller': 'seller1'},
+                "expectedOutcome": 'Trả về false khi orderId null'
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": 'OrderDAOTest.canManageOrder_rejectsMissingKeys{String, String}[2]',
+                "testScope": 'DAO Unit Test (canManageOrder: null seller)',
+                "inputData": {'orderId': 'ORD-001', 'seller': None},
+                "expectedOutcome": 'Trả về false khi seller null'
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": 'OrderDAOTest.canManageOrder_rejectsMissingKeys{String, String}[3]',
+                "testScope": 'DAO Unit Test (canManageOrder: blank keys)',
+                "inputData": {'orderId': '  ', 'seller': '  '},
+                "expectedOutcome": 'Trả về false khi các khóa toàn khoảng trắng'
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": 'OrderDAOTest.canManageOrder_requiresSellerToOwnEveryLine{long, boolean}[1]',
+                "testScope": 'DAO Parameterized Test (Seller Owns All Lines -> True)',
+                "inputData": {'totalLines': 2, 'ownedLines': 2},
+                "expectedOutcome": 'Cho phép seller quản lý đơn hàng khi sở hữu 100% dòng hàng (True)'
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": 'OrderDAOTest.canManageOrder_requiresSellerToOwnEveryLine{long, boolean}[2]',
+                "testScope": 'DAO Parameterized Test (Seller Partial Ownership -> False)',
+                "inputData": {'totalLines': 3, 'ownedLines': 1},
+                "expectedOutcome": 'Từ chối quyền quản lý đơn khi seller chỉ sở hữu một phần dòng hàng (False)'
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": 'OrderDAOTest.canManageOrder_requiresSellerToOwnEveryLine{long, boolean}[3]',
+                "testScope": 'DAO Parameterized Test (Seller Zero Ownership -> False)',
+                "inputData": {'totalLines': 2, 'ownedLines': 0},
+                "expectedOutcome": 'Từ chối quyền quản lý khi seller không sở hữu dòng hàng nào (False)'
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_rejectsMissingKeys{String, String}[1]',
+                "testScope": 'DAO Unit Test (canAccessOrder: null orderId)',
+                "inputData": {'orderId': None},
+                "expectedOutcome": 'Trả về false khi orderId null'
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_rejectsMissingKeys{String, String}[2]',
+                "testScope": 'DAO Unit Test (canAccessOrder: null username)',
+                "inputData": {'username': None},
+                "expectedOutcome": 'Trả về false khi username null'
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_rejectsMissingKeys{String, String}[3]',
+                "testScope": 'DAO Unit Test (canAccessOrder: blank username)',
+                "inputData": {'username': '   '},
+                "expectedOutcome": 'Trả về false khi username rỗng'
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_rejectsUnknownRoleWithoutQuery',
+                "testScope": 'DAO Unit Test (canAccessOrder: Unknown Role Guard)',
+                "inputData": {'role': 'UNKNOWN_ROLE'},
+                "expectedOutcome": 'Trả về false ngay lập tức không cần thực hiện truy vấn DB'
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_usesRoleSpecificOwnershipQuery{String, long, boolean}[1]',
+                "testScope": 'DAO Parameterized Test (CanAccess: Admin -> Always True)',
+                "inputData": {'role': 'ROLE_ADMIN'},
+                "expectedOutcome": 'Quản trị viên có toàn quyền truy cập mọi đơn hàng (True)'
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_usesRoleSpecificOwnershipQuery{String, long, boolean}[2]',
+                "testScope": 'DAO Parameterized Test (CanAccess: Employee -> Always True)',
+                "inputData": {'role': 'ROLE_EMPLOYEE'},
+                "expectedOutcome": 'Nhân viên có quyền truy cập mọi đơn hàng để xử lý vận đơn (True)'
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_usesRoleSpecificOwnershipQuery{String, long, boolean}[3]',
+                "testScope": 'DAO Parameterized Test (CanAccess: Customer -> Match Owner)',
+                "inputData": {'role': 'ROLE_USER', 'isOwner': True},
+                "expectedOutcome": 'Khách hàng được truy cập đơn do chính mình đặt (True)'
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": 'OrderDAOTest.canAccessOrder_usesRoleSpecificOwnershipQuery{String, long, boolean}[4]',
+                "testScope": 'DAO Parameterized Test (CanAccess: Seller -> Match Seller Lines)',
+                "inputData": {'role': 'ROLE_SELLER', 'hasLines': True},
+                "expectedOutcome": 'Người bán được truy cập đơn chứa sản phẩm của gian hàng mình (True)'
+            },
+            {
+                "runIndex": 24,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_withoutScopeReturnsGlobalAggregate',
+                "testScope": 'DAO Aggregate Test (Global Revenue Without Scope)',
+                "inputData": {'scope': 'GLOBAL'},
+                "expectedOutcome": 'Tính tổng doanh thu toàn sàn từ các đơn đã thanh toán/hoàn thành'
+            },
+            {
+                "runIndex": 25,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[1]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Global Sum)',
+                "inputData": {'role': 'ROLE_ADMIN', 'revenue': 50000000.0},
+                "expectedOutcome": 'Doanh thu toàn hệ thống khớp số liệu'
+            },
+            {
+                "runIndex": 26,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[2]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Null Aggregate -> 0.0)',
+                "inputData": {'dbAggregate': None},
+                "expectedOutcome": 'Xử lý kết quả sum() trả về null thành 0.0 an toàn'
+            },
+            {
+                "runIndex": 27,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[3]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Filter Status COMPLETED)',
+                "inputData": {'status': 'COMPLETED'},
+                "expectedOutcome": 'Tính doanh thu riêng cho các đơn trạng thái COMPLETED'
+            },
+            {
+                "runIndex": 28,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[4]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Seller Specific Revenue)',
+                "inputData": {'role': 'ROLE_SELLER', 'seller': 'seller1'},
+                "expectedOutcome": 'Tính doanh thu dựa trên các dòng chi tiết thuộc seller1'
+            },
+            {
+                "runIndex": 29,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[5]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Seller Status Filter)',
+                "inputData": {'role': 'ROLE_SELLER', 'status': 'DELIVERED'},
+                "expectedOutcome": 'Tính doanh thu của seller1 cho đơn đã giao thành công'
+            },
+            {
+                "runIndex": 30,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[6]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Customer Total Spent)',
+                "inputData": {'role': 'ROLE_USER', 'customer': 'alice'},
+                "expectedOutcome": 'Tính tổng số tiền khách hàng alice đã chi tiêu'
+            },
+            {
+                "runIndex": 31,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[7]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Customer Specific Status)',
+                "inputData": {'role': 'ROLE_USER', 'status': 'COMPLETED'},
+                "expectedOutcome": 'Tính tổng tiền các đơn hoàn tất của alice'
+            },
+            {
+                "runIndex": 32,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[8]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Unknown Role -> 0.0)',
+                "inputData": {'role': 'UNKNOWN_ROLE'},
+                "expectedOutcome": 'Trả về 0.0 khi vai trò không có quyền xem doanh thu'
+            },
+            {
+                "runIndex": 33,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[9]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Blank Status Normalized)',
+                "inputData": {'status': '   '},
+                "expectedOutcome": 'Chuẩn hóa trạng thái khoảng trắng thành bỏ qua lọc status'
+            },
+            {
+                "runIndex": 34,
+                "targetMethod": 'OrderDAOTest.getTotalRevenue_scopesAndMapsNullableAggregate{String, String, Double, double, String}[10]',
+                "testScope": 'DAO Parameterized Test (Revenue Scope: Floating Point Rounding)',
+                "inputData": {'rawSum': 1234567.89},
+                "expectedOutcome": 'Định dạng số thực doanh thu chuẩn xác'
+            },
+            {
+                "runIndex": 35,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_withoutScopeReturnsGlobalAggregate',
+                "testScope": 'DAO Aggregate Test (Global Order Count Without Scope)',
+                "inputData": {'scope': 'GLOBAL'},
+                "expectedOutcome": 'Đếm tổng số đơn hàng trên toàn hệ thống'
+            },
+            {
+                "runIndex": 36,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[1]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Global Total)',
+                "inputData": {'role': 'ROLE_ADMIN', 'expected': 1250},
+                "expectedOutcome": 'Tổng số đơn hàng toàn hệ thống khớp số liệu'
+            },
+            {
+                "runIndex": 37,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[2]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Null Count -> 0)',
+                "inputData": {'dbAggregate': None},
+                "expectedOutcome": 'Xử lý kết quả count() trả về null thành 0'
+            },
+            {
+                "runIndex": 38,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[3]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Status PENDING)',
+                "inputData": {'status': 'PENDING'},
+                "expectedOutcome": 'Đếm số đơn đang chờ xử lý'
+            },
+            {
+                "runIndex": 39,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[4]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Seller Orders)',
+                "inputData": {'role': 'ROLE_SELLER', 'seller': 'seller1'},
+                "expectedOutcome": 'Đếm số đơn chứa sản phẩm của seller1'
+            },
+            {
+                "runIndex": 40,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[5]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Seller Filter PROCESSING)',
+                "inputData": {'role': 'ROLE_SELLER', 'status': 'PROCESSING'},
+                "expectedOutcome": 'Đếm số đơn đang xử lý của seller1'
+            },
+            {
+                "runIndex": 41,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[6]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Customer Total Orders)',
+                "inputData": {'role': 'ROLE_USER', 'customer': 'alice'},
+                "expectedOutcome": 'Đếm tổng số đơn mà khách hàng alice đã đặt'
+            },
+            {
+                "runIndex": 42,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[7]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Customer Status CANCELLED)',
+                "inputData": {'role': 'ROLE_USER', 'status': 'CANCELLED'},
+                "expectedOutcome": 'Đếm số đơn đã hủy của alice'
+            },
+            {
+                "runIndex": 43,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[8]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Unknown Role -> 0)',
+                "inputData": {'role': 'UNKNOWN_ROLE'},
+                "expectedOutcome": 'Trả về 0 khi vai trò không hợp lệ'
+            },
+            {
+                "runIndex": 44,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[9]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Blank Status)',
+                "inputData": {'status': '   '},
+                "expectedOutcome": 'Chuẩn hóa trạng thái rỗng và đếm tất cả'
+            },
+            {
+                "runIndex": 45,
+                "targetMethod": 'OrderDAOTest.getTotalOrdersCount_scopesAndMapsNullableAggregate{String, String, Long, long, String}[10]',
+                "testScope": 'DAO Parameterized Test (Orders Count Scope: Null State -> 0)',
+                "inputData": {'status': 'NULL_STATUS'},
+                "expectedOutcome": 'Xử lý an toàn khi trạng thái đơn rỗng'
+            },
+            {
+                "runIndex": 46,
+                "targetMethod": 'OrderDAOTest.isOrderCustomer_mapsCountToBoolean{long, boolean}[3]',
+                "testScope": 'DAO Parameterized Test (isOrderCustomer: Multiple Match -> True)',
+                "inputData": {'countResult': 2},
+                "expectedOutcome": 'Xác nhận quyền sở hữu đơn hàng khi count >= 1 (True)'
+            }
+        ]
     },
     # ==================== PHÂN HỆ 6: ĐÁNH GIÁ & BÌNH LUẬN (REVIEW & RATING) ====================
     "TC_REV_001": {
-        "scenario": "Đánh giá hợp lệ 5 sao và tự động tính lại điểm số trung bình (Rating cache)",
-        "request": {
-            "endpoint": "/api/v1/reviews",
-            "method": "POST",
-            "productCode": "P1",
-            "ratingValue": 5,
-            "comment": "Giày rất êm, chất liệu tốt",
-            "authenticatedUser": "buyer"
-        },
-        "cacheCalculation": {
-            "productCode": "P1",
-            "previousReviewCount": 2,
-            "newReviewCount": 3,
-            "aggregatedAverageRating": 4.26,
-            "roundedRatingCache": 4.3
-        },
-        "expectedResponse": {
-            "httpStatus": 201,
-            "statusName": "HttpStatus.CREATED",
-            "success": True,
-            "review": {
-                "productCode": "P1",
-                "username": "buyer",
-                "ratingValue": 5,
-                "comment": "Giày rất êm, chất liệu tốt"
+        "specTestCase": "TC_REV_001 (Đánh giá hợp lệ 5 sao & Đồng bộ Cache Rating)",
+        "totalTestRuns": 7,
+        "summary": "Kiểm tra tạo đánh giá 5 sao thành công, chuẩn hóa Trim chuỗi và tự động cập nhật cache rating làm tròn",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ReviewApiControllerTest.saveReview_trimsAndReturnsCreatedReview",
+                "testScope": "REST API Controller Test (Trim & Create 201)",
+                "inputData": {"productCode": " P1 ", "ratingValue": 5, "comment": " great ", "authenticatedUser": "buyer"},
+                "expectedOutcome": "API tự động trim chuỗi ('P1', 'great'), lưu thành công và trả về HTTP 201 Created"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache",
+                "testScope": "Unit Test (DAO Cache Recalculate & Rounding)",
+                "inputData": {"productCode": "P001", "status": "active (case-insensitive)", "rawAverage": 4.26, "count": 3},
+                "expectedOutcome": "Lưu review thành công, tự động làm tròn điểm trung bình lên 4.3 và cập nhật reviewCount = 3"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductReviewDAOTest.saveReview_skipsCacheQueryWhenLockedProductDisappears",
+                "testScope": "Unit Test (DAO Concurrency Lock Safe Handling)",
+                "inputData": {"lockMode": "LockModeType.PESSIMISTIC_WRITE", "lockedProduct": None},
+                "expectedOutcome": "Bỏ qua truy vấn tính cache an toàn khi sản phẩm bị xóa sau thời điểm lock"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductReviewDAOTest.saveReview_leavesCacheUntouchedWhenAggregateIsNull",
+                "testScope": "Unit Test (DAO Null Aggregate Cache Protection)",
+                "inputData": {"aggregateQuery": None, "currentCount": 8, "currentRating": 2.5},
+                "expectedOutcome": "Không cập nhật cache, bảo toàn nguyên vẹn reviewCount=8 và rating=2.5 khi aggregate null"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductReviewDAOTest.saveReview_resetsCacheForEmptyOrIncompleteAggregate",
+                "testScope": "Unit Test (Parameterized Aggregate Reset Run 1)",
+                "inputData": {"aggregate": [None, 4.0]},
+                "expectedOutcome": "Tổng hợp count null -> Reset cache về mặc định: reviewCount=0, rating=5.0"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductReviewDAOTest.saveReview_resetsCacheForEmptyOrIncompleteAggregate",
+                "testScope": "Unit Test (Parameterized Aggregate Reset Run 2)",
+                "inputData": {"aggregate": [0, 4.0]},
+                "expectedOutcome": "Tổng hợp count = 0L -> Reset cache về mặc định: reviewCount=0, rating=5.0"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ProductReviewDAOTest.saveReview_resetsCacheForEmptyOrIncompleteAggregate",
+                "testScope": "Unit Test (Parameterized Aggregate Reset Run 3)",
+                "inputData": {"aggregate": [1, None]},
+                "expectedOutcome": "Tổng hợp average null -> Reset cache về mặc định: reviewCount=0, rating=5.0"
             }
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache()",
-            "ReviewApiControllerTest.saveReview_trimsAndReturnsCreatedReview()"
         ]
     },
     "TC_REV_002": {
-        "scenario": "Đánh giá hợp lệ 1 sao (biên dưới BVA min) và tự động tính lại điểm số trung bình",
-        "request": {
-            "endpoint": "/api/v1/reviews",
-            "method": "POST",
-            "productCode": "P1",
-            "ratingValue": 1,
-            "comment": "Giao hàng chậm, hộp bị móp",
-            "authenticatedUser": "buyer"
-        },
-        "bvaPoint": "ratingValue = 1 (min boundary)",
-        "expectedOutcome": {
-            "saved": True,
-            "ratingDecreased": True,
-            "reviewCountIncremented": True
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache()"
+        "specTestCase": "TC_REV_002 (Đánh giá hợp lệ 1 sao BVA Min & Truy vấn danh sách)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra đánh giá hợp lệ tại biên nhỏ nhất (1 sao), truy vấn danh sách theo mã sản phẩm và tra cứu theo ID",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.getReviewsByProductCode_bindsCodeAndReturnsRows",
+                "testScope": "Unit Test (DAO Query List by Product Code)",
+                "inputData": {"productCode": "P001", "queryHQL": "from ProductReview where productCode = :code"},
+                "expectedOutcome": "DAO bind đúng tham số mã sản phẩm P001 và trả về danh sách các đánh giá"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ReviewApiControllerTest.getReviews_returnsDaoList",
+                "testScope": "REST API Controller Test (Public Review List 200 OK)",
+                "inputData": {"endpoint": "GET /api/v1/reviews/product/P1"},
+                "expectedOutcome": "API trả về HTTP 200 OK kèm mảng danh sách các bài đánh giá cho khách hàng"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductReviewDAOTest.findReview_delegatesLookup",
+                "testScope": "Unit Test (DAO Find Review by ID)",
+                "inputData": {"reviewId": 7},
+                "expectedOutcome": "Tìm kiếm chính xác bài review theo khóa chính ID = 7"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductReviewDAOTest.findReview_returnsNullForNullId",
+                "testScope": "Unit Test (DAO Find Review Null Safety)",
+                "inputData": {"reviewId": None},
+                "expectedOutcome": "ID truyền vào là null -> Trả về null an toàn, không query database"
+            }
         ]
     },
     "TC_REV_003": {
-        "scenario": "Chặn lưu đánh giá khi Comment rỗng hoặc vượt quá 2000 ký tự (BVA min-1 và max+1)",
-        "bvaCommentMatrix": [
-            {"comment": "", "pointType": "0 chars (min - 1)", "expectedStatus": 400, "error": "NotEmpty"},
-            {"comment": "   ", "pointType": "blank spaces (min - 1)", "expectedStatus": 400, "error": "NotEmpty"},
-            {"comment": None, "pointType": "null payload", "expectedStatus": 400, "error": "NotNull"},
-            {"comment": "c" * 2001, "pointType": "2001 chars (max + 1)", "expectedStatus": 400, "error": "Length.reviewForm.comment"}
-        ],
-        "expectedResponse": {
-            "httpStatus": 400,
-            "success": False,
-            "exception": "IllegalArgumentException"
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.saveReview_rejectsEachInvalidField()",
-            "ReviewApiControllerTest.saveReview_rejectsInvalidForm()"
+        "specTestCase": "TC_REV_003 (Chặn Comment rỗng, quá 2000 ký tự & Validate Form)",
+        "totalTestRuns": 17,
+        "summary": "Kiểm tra toàn diện tính toàn vẹn của Form đánh giá (chặn comment rỗng, quá 2000 ký tự, mã SP sai, user rỗng và lỗi hệ thống)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 1: Null Entity)",
+                "inputData": {"review": None},
+                "expectedOutcome": "Entity review là null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 2: Null ProductCode)",
+                "inputData": {"productCode": None},
+                "expectedOutcome": "Mã sản phẩm null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 3: Blank ProductCode)",
+                "inputData": {"productCode": "   "},
+                "expectedOutcome": "Mã sản phẩm rỗng/khoảng trắng -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 4: Long ProductCode)",
+                "inputData": {"productCode": "P" * 21},
+                "expectedOutcome": "Mã sản phẩm dài 21 ký tự (>20) -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 5: Null Username)",
+                "inputData": {"username": None},
+                "expectedOutcome": "Tên người dùng null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 6: Blank Username)",
+                "inputData": {"username": " "},
+                "expectedOutcome": "Tên người dùng rỗng/khoảng trắng -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 7: Null Comment)",
+                "inputData": {"comment": None},
+                "expectedOutcome": "Nội dung bình luận null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 8: Blank Comment)",
+                "inputData": {"comment": " "},
+                "expectedOutcome": "Nội dung bình luận chỉ chứa khoảng trắng -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Validation Run 9: Long Comment)",
+                "inputData": {"commentLength": 2001},
+                "expectedOutcome": "Nội dung bình luận dài 2001 ký tự (>2000) -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 1: Null Body)",
+                "inputData": {"form": None},
+                "expectedOutcome": "Body JSON form null -> 400 Bad Request"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 2: Missing ProductCode)",
+                "inputData": {"productCode": None},
+                "expectedOutcome": "Thiếu mã sản phẩm -> 400 Bad Request"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 3: Blank ProductCode)",
+                "inputData": {"productCode": "   "},
+                "expectedOutcome": "Mã sản phẩm rỗng/khoảng trắng -> 400 Bad Request"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 4: Long ProductCode)",
+                "inputData": {"productCode": "p" * 21},
+                "expectedOutcome": "Mã sản phẩm vượt quá 20 ký tự -> 400 Bad Request"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 5: Missing Comment)",
+                "inputData": {"comment": None},
+                "expectedOutcome": "Thiếu bình luận (null) -> 400 Bad Request"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 6: Blank Comment)",
+                "inputData": {"comment": "   "},
+                "expectedOutcome": "Bình luận chỉ toàn khoảng trắng -> 400 Bad Request"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (Form Run 7: Long Comment)",
+                "inputData": {"commentLength": 2001},
+                "expectedOutcome": "Bình luận dài 2001 ký tự (>2000) -> 400 Bad Request"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "ReviewApiControllerTest.saveReview_mapsUnexpectedExceptionToServerError",
+                "testScope": "REST API Controller Test (Server Error 500 Mapping)",
+                "inputData": {"exception": "IllegalStateException: database unavailable"},
+                "expectedOutcome": "Ngoại lệ hệ thống không mong muốn -> Ánh xạ thành HTTP 500 Server Error"
+            }
         ]
     },
     "TC_REV_004": {
-        "scenario": "Chặn đánh giá 0 sao (BVA min - 1)",
-        "input": {
-            "productCode": "P1",
-            "ratingValue": 0,
-            "comment": "Rating quá thấp",
-            "bvaPoint": "min - 1 (Invalid Boundary: 0 stars)"
-        },
-        "expectedResponse": {
-            "httpStatus": 400,
-            "success": False,
-            "exception": "IllegalArgumentException",
-            "message": "Số sao đánh giá phải từ 1 đến 5"
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.saveReview_rejectsEachInvalidField()",
-            "ReviewApiControllerTest.saveReview_rejectsInvalidForm()"
+        "specTestCase": "TC_REV_004 (Chặn đánh giá 0 sao - BVA Min - 1)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra chặn đánh giá 0 sao (dưới ngưỡng tối thiểu 1 sao) ở cả tầng DAO và REST API khi tạo mới và sửa",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Create Rating 0)",
+                "inputData": {"ratingValue": 0, "pointType": "BVA Min - 1 (Invalid)"},
+                "expectedOutcome": "DAO chặn tạo review 0 sao -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.updateReview_rejectsInvalidInput",
+                "testScope": "Unit Test (DAO Update Rating 0)",
+                "inputData": {"reviewId": 1, "rating": 0, "pointType": "BVA Min - 1 (Invalid)"},
+                "expectedOutcome": "DAO chặn sửa review thành 0 sao -> Trả về false"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Create Rating 0)",
+                "inputData": {"endpoint": "POST /api/v1/reviews", "ratingValue": 0},
+                "expectedOutcome": "API chặn tạo mới 0 sao -> Trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Update Rating 0)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/1", "ratingValue": 0},
+                "expectedOutcome": "API chặn cập nhật 0 sao -> Trả về HTTP 400 Bad Request"
+            }
         ]
     },
     "TC_REV_005": {
-        "scenario": "Chặn đánh giá 6 sao (BVA max + 1)",
-        "input": {
-            "productCode": "P1",
-            "ratingValue": 6,
-            "comment": "Rating vượt trần",
-            "bvaPoint": "max + 1 (Invalid Boundary: 6 stars)"
-        },
-        "expectedResponse": {
-            "httpStatus": 400,
-            "success": False,
-            "exception": "IllegalArgumentException",
-            "message": "Số sao đánh giá phải từ 1 đến 5"
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.saveReview_rejectsEachInvalidField()",
-            "ReviewApiControllerTest.saveReview_rejectsInvalidForm()"
+        "specTestCase": "TC_REV_005 (Chặn đánh giá 6 sao - BVA Max + 1)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra chặn đánh giá 6 sao (vượt trần tối đa 5 sao) ở cả tầng DAO và REST API khi tạo mới và sửa",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsEachInvalidField",
+                "testScope": "Unit Test (DAO Create Rating 6)",
+                "inputData": {"ratingValue": 6, "pointType": "BVA Max + 1 (Invalid)"},
+                "expectedOutcome": "DAO chặn tạo review 6 sao -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.updateReview_rejectsInvalidInput",
+                "testScope": "Unit Test (DAO Update Rating 6)",
+                "inputData": {"reviewId": 1, "rating": 6, "pointType": "BVA Max + 1 (Invalid)"},
+                "expectedOutcome": "DAO chặn sửa review thành 6 sao -> Trả về false"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Create Rating 6)",
+                "inputData": {"endpoint": "POST /api/v1/reviews", "ratingValue": 6},
+                "expectedOutcome": "API chặn tạo mới 6 sao -> Trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Update Rating 6)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/1", "ratingValue": 6},
+                "expectedOutcome": "API chặn cập nhật 6 sao -> Trả về HTTP 400 Bad Request"
+            }
         ]
     },
     "TC_REV_006": {
-        "scenario": "Báo lỗi 401 Unauthorized: Khách vãng lai chưa đăng nhập không được quyền đánh giá",
-        "securityContext": {
-            "authenticated": False,
-            "principal": None,
-            "jwtToken": None
-        },
-        "request": {"endpoint": "/api/v1/reviews", "method": "POST", "productCode": "P1", "ratingValue": 5},
-        "expectedResponse": {
-            "httpStatus": 401,
-            "statusName": "HttpStatus.UNAUTHORIZED",
-            "message": "Yêu cầu đăng nhập trước khi gửi đánh giá"
-        },
-        "testMethods": [
-            "ReviewApiControllerTest.saveReview_rejectsLoginRequiredAuthentication()"
+        "specTestCase": "TC_REV_006 (Báo lỗi 401: Khách vãng lai chưa đăng nhập)",
+        "totalTestRuns": 9,
+        "summary": "Kiểm tra chặn người dùng chưa đăng nhập (Missing Auth, Unauthenticated Token, Anonymous) trên cả 3 thao tác Tạo, Sửa và Xóa đánh giá",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (POST Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "POST /api/v1/reviews", "auth": None},
+                "expectedOutcome": "Thiếu thông tin xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (POST Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "POST /api/v1/reviews", "auth": "unauthenticated('buyer')"},
+                "expectedOutcome": "Token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (POST Auth Run 3: Anonymous)",
+                "inputData": {"endpoint": "POST /api/v1/reviews", "auth": "anonymousUser"},
+                "expectedOutcome": "Tài khoản khách ẩn danh -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (PUT Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/1", "auth": None},
+                "expectedOutcome": "Sửa bài khi thiếu xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (PUT Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/1", "auth": "unauthenticated('buyer')"},
+                "expectedOutcome": "Sửa bài khi token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (PUT Auth Run 3: Anonymous)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/1", "auth": "anonymousUser"},
+                "expectedOutcome": "Sửa bài khi là khách ẩn danh -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ReviewApiControllerTest.deleteReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (DELETE Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "DELETE /api/v1/reviews/1", "auth": None},
+                "expectedOutcome": "Xóa bài khi thiếu xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "ReviewApiControllerTest.deleteReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (DELETE Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "DELETE /api/v1/reviews/1", "auth": "unauthenticated('buyer')"},
+                "expectedOutcome": "Xóa bài khi token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "ReviewApiControllerTest.deleteReview_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (DELETE Auth Run 3: Anonymous)",
+                "inputData": {"endpoint": "DELETE /api/v1/reviews/1", "auth": "anonymousUser"},
+                "expectedOutcome": "Xóa bài khi là khách ẩn danh -> Trả về HTTP 401 Unauthorized"
+            }
         ]
     },
     "TC_REV_007": {
-        "scenario": "Báo lỗi 403 Forbidden: Cấm Admin dùng quyền quản trị để seeding đánh giá ảo",
-        "securityContext": {
-            "authenticated": True,
-            "username": "admin",
-            "roles": ["ROLE_USER", "ROLE_ADMIN"]
-        },
-        "policy": "ANTI_SEEDING_RULE: Admin cannot review products",
-        "expectedResponse": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "message": "Tài khoản Quản trị viên không được phép đánh giá sản phẩm"
-        },
-        "testMethods": [
-            "ReviewApiControllerTest.saveReview_rejectsAdminRole()"
+        "specTestCase": "TC_REV_007 (Báo lỗi 403: Cấm Admin tạo đánh giá ảo)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra quy tắc chống seeding đánh giá ảo: Nghiêm cấm tài khoản Quản trị viên (ROLE_ADMIN) gửi đánh giá sản phẩm",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ReviewApiControllerTest.saveReview_rejectsAdminRole",
+                "testScope": "REST API Controller Test (Admin Anti-seeding Rule)",
+                "inputData": {"username": "admin", "roles": ["ROLE_USER", "ROLE_ADMIN"], "endpoint": "POST /api/v1/reviews"},
+                "expectedOutcome": "Tài khoản có quyền ROLE_ADMIN -> Bị từ chối thẳng với mã lỗi HTTP 403 Forbidden"
+            }
         ]
     },
     "TC_REV_008": {
-        "scenario": "Chặn đánh giá vào sản phẩm đang bị tắt (INACTIVE) hoặc bản nháp (DRAFT)",
-        "targetProducts": [
-            {"productCode": "P001", "status": "INACTIVE", "note": "Ngừng kinh doanh"},
-            {"productCode": "P002", "status": "DRAFT", "note": "Bản nháp chưa duyệt"},
-            {"productCode": "P999", "status": None, "note": "Không tồn tại trong DB"}
-        ],
-        "expectedResponse": {
-            "httpStatus": 400,
-            "exception": "IllegalArgumentException",
-            "message": "Sản phẩm không tồn tại hoặc hiện không mở bán"
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.saveReview_rejectsMissingOrNonActiveProduct()",
-            "ReviewApiControllerTest.saveReview_mapsDomainExceptionToBadRequest()"
+        "specTestCase": "TC_REV_008 (Chặn đánh giá SP Tắt INACTIVE / DRAFT / Không tồn tại)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra hệ thống chặn đánh giá vào sản phẩm ngừng kinh doanh (INACTIVE), sản phẩm nháp (DRAFT) hoặc mã sản phẩm không tồn tại",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsMissingOrNonActiveProduct",
+                "testScope": "Unit Test (Product Scope Run 1: Null Product)",
+                "inputData": {"productCode": "P001", "productInDB": None},
+                "expectedOutcome": "Sản phẩm không tồn tại trong DB -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsMissingOrNonActiveProduct",
+                "testScope": "Unit Test (Product Scope Run 2: INACTIVE)",
+                "inputData": {"productCode": "P001", "status": "INACTIVE"},
+                "expectedOutcome": "Sản phẩm ngừng bán INACTIVE -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductReviewDAOTest.saveReview_rejectsMissingOrNonActiveProduct",
+                "testScope": "Unit Test (Product Scope Run 3: DRAFT)",
+                "inputData": {"productCode": "P001", "status": "DRAFT"},
+                "expectedOutcome": "Sản phẩm bản nháp DRAFT -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ReviewApiControllerTest.saveReview_mapsDomainExceptionToBadRequest",
+                "testScope": "REST API Controller Test (Domain Exception Mapping)",
+                "inputData": {"daoException": "IllegalArgumentException: invalid product"},
+                "expectedOutcome": "API bắt ngoại lệ nghiệp vụ và trả về HTTP 400 Bad Request kèm thông báo lỗi"
+            }
         ]
     },
     "TC_REV_009": {
-        "scenario": "Chặn hành vi sửa hoặc xóa bài đánh giá của người khác (Ownership check)",
-        "ownershipContext": {
-            "reviewId": 1,
-            "reviewAuthor": "alice",
-            "currentPrincipal": "bob"
-        },
-        "operation": "PUT /api/v1/reviews/1 OR DELETE /api/v1/reviews/1",
-        "expectedOutcome": {
-            "daoResult": False,
-            "httpStatus": 400,
-            "message": "Bạn không có quyền chỉnh sửa hoặc xóa bài đánh giá của người khác"
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.updateReview_returnsFalseForDifferentOwner()",
-            "ReviewApiControllerTest.updateReview_returnsBadRequestWhenDaoRejectsUpdate()"
+        "specTestCase": "TC_REV_009 (Chặn can thiệp sửa/xóa bài của người khác)",
+        "totalTestRuns": 6,
+        "summary": "Kiểm tra kiểm soát quyền sở hữu bài viết (Ownership check): Chặn User A can thiệp sửa hoặc xóa bài đánh giá của User B và xử lý bài không tồn tại",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.updateReview_returnsFalseForDifferentOwner",
+                "testScope": "Unit Test (DAO Ownership Update Check)",
+                "inputData": {"reviewOwner": "alice", "requestCaller": "bob"},
+                "expectedOutcome": "Caller không phải tác giả bài viết -> DAO từ chối cập nhật, trả về false"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.deleteReview_returnsFalseForDifferentOwner",
+                "testScope": "Unit Test (DAO Ownership Delete Check)",
+                "inputData": {"reviewOwner": "alice", "requestCaller": "bob"},
+                "expectedOutcome": "Caller không phải tác giả bài viết -> DAO từ chối xóa, trả về false"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductReviewDAOTest.updateReview_returnsFalseWhenReviewMissing",
+                "testScope": "Unit Test (DAO Update Missing Review)",
+                "inputData": {"reviewId": 1, "reviewInDB": None},
+                "expectedOutcome": "Bài đánh giá không tồn tại trong DB -> Trả về false"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductReviewDAOTest.deleteReview_returnsFalseWhenMissing",
+                "testScope": "Unit Test (DAO Delete Missing Review)",
+                "inputData": {"reviewId": 1, "reviewInDB": None},
+                "expectedOutcome": "Bài đánh giá không tồn tại trong DB -> Trả về false"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ReviewApiControllerTest.updateReview_returnsBadRequestWhenDaoRejectsUpdate",
+                "testScope": "REST API Controller Test (API Update Rejected)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/2", "daoResult": False},
+                "expectedOutcome": "DAO từ chối sửa do vi phạm quyền sở hữu -> API trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ReviewApiControllerTest.deleteReview_returnsBadRequestWhenDaoRejectsDeletion",
+                "testScope": "REST API Controller Test (API Delete Rejected)",
+                "inputData": {"endpoint": "DELETE /api/v1/reviews/2", "daoResult": False},
+                "expectedOutcome": "DAO từ chối xóa do vi phạm quyền sở hữu -> API trả về HTTP 400 Bad Request"
+            }
         ]
     },
     "TC_REV_010": {
-        "scenario": "Giới hạn thời gian cho phép sửa bài đánh giá trong vòng 5 phút (300,000 ms)",
-        "bvaTimeMatrix": [
+        "specTestCase": "TC_REV_010 (Giới hạn thời gian sửa bài trong 5 phút & Validate Sửa)",
+        "totalTestRuns": 15,
+        "summary": "Kiểm tra giới hạn thời gian sửa bài trong 5 phút (BVA 299s vs 301s), cập nhật thành công và 12 trường hợp validate payload sửa bài",
+        "testRunsBreakdown": [
             {
-                "elapsedMillis": 299000,
-                "elapsedDisplay": "4 phút 59 giây (max - 1)",
-                "withinWindow": True,
-                "action": "ALLOW_UPDATE",
-                "daoResult": True,
-                "expectedStatus": 200
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.updateReview_returnsFalseOutsideFiveMinuteWindow",
+                "testScope": "Unit Test (BVA Time Window Max + 1)",
+                "inputData": {"elapsedMillis": 301000, "elapsedDisplay": "5 phút 01 giây (> 5 phút)"},
+                "expectedOutcome": "Quá thời hạn 5 phút kể từ lúc đăng bài -> Khóa quyền sửa, DAO trả về false"
             },
             {
-                "elapsedMillis": 300000,
-                "elapsedDisplay": "5 phút 00 giây (max boundary)",
-                "withinWindow": True,
-                "action": "ALLOW_UPDATE",
-                "daoResult": True,
-                "expectedStatus": 200
+                "runIndex": 2,
+                "targetMethod": "ProductReviewDAOTest.updateReview_updatesWithinWindowAndRefreshesCache",
+                "testScope": "Unit Test (BVA Time Window Max - 1 & Cache Refresh)",
+                "inputData": {"elapsedMillis": 299000, "elapsedDisplay": "4 phút 59 giây (<= 5 phút)"},
+                "expectedOutcome": "Còn trong thời hạn 5 phút -> Cập nhật thành công, đổi comment, rating và làm mới cache rating SP"
             },
             {
-                "elapsedMillis": 301000,
-                "elapsedDisplay": "5 phút 01 giây (max + 1)",
-                "withinWindow": False,
-                "action": "LOCK_EDIT_REJECT",
-                "daoResult": False,
-                "expectedStatus": 400,
-                "message": "Đã quá thời hạn 5 phút kể từ lúc đăng, không thể chỉnh sửa bài đánh giá"
+                "runIndex": 3,
+                "targetMethod": "ReviewApiControllerTest.updateReview_returnsUpdatedEntity",
+                "testScope": "REST API Controller Test (API Update Success 200 OK)",
+                "inputData": {"endpoint": "PUT /api/v1/reviews/1", "payload": {"ratingValue": 5, "comment": " updated "}},
+                "expectedOutcome": "API cập nhật thành công trong thời hạn -> Trả về HTTP 200 OK kèm đối tượng đã cập nhật"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductReviewDAOTest.updateReview_rejectsInvalidInput",
+                "testScope": "Unit Test (DAO Update Input Run 1: Null Username)",
+                "inputData": {"username": None},
+                "expectedOutcome": "Username null -> DAO từ chối, trả về false"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductReviewDAOTest.updateReview_rejectsInvalidInput",
+                "testScope": "Unit Test (DAO Update Input Run 2: Null Comment)",
+                "inputData": {"comment": None},
+                "expectedOutcome": "Comment null -> DAO từ chối, trả về false"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductReviewDAOTest.updateReview_rejectsInvalidInput",
+                "testScope": "Unit Test (DAO Update Input Run 3: Blank Comment)",
+                "inputData": {"comment": " "},
+                "expectedOutcome": "Comment chỉ toàn khoảng trắng -> DAO từ chối, trả về false"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ProductReviewDAOTest.updateReview_rejectsInvalidInput",
+                "testScope": "Unit Test (DAO Update Input Run 4: Long Comment)",
+                "inputData": {"commentLength": 2001},
+                "expectedOutcome": "Comment dài 2001 ký tự (>2000) -> DAO từ chối, trả về false"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 1: Null Payload)",
+                "inputData": {"payload": None},
+                "expectedOutcome": "Payload cập nhật null -> 400 Bad Request"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 2: Non-text Comment)",
+                "inputData": {"comment": 123},
+                "expectedOutcome": "Comment không phải chuỗi ký tự (số 123) -> 400 Bad Request"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 3: Blank Comment)",
+                "inputData": {"comment": "   "},
+                "expectedOutcome": "Comment chỉ toàn khoảng trắng -> 400 Bad Request"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 4: Long Comment)",
+                "inputData": {"commentLength": 2001},
+                "expectedOutcome": "Comment dài 2001 ký tự (>2000) -> 400 Bad Request"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 5: Text Rating)",
+                "inputData": {"ratingValue": "5"},
+                "expectedOutcome": "RatingValue gửi dạng chuỗi ký tự '5' -> 400 Bad Request"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 6: NaN Rating)",
+                "inputData": {"ratingValue": "Double.NaN"},
+                "expectedOutcome": "RatingValue gửi giá trị NaN -> 400 Bad Request"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 7: Infinite Rating)",
+                "inputData": {"ratingValue": "Double.POSITIVE_INFINITY"},
+                "expectedOutcome": "RatingValue gửi giá trị Infinity -> 400 Bad Request"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "ReviewApiControllerTest.updateReview_rejectsInvalidPayload",
+                "testScope": "REST API Controller Test (API Payload Run 8: Fractional Rating)",
+                "inputData": {"ratingValue": 4.5},
+                "expectedOutcome": "RatingValue gửi số thập phân lẻ (4.5) thay vì số nguyên -> 400 Bad Request"
             }
-        ],
-        "testMethods": [
-            "ProductReviewDAOTest.updateReview_returnsFalseOutsideFiveMinuteWindow()",
-            "ProductReviewDAOTest.updateReview_updatesWithinWindowAndRefreshesCache()"
         ]
     },
     "TC_REV_011": {
-        "scenario": "Xóa thành công bài đánh giá của chính mình và khôi phục điểm Rating gốc của sản phẩm",
-        "request": {
-            "endpoint": "/api/v1/reviews/1",
-            "method": "DELETE",
-            "authenticatedUser": "buyer",
-            "reviewOwner": "buyer"
-        },
-        "postDeletionEffects": {
-            "reviewDeleted": True,
-            "daoResult": True,
-            "productCode": "P1",
-            "recalculatedRating": "Làm mới lại điểm trung bình từ các bài còn lại",
-            "recalculatedCount": "Giảm đi 1 lượt review"
-        },
-        "expectedResponse": {
-            "httpStatus": 200,
-            "success": True,
-            "message": "Đã xóa bài đánh giá thành công"
-        },
-        "testMethods": [
-            "ProductReviewDAOTest.deleteReview_deletesAndRefreshesProductCache()",
-            "ReviewApiControllerTest.deleteReview_returnsSuccessWhenDaoDeletesReview()"
+        "specTestCase": "TC_REV_011 (Xóa thành công Review & Khôi phục điểm Rating gốc)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra quy trình xóa bài đánh giá hợp lệ của chính chủ và làm mới khôi phục điểm rating gốc của sản phẩm",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductReviewDAOTest.deleteReview_deletesAndRefreshesProductCache",
+                "testScope": "Unit Test (DAO Delete & Recalculate Cache)",
+                "inputData": {"reviewId": 1, "username": "alice", "deletedCount": 1},
+                "expectedOutcome": "Xóa review thành công, tự động tính lại cache sản phẩm (reviewCount=0, rating=5.0)"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ReviewApiControllerTest.deleteReview_returnsSuccessWhenDaoDeletesReview",
+                "testScope": "REST API Controller Test (API Delete 200 OK)",
+                "inputData": {"endpoint": "DELETE /api/v1/reviews/1", "authenticatedUser": "buyer"},
+                "expectedOutcome": "API DELETE thực hiện thành công -> Trả về HTTP 200 OK kèm {'success': true}"
+            }
         ]
     },
     # ==================== PHÂN HỆ 7: HỦY ĐƠN & TRẢ HÀNG (CANCEL & RETURN) ====================
     "TC_CAN_001": {
-        "transition": "Hủy đơn hàng PENDING ➔ CANCELLED thành công",
-        "orderContext": {
-            "orderId": "O1",
-            "currentStatus": "PENDING",
-            "owner": "alice",
-            "action": "CANCEL_ORDER"
-        },
-        "expectedResult": {
-            "success": True,
-            "nextStatus": "CANCELLED",
-            "stockRestored": True,
-            "salesDeducted": True
-        },
-        "testMethods": [
-            "OrderReturnDAOTest.cancelOrder_acceptsNormalizedPendingAndCancelsOrderWithoutDetails()",
-            "OrderCancelReturnApiControllerTest.cancelOrder_returnsSuccessForOwner()"
+        "specTestCase": "TC_CAN_001 (Khách Hủy đơn hàng PENDING thành công)",
+        "totalTestRuns": 3,
+        "summary": "Kiểm tra khách hàng hủy đơn hàng trạng thái PENDING thành công, chuyển trạng thái FSM sang CANCELLED và xử lý an toàn khi SP bị xóa",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_acceptsNormalizedPendingAndCancelsOrderWithoutDetails",
+                "testScope": "Unit Test (DAO State Transition: PENDING -> CANCELLED)",
+                "inputData": {"orderId": "O001", "status": " pending (case-insensitive & trim)", "customer": "alice"},
+                "expectedOutcome": "Chuẩn hóa trạng thái đơn hàng thành công, chuyển sang CANCELLED"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_stillCancelsOrderWhenProductWasDeleted",
+                "testScope": "Unit Test (DAO Resilience When Product Deleted)",
+                "inputData": {"orderId": "O001", "orderDetailProduct": "Deleted from database"},
+                "expectedOutcome": "Đơn hàng vẫn được hủy thành công sang CANCELLED ngay cả khi sản phẩm trong dòng hàng đã bị xóa"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_returnsSuccessfulDaoOutcome",
+                "testScope": "REST API Controller Test (Cancel Order 200 OK)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O001/cancel", "authenticatedUser": "alice"},
+                "expectedOutcome": "API hủy đơn thành công, trả về HTTP 200 OK kèm {'success': true}"
+            }
         ]
     },
     "TC_CAN_002": {
-        "scenario": "Thuật toán Hủy đơn phục hồi Tồn kho nhưng không bao giờ làm Âm lượt Sales (Math.max(0, sales - qty))",
-        "bvaSalesMatrix": [
-            {"initialSales": 0, "orderQty": 2, "expectedSales": 0, "pointType": "min - 1 (Chống âm: max(0, 0-2))"},
-            {"initialSales": 1, "orderQty": 2, "expectedSales": 0, "pointType": "min (max(0, 1-2))"},
-            {"initialSales": 2, "orderQty": 2, "expectedSales": 0, "pointType": "exact boundary (max(0, 2-2))"},
-            {"initialSales": 3, "orderQty": 2, "expectedSales": 1, "pointType": "min + 1 (3-2 = 1)"}
-        ],
-        "stockRestoration": {
-            "initialStock": 5,
-            "restoredQuantity": 2,
-            "finalStock": 7
-        },
-        "testMethods": [
-            "OrderReturnDAOTest.cancelOrder_restoresStockAndNeverMakesSalesNegative()"
+        "specTestCase": "TC_CAN_002 (Thuật toán phục hồi Kho & Chống âm lượt Sales)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra thuật toán phục hồi tồn kho và chặn lượt bán không bao giờ tụt xuống âm: Sales = max(0, Sales - quantity)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_restoresStockAndNeverMakesSalesNegative",
+                "testScope": "Unit Test (BVA Math Formula Run 1: initial sales = 0)",
+                "inputData": {"initialSales": 0, "cancelQuantity": 2, "formula": "max(0, 0 - 2)"},
+                "expectedOutcome": "Tồn kho tăng 2, Lượt bán bị chặn cứng ở mức 0 (không tụt xuống -2)"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_restoresStockAndNeverMakesSalesNegative",
+                "testScope": "Unit Test (BVA Math Formula Run 2: initial sales = 1)",
+                "inputData": {"initialSales": 1, "cancelQuantity": 2, "formula": "max(0, 1 - 2)"},
+                "expectedOutcome": "Tồn kho tăng 2, Lượt bán giảm về 0 (chặn đứng không bị âm)"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_restoresStockAndNeverMakesSalesNegative",
+                "testScope": "Unit Test (BVA Math Formula Run 3: initial sales = 2)",
+                "inputData": {"initialSales": 2, "cancelQuantity": 2, "formula": "max(0, 2 - 2)"},
+                "expectedOutcome": "Tồn kho tăng 2, Lượt bán giảm chính xác từ 2 về 0"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_restoresStockAndNeverMakesSalesNegative",
+                "testScope": "Unit Test (BVA Math Formula Run 4: initial sales = 5)",
+                "inputData": {"initialSales": 5, "cancelQuantity": 2, "formula": "max(0, 5 - 2)"},
+                "expectedOutcome": "Tồn kho tăng 2, Lượt bán giảm từ 5 về 3"
+            }
         ]
     },
     "TC_CAN_003": {
-        "scenario": "Chặn Hủy đơn hàng ở các trạng thái phi logic (FSM State Machine)",
-        "nonCancellableStatuses": [
-            {"status": "SHIPPING", "action": "CANCEL", "expectedException": "IllegalStateException"},
-            {"status": "APPROVED", "action": "CANCEL", "expectedException": "IllegalStateException"},
-            {"status": "COMPLETED", "action": "CANCEL", "expectedException": "IllegalStateException"},
-            {"status": "CANCELLED", "action": "CANCEL", "expectedException": "IllegalStateException"},
-            {"status": "RETURN_PENDING", "action": "CANCEL", "expectedException": "IllegalStateException"},
-            {"status": "RETURNED", "action": "CANCEL", "expectedException": "IllegalStateException"}
-        ],
-        "testMethods": [
-            "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus()"
+        "specTestCase": "TC_CAN_003 (Chặn Hủy/Trả đơn hàng sai trạng thái logic)",
+        "totalTestRuns": 25,
+        "summary": "Kiểm tra ma trận chuyển trạng thái FSM: Chặn hủy đơn khác PENDING, chặn trả đơn khác COMPLETED, chặn duyệt đơn khác RETURN_PENDING và mapping ngoại lệ API",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus",
+                "testScope": "Unit Test (Cancel State Run 1: Null Status)",
+                "inputData": {"orderStatus": None},
+                "expectedOutcome": "Trạng thái đơn null -> Chặn hủy, ném IllegalStateException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus",
+                "testScope": "Unit Test (Cancel State Run 2: Blank Status)",
+                "inputData": {"orderStatus": ""},
+                "expectedOutcome": "Trạng thái đơn rỗng -> Chặn hủy, ném IllegalStateException"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus",
+                "testScope": "Unit Test (Cancel State Run 3: SHIPPING)",
+                "inputData": {"orderStatus": "SHIPPING"},
+                "expectedOutcome": "Đơn đang giao hàng (SHIPPING) -> Cấm hủy, ném IllegalStateException"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus",
+                "testScope": "Unit Test (Cancel State Run 4: COMPLETED)",
+                "inputData": {"orderStatus": "COMPLETED"},
+                "expectedOutcome": "Đơn đã hoàn thành (COMPLETED) -> Cấm hủy trực tiếp, ném IllegalStateException"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus",
+                "testScope": "Unit Test (Cancel State Run 5: CANCELLED)",
+                "inputData": {"orderStatus": "CANCELLED"},
+                "expectedOutcome": "Đơn đã hủy trước đó -> Cấm hủy lặp lại, ném IllegalStateException"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsEveryNonPendingStatus",
+                "testScope": "Unit Test (Cancel State Run 6: RETURNED)",
+                "inputData": {"orderStatus": "RETURNED"},
+                "expectedOutcome": "Đơn đã trả hàng thành công -> Cấm hủy, ném IllegalStateException"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsNonCompletedOrder",
+                "testScope": "Unit Test (Return State Run 1: Null Status)",
+                "inputData": {"orderStatus": None},
+                "expectedOutcome": "Trạng thái đơn null -> Chặn xin trả hàng, ném IllegalStateException"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsNonCompletedOrder",
+                "testScope": "Unit Test (Return State Run 2: Blank Status)",
+                "inputData": {"orderStatus": ""},
+                "expectedOutcome": "Trạng thái đơn rỗng -> Chặn xin trả hàng, ném IllegalStateException"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsNonCompletedOrder",
+                "testScope": "Unit Test (Return State Run 3: PENDING)",
+                "inputData": {"orderStatus": "PENDING"},
+                "expectedOutcome": "Đơn đang chờ duyệt (PENDING) -> Chưa nhận hàng nên cấm xin trả, ném IllegalStateException"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsNonCompletedOrder",
+                "testScope": "Unit Test (Return State Run 4: SHIPPING)",
+                "inputData": {"orderStatus": "SHIPPING"},
+                "expectedOutcome": "Đơn đang giao (SHIPPING) -> Chưa hoàn tất nên cấm xin trả, ném IllegalStateException"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsNonCompletedOrder",
+                "testScope": "Unit Test (Return State Run 5: CANCELLED)",
+                "inputData": {"orderStatus": "CANCELLED"},
+                "expectedOutcome": "Đơn đã hủy -> Cấm xin trả hàng, ném IllegalStateException"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsNonCompletedOrder",
+                "testScope": "Unit Test (Return State Run 6: RETURNED)",
+                "inputData": {"orderStatus": "RETURNED"},
+                "expectedOutcome": "Đơn đã hoàn tất trả hàng -> Cấm xin trả tiếp, ném IllegalStateException"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsOrderOutsideReturnPendingState",
+                "testScope": "Unit Test (Admin Review State: Order Not RETURN_PENDING)",
+                "inputData": {"orderStatus": "COMPLETED", "expectedState": "RETURN_PENDING"},
+                "expectedOutcome": "Đơn hàng liên kết không ở RETURN_PENDING -> Chặn duyệt, ném IllegalStateException"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsAlreadyProcessedRequest",
+                "testScope": "Unit Test (Admin Review State Run 1: Already APPROVED)",
+                "inputData": {"currentRequestStatus": "APPROVED"},
+                "expectedOutcome": "Yêu cầu đã duyệt trước đó -> Chặn duyệt lại, ném IllegalStateException"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsAlreadyProcessedRequest",
+                "testScope": "Unit Test (Admin Review State Run 2: Already REJECTED)",
+                "inputData": {"currentRequestStatus": "REJECTED"},
+                "expectedOutcome": "Yêu cầu đã từ chối trước đó -> Chặn xử lý lại, ném IllegalStateException"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsAlreadyProcessedRequest",
+                "testScope": "Unit Test (Admin Review State Run 3: Already CANCELLED)",
+                "inputData": {"currentRequestStatus": "CANCELLED"},
+                "expectedOutcome": "Yêu cầu đã hủy -> Chặn xử lý lại, ném IllegalStateException"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_mapsDaoException",
+                "testScope": "REST API Controller Test (Cancel Exception Mapping: IllegalArgument)",
+                "inputData": {"thrownException": "IllegalArgumentException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_mapsDaoException",
+                "testScope": "REST API Controller Test (Cancel Exception Mapping: IllegalState)",
+                "inputData": {"thrownException": "IllegalStateException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 409 Conflict"
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_mapsDaoException",
+                "testScope": "REST API Controller Test (Cancel Exception Mapping: RuntimeException)",
+                "inputData": {"thrownException": "RuntimeException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 500 Internal Server Error"
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_mapsDaoException",
+                "testScope": "REST API Controller Test (Return Exception Mapping: IllegalArgument)",
+                "inputData": {"thrownException": "IllegalArgumentException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_mapsDaoException",
+                "testScope": "REST API Controller Test (Return Exception Mapping: IllegalState)",
+                "inputData": {"thrownException": "IllegalStateException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 409 Conflict"
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_mapsDaoException",
+                "testScope": "REST API Controller Test (Return Exception Mapping: RuntimeException)",
+                "inputData": {"thrownException": "RuntimeException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 500 Internal Server Error"
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_mapsDaoException",
+                "testScope": "REST API Controller Test (Review Exception Mapping: IllegalArgument)",
+                "inputData": {"thrownException": "IllegalArgumentException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 24,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_mapsDaoException",
+                "testScope": "REST API Controller Test (Review Exception Mapping: IllegalState)",
+                "inputData": {"thrownException": "IllegalStateException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 409 Conflict"
+            },
+            {
+                "runIndex": 25,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_mapsDaoException",
+                "testScope": "REST API Controller Test (Review Exception Mapping: RuntimeException)",
+                "inputData": {"thrownException": "RuntimeException"},
+                "expectedOutcome": "Ánh xạ sang HTTP 500 Internal Server Error"
+            }
         ]
     },
     "TC_CAN_004": {
-        "scenario": "Chặn khách hàng can thiệp thao tác Hủy/Trả trên đơn của người khác (Ownership Check)",
-        "securityCheck": {
-            "orderOwner": "alice",
-            "attackerUser": "bob",
-            "unauthorizedUser": None,
-            "action": "CANCEL_OR_RETURN_ORDER"
-        },
-        "expectedResponse": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "exception": "IllegalStateException",
-            "message": "Không có quyền thao tác trên đơn hàng của tài khoản khác"
-        },
-        "testMethods": [
-            "OrderReturnDAOTest.cancelOrder_rejectsMissingOrDifferentCustomer()",
-            "OrderCancelReturnApiControllerTest.getReturn_forbidsRequestOwnedByAnotherUser()"
+        "specTestCase": "TC_CAN_004 (Chặn thao tác đơn của người khác - Ownership & Auth)",
+        "totalTestRuns": 16,
+        "summary": "Kiểm tra quyền sở hữu đơn hàng (chặn khách A can thiệp đơn khách B), chặn khách chưa đăng nhập (401) và chặn Seller ngoài phạm vi quản lý đơn",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsMissingOrDifferentCustomer",
+                "testScope": "Unit Test (DAO Cancel Ownership Run 1: Null Customer)",
+                "inputData": {"callerCustomer": None, "orderOwner": "alice"},
+                "expectedOutcome": "Username caller là null -> DAO từ chối hủy đơn, ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsMissingOrDifferentCustomer",
+                "testScope": "Unit Test (DAO Cancel Ownership Run 2: Different Customer)",
+                "inputData": {"callerCustomer": "hacker_bob", "orderOwner": "alice"},
+                "expectedOutcome": "Hacker cố tình hủy đơn người khác -> DAO chặn lại, ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsMissingOrDifferentOwner",
+                "testScope": "Unit Test (DAO Return Ownership Run 1: Null Owner)",
+                "inputData": {"callerOwner": None, "orderOwner": "alice"},
+                "expectedOutcome": "Username caller là null -> DAO từ chối xin trả hàng, ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsMissingOrDifferentOwner",
+                "testScope": "Unit Test (DAO Return Ownership Run 2: Different Owner)",
+                "inputData": {"callerOwner": "hacker_bob", "orderOwner": "alice"},
+                "expectedOutcome": "Hacker cố tình xin trả đơn người khác -> DAO chặn lại, ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderReturnDAOTest.cancelOrder_rejectsMissingOrder",
+                "testScope": "Unit Test (DAO Cancel Missing Order)",
+                "inputData": {"orderId": "NON_EXISTENT_ORDER"},
+                "expectedOutcome": "Đơn hàng không tồn tại trong DB -> DAO ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsMissingOrder",
+                "testScope": "Unit Test (DAO Return Missing Order)",
+                "inputData": {"orderId": "NON_EXISTENT_ORDER"},
+                "expectedOutcome": "Đơn hàng không tồn tại trong DB -> DAO ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (Cancel Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O1/cancel", "auth": None},
+                "expectedOutcome": "Khách chưa đăng nhập -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (Cancel Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O1/cancel", "auth": "unauthenticated('buyer')"},
+                "expectedOutcome": "Token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (Cancel Auth Run 3: Anonymous)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O1/cancel", "auth": "anonymousUser"},
+                "expectedOutcome": "Khách ẩn danh -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (Return Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O1/return", "auth": None},
+                "expectedOutcome": "Khách chưa đăng nhập -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (Return Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O1/return", "auth": "unauthenticated('buyer')"},
+                "expectedOutcome": "Token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (Return Auth Run 3: Anonymous)",
+                "inputData": {"endpoint": "POST /api/v1/orders/O1/return", "auth": "anonymousUser"},
+                "expectedOutcome": "Khách ẩn danh -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "OrderCancelReturnApiControllerTest.cancelOrder_returnsRejectedDaoOutcome",
+                "testScope": "REST API Controller Test (Cancel Rejected by DAO)",
+                "inputData": {"orderId": "O1", "daoOutcome": False},
+                "expectedOutcome": "DAO từ chối hủy do không hợp lệ -> API trả về HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_forbidsRequestOwnedByAnotherUser",
+                "testScope": "REST API Controller Test (View Return Cross-User Forbidden)",
+                "inputData": {"callerUser": "buyer", "requestOwner": "other_user"},
+                "expectedOutcome": "Người dùng xem yêu cầu trả hàng của người khác -> HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_forbidsAdminOutsideOrderScope",
+                "testScope": "REST API Controller Test (View Return Out-of-Scope Admin Forbidden)",
+                "inputData": {"callerAdmin": "manager1", "canAccessOrder": False},
+                "expectedOutcome": "Admin/Seller nằm ngoài phạm vi quản lý đơn hàng -> HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsSellerWithoutWholeOrderOwnership",
+                "testScope": "Unit Test (DAO Seller Partial Ownership Rejection)",
+                "inputData": {"sellerUsername": "seller_partial", "orderLines": "Belongs to multiple sellers"},
+                "expectedOutcome": "Seller không sở hữu toàn bộ sản phẩm trong đơn -> Bị từ chối duyệt, ném IllegalArgumentException"
+            }
         ]
     },
     "TC_CAN_005": {
-        "transition": "Khách hàng tạo Yêu cầu Trả hàng (Return Request) thành công từ đơn COMPLETED",
-        "preconditions": {
-            "orderId": "O1",
-            "orderStatus": "COMPLETED",
-            "owner": "alice"
-        },
-        "requestForm": {
-            "reason": "Sản phẩm bị lỗi đường may, sai kích thước",
-            "imageUrls": "https://shoeshop.com/evidence/img1.jpg,https://shoeshop.com/evidence/img2.jpg"
-        },
-        "expectedResult": {
-            "requestSaved": True,
-            "returnRequestStatus": "PENDING",
-            "orderTaggedStatus": "RETURN_PENDING",
-            "stockChanged": False
-        },
-        "testMethods": [
-            "OrderReturnDAOTest.createReturnRequest_trimsFieldsPersistsAndTagsOrder()",
-            "OrderCancelReturnApiControllerTest.createReturn_createsReturnForCompletedOrder()"
+        "specTestCase": "TC_CAN_005 (Khách tạo Yêu cầu Trả hàng thành công & Tra cứu chi tiết)",
+        "totalTestRuns": 8,
+        "summary": "Kiểm tra khách tạo yêu cầu trả hàng thành công (chuyển đơn sang RETURN_PENDING), tra cứu chi tiết và phân quyền xem thông tin hợp lệ",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_trimsFieldsPersistsAndTagsOrder",
+                "testScope": "Unit Test (DAO Create Return Run 1: Single Image Trim)",
+                "inputData": {"orderId": "O001", "imageUrls": " http://example.com/img.jpg ", "reason": " defective "},
+                "expectedOutcome": "Tự động trim khoảng trắng, lưu record OrderReturn và gắn tag đơn hàng sang RETURN_PENDING"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_trimsFieldsPersistsAndTagsOrder",
+                "testScope": "Unit Test (DAO Create Return Run 2: Comma-Separated Images)",
+                "inputData": {"orderId": "O001", "imageUrls": "http://example.com/1.jpg, http://example.com/2.jpg"},
+                "expectedOutcome": "Xử lý danh sách nhiều ảnh minh chứng phân tách bằng dấu phẩy thành công"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderReturnDAOTest.findReturnByOrderId_returnsFirstRow",
+                "testScope": "Unit Test (DAO Query Return Request by Order ID)",
+                "inputData": {"orderId": "O001"},
+                "expectedOutcome": "Truy vấn chính xác bản ghi yêu cầu trả hàng theo mã đơn hàng"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderReturnDAOTest.findReturnByOrderId_returnsNullForNullId",
+                "testScope": "Unit Test (DAO Query Return Null Safety)",
+                "inputData": {"orderId": None},
+                "expectedOutcome": "Mã đơn hàng null -> Trả về null an toàn, không query CSDL"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderReturnDAOTest.findReturnByOrderId_returnsNullForEmptyRows",
+                "testScope": "Unit Test (DAO Query Return When Empty)",
+                "inputData": {"orderId": "O_NO_RETURN"},
+                "expectedOutcome": "Đơn hàng chưa có yêu cầu trả hàng nào -> Trả về null an toàn"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_allowsRequestOwner",
+                "testScope": "REST API Controller Test (View Return by Owner 200 OK)",
+                "inputData": {"orderId": "O1", "authenticatedUser": "buyer (Owner)"},
+                "expectedOutcome": "Chính chủ đơn hàng xem chi tiết yêu cầu trả hàng -> Trả về HTTP 200 OK"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_allowsAdminWithinOrderScope",
+                "testScope": "REST API Controller Test (View Return by Admin 200 OK)",
+                "inputData": {"orderId": "O1", "authenticatedUser": "manager1 (Scope Owner)"},
+                "expectedOutcome": "Admin/Seller trong phạm vi quản lý đơn xem chi tiết -> Trả về HTTP 200 OK"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_returnsNotFoundWhenRequestDoesNotExist",
+                "testScope": "REST API Controller Test (View Return Not Found 404)",
+                "inputData": {"orderId": "O_NOT_FOUND"},
+                "expectedOutcome": "Yêu cầu trả hàng không tồn tại -> Trả về HTTP 404 Not Found"
+            }
         ]
     },
     "TC_CAN_006": {
-        "scenario": "Chặn tạo nhiều yêu cầu Trả hàng trùng lặp trên cùng 1 đơn hàng (Duplicate Prevention)",
-        "stateCheck": {
-            "orderId": "O1",
-            "orderStatus": "COMPLETED",
-            "existingReturnRequests": [{"id": 101, "status": "PENDING"}]
-        },
-        "action": "Spam gửi yêu cầu trả hàng lần 2",
-        "expectedException": "IllegalStateException",
-        "errorMessage": "Đơn hàng đã có yêu cầu trả hàng đang chờ xử lý",
-        "testMethods": [
-            "OrderReturnDAOTest.createReturnRequest_rejectsDuplicateRequest()"
+        "specTestCase": "TC_CAN_006 (Chặn tạo yêu cầu Trả hàng trùng lặp)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra hệ thống chặn đứng hành vi spam gửi nhiều yêu cầu trả hàng liên tiếp khi đơn đã có yêu cầu đang chờ duyệt",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsDuplicateRequest",
+                "testScope": "Unit Test (DAO Duplicate Return Request Prevention)",
+                "inputData": {"orderId": "O001", "hasPendingReturn": True},
+                "expectedOutcome": "Đơn đã có yêu cầu trả hàng đang ở RETURN_PENDING -> Chặn tạo lần 2, ném IllegalStateException"
+            }
         ]
     },
     "TC_CAN_007": {
-        "scenario": "Báo lỗi Form Xin trả hàng bỏ trống lý do hoặc đường dẫn ảnh quá 500 ký tự (BVA Form)",
-        "bvaMatrix": [
-            {"field": "reason", "value": "", "bva": "0 chars (min - 1)", "expected": "IllegalArgumentException"},
-            {"field": "reason", "value": "   ", "bva": "blank spaces (min - 1)", "expected": "IllegalArgumentException"},
-            {"field": "reason", "value": "r" * 2001, "bva": "2001 chars (max + 1)", "expected": "IllegalArgumentException"},
-            {"field": "imageUrls", "value": "i" * 501, "bva": "501 chars (max + 1)", "expected": "IllegalArgumentException"}
-        ],
-        "expectedStatus": 400,
-        "testMethods": [
-            "OrderReturnDAOTest.createReturnRequest_rejectsEachInvalidFormBoundary()",
-            "OrderCancelReturnApiControllerTest.createReturn_rejectsInvalidForm()"
+        "specTestCase": "TC_CAN_007 (Validate Form Trả hàng & BVA Lý do/Hình ảnh)",
+        "totalTestRuns": 12,
+        "summary": "Kiểm tra tính toàn vẹn và các giá trị biên BVA của form xin trả hàng (độ dài lý do 1-2000 ký tự, link ảnh <= 500 ký tự) trên DAO và API",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsEachInvalidFormBoundary",
+                "testScope": "Unit Test (DAO Return Form Run 1: Null Form)",
+                "inputData": {"form": None},
+                "expectedOutcome": "Form trả hàng null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsEachInvalidFormBoundary",
+                "testScope": "Unit Test (DAO Return Form Run 2: Null Reason)",
+                "inputData": {"reason": None},
+                "expectedOutcome": "Lý do trả hàng null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsEachInvalidFormBoundary",
+                "testScope": "Unit Test (DAO Return Form Run 3: Blank Reason)",
+                "inputData": {"reason": "   "},
+                "expectedOutcome": "Lý do trả hàng chỉ toàn khoảng trắng -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsEachInvalidFormBoundary",
+                "testScope": "Unit Test (DAO Return Form Run 4: Long Reason)",
+                "inputData": {"reasonLength": 2001},
+                "expectedOutcome": "Lý do trả hàng dài 2001 ký tự (>2000) -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderReturnDAOTest.createReturnRequest_rejectsEachInvalidFormBoundary",
+                "testScope": "Unit Test (DAO Return Form Run 5: Long ImageUrl)",
+                "inputData": {"imageUrlLength": 501},
+                "expectedOutcome": "Đường dẫn hình ảnh dài 501 ký tự (>500) -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Return Form Run 1: Null Body)",
+                "inputData": {"formBody": None},
+                "expectedOutcome": "Body JSON form null -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Return Form Run 2: Missing Reason)",
+                "inputData": {"reason": None},
+                "expectedOutcome": "Thiếu lý do trả hàng -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Return Form Run 3: Blank Reason)",
+                "inputData": {"reason": "   "},
+                "expectedOutcome": "Lý do trả hàng chỉ chứa khoảng trắng -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Return Form Run 4: Long Reason)",
+                "inputData": {"reasonLength": 2001},
+                "expectedOutcome": "Lý do trả hàng vượt quá 2000 ký tự -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Return Form Run 5: Long ImageUrl)",
+                "inputData": {"imageUrlLength": 501},
+                "expectedOutcome": "Đường dẫn hình ảnh vượt quá 500 ký tự -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_returnsCreatedDataForValidImageBoundary",
+                "testScope": "REST API Controller Test (BVA Image Boundary Run 1: Null Image)",
+                "inputData": {"imageUrl": None, "reason": "Sản phẩm bị rách"},
+                "expectedOutcome": "Không đính kèm ảnh minh chứng (ảnh không bắt buộc) -> Hợp lệ, tạo thành công HTTP 201 Created"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "OrderCancelReturnApiControllerTest.createReturn_returnsCreatedDataForValidImageBoundary",
+                "testScope": "REST API Controller Test (BVA Image Boundary Run 2: Exact 500 Chars)",
+                "inputData": {"imageUrlLength": 500, "reason": "Sản phẩm bị lỗi keo"},
+                "expectedOutcome": "Đường dẫn hình ảnh chạm trần biên trên đúng 500 ký tự -> Hợp lệ, tạo thành công HTTP 201 Created"
+            }
         ]
     },
     "TC_CAN_008": {
-        "transition": "Admin Duyệt (APPROVE) yêu cầu trả hàng: Hoàn kho & Chuyển trạng thái RETURNED",
-        "adminAction": {
-            "returnId": 1,
-            "decision": "APPROVE",
-            "note": "Đã nhận lại hàng nguyên vẹn tem mác",
-            "adminRole": "ROLE_ADMIN"
-        },
-        "expectedOutcome": {
-            "orderStatus": "RETURNED",
-            "returnStatus": "APPROVED",
-            "inventoryRestored": True,
-            "salesCountDeducted": True,
-            "httpStatus": 200
-        },
-        "testMethods": [
-            "OrderReturnDAOTest.updateReturnStatus_approveRestoresStockAndMarksReturned()",
-            "OrderCancelReturnApiControllerTest.updateStatus_returnsUpdatedRequest()"
+        "specTestCase": "TC_CAN_008 (Admin Duyệt đơn trả hàng & Hoàn kho)",
+        "totalTestRuns": 3,
+        "summary": "Kiểm tra quy trình Admin duyệt (APPROVE) yêu cầu trả hàng: Chuyển đơn sang RETURNED, yêu cầu sang APPROVED, hoàn lại tồn kho và giảm lượt sales",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_approveRestoresStockAndMarksReturned",
+                "testScope": "Unit Test (DAO Approve Return & Inventory Restoration)",
+                "inputData": {"action": "APPROVE", "orderId": "O001", "returnQuantity": 2},
+                "expectedOutcome": "Đơn chuyển thành RETURNED, yêu cầu thành APPROVED, tự động hoàn trả 2 sản phẩm vào kho và giảm sales"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_approveSkipsDeletedProduct",
+                "testScope": "Unit Test (DAO Approve Resilience When Product Deleted)",
+                "inputData": {"action": "APPROVE", "productInStock": "Deleted"},
+                "expectedOutcome": "Bỏ qua an toàn khi sản phẩm trong đơn đã bị xóa khỏi kho, vẫn hoàn tất duyệt đơn sang RETURNED"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_returnsUpdatedRequest",
+                "testScope": "REST API Controller Test (API Approve Return 200 OK)",
+                "inputData": {"endpoint": "PUT /api/v1/admin/orders/O1/return-status", "action": "APPROVE"},
+                "expectedOutcome": "API Admin duyệt thành công -> Trả về HTTP 200 OK kèm dữ liệu yêu cầu APPROVED"
+            }
         ]
     },
     "TC_CAN_009": {
-        "transition": "Admin Từ chối (REJECT) yêu cầu trả hàng: Giữ nguyên COMPLETED & Không đổi tồn kho",
-        "adminAction": {
-            "returnId": 1,
-            "decision": "REJECT",
-            "note": "Hình ảnh minh chứng không đủ căn cứ lỗi nhà sản xuất",
-            "adminRole": "ROLE_ADMIN"
-        },
-        "expectedOutcome": {
-            "orderStatus": "COMPLETED",
-            "returnStatus": "REJECTED",
-            "inventoryRestored": False,
-            "salesCountDeducted": False,
-            "httpStatus": 200
-        },
-        "testMethods": [
-            "OrderReturnDAOTest.updateReturnStatus_rejectReturnsOrderToCompletedWithoutStockMutation()",
-            "OrderCancelReturnApiControllerTest.updateStatus_returnsUpdatedRequest()"
+        "specTestCase": "TC_CAN_009 (Admin Từ chối đơn trả hàng do thiếu bằng chứng)",
+        "totalTestRuns": 5,
+        "summary": "Kiểm tra quy trình Admin từ chối (REJECT) yêu cầu trả hàng: Chuyển yêu cầu sang REJECTED, đưa đơn về lại COMPLETED ban đầu, không thay đổi kho và xử lý đơn không tồn tại",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectReturnsOrderToCompletedWithoutStockMutation",
+                "testScope": "Unit Test (DAO Reject Return & Zero Stock Mutation)",
+                "inputData": {"action": "REJECT", "orderId": "O001"},
+                "expectedOutcome": "Yêu cầu thành REJECTED, đơn quay về COMPLETED ban đầu, tuyệt đối không thay đổi tồn kho và sales"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectAllowsMissingAdminNote",
+                "testScope": "Unit Test (DAO Reject Allows Missing Admin Note)",
+                "inputData": {"action": "REJECT", "adminNote": None},
+                "expectedOutcome": "Cho phép từ chối mà không cần ghi chú adminNote vẫn hợp lệ"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_returnsUpdatedRequest",
+                "testScope": "REST API Controller Test (API Reject Return 200 OK)",
+                "inputData": {"endpoint": "PUT /api/v1/admin/orders/O1/return-status", "action": "REJECT"},
+                "expectedOutcome": "API Admin từ chối thành công -> Trả về HTTP 200 OK kèm dữ liệu yêu cầu REJECTED"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsMissingReturnRequest",
+                "testScope": "Unit Test (DAO Missing Return Request Rejection)",
+                "inputData": {"returnRequestId": 99999, "returnRequestInDB": None},
+                "expectedOutcome": "Yêu cầu trả hàng không tồn tại trong DB -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsMissingOrder",
+                "testScope": "Unit Test (DAO Missing Order Rejection)",
+                "inputData": {"orderId": "MISSING_ORDER"},
+                "expectedOutcome": "Đơn hàng liên kết không tồn tại trong DB -> Ném IllegalArgumentException"
+            }
         ]
     },
     "TC_CAN_010": {
-        "scenario": "Chặn khách hàng ROLE_USER can thiệp vào API Duyệt/Từ chối của Admin",
-        "securityContext": {
-            "username": "customer_alice",
-            "role": "ROLE_USER"
-        },
-        "unauthorizedCall": "PUT /api/v1/admin/order-returns/1 (action: APPROVE)",
-        "expectedResponse": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "message": "Access Denied: Quyền hạn chỉ dành cho Quản trị viên"
-        },
-        "testMethods": [
-            "OrderCancelReturnApiControllerTest.updateStatus_rejectsNonAdminAuthentication()"
+        "specTestCase": "TC_CAN_010 (Chặn User duyệt đơn & Validate Form Duyệt của Admin)",
+        "totalTestRuns": 14,
+        "summary": "Kiểm tra chặn người dùng thường gọi API quản trị của Admin (403), chặn khách chưa đăng nhập (401) và xác thực toàn vẹn 4 trường hợp form duyệt",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsNonAdminAuthentication",
+                "testScope": "REST API Controller Test (Admin Review Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "PUT /api/v1/admin/orders/O1/return-status", "auth": None},
+                "expectedOutcome": "Thiếu thông tin xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsNonAdminAuthentication",
+                "testScope": "REST API Controller Test (Admin Review Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "PUT /api/v1/admin/orders/O1/return-status", "auth": "unauthenticated('admin')"},
+                "expectedOutcome": "Token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsNonAdminAuthentication",
+                "testScope": "REST API Controller Test (Admin Review Auth Run 3: Non-Admin Role)",
+                "inputData": {"endpoint": "PUT /api/v1/admin/orders/O1/return-status", "auth": "ROLE_USER"},
+                "expectedOutcome": "Khách hàng thường cố tình gọi API duyệt của Admin -> Chặn đứng với HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (View Return Auth Run 1: Missing Auth)",
+                "inputData": {"endpoint": "GET /api/v1/orders/O1/return", "auth": None},
+                "expectedOutcome": "Xem chi tiết trả hàng khi chưa đăng nhập -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (View Return Auth Run 2: Unauthenticated)",
+                "inputData": {"endpoint": "GET /api/v1/orders/O1/return", "auth": "unauthenticated('buyer')"},
+                "expectedOutcome": "Xem chi tiết trả hàng khi token chưa xác thực -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderCancelReturnApiControllerTest.getReturn_rejectsLoginRequiredAuthentication",
+                "testScope": "REST API Controller Test (View Return Auth Run 3: Anonymous)",
+                "inputData": {"endpoint": "GET /api/v1/orders/O1/return", "auth": "anonymousUser"},
+                "expectedOutcome": "Xem chi tiết trả hàng khi là khách ẩn danh -> Trả về HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsInvalidActionOrNote",
+                "testScope": "Unit Test (DAO Review Form Run 1: Null Action)",
+                "inputData": {"action": None},
+                "expectedOutcome": "Hành động duyệt null -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsInvalidActionOrNote",
+                "testScope": "Unit Test (DAO Review Form Run 2: Invalid Action)",
+                "inputData": {"action": "INVALID_ACTION"},
+                "expectedOutcome": "Hành động duyệt không phải APPROVE hoặc REJECT -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsInvalidActionOrNote",
+                "testScope": "Unit Test (DAO Review Form Run 3: Blank Action)",
+                "inputData": {"action": ""},
+                "expectedOutcome": "Hành động duyệt rỗng -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "OrderReturnDAOTest.updateReturnStatus_rejectsInvalidActionOrNote",
+                "testScope": "Unit Test (DAO Review Form Run 4: Long Admin Note)",
+                "inputData": {"adminNoteLength": 501},
+                "expectedOutcome": "Ghi chú của Admin dài 501 ký tự (>500) -> Ném IllegalArgumentException"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Review Form Run 1: Null Form)",
+                "inputData": {"formBody": None},
+                "expectedOutcome": "Body form duyệt null -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Review Form Run 2: Missing Action)",
+                "inputData": {"action": None},
+                "expectedOutcome": "Thiếu hành động duyệt -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Review Form Run 3: Invalid Action)",
+                "inputData": {"action": "INVALID_ACTION"},
+                "expectedOutcome": "Hành động duyệt không hợp lệ -> HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "OrderCancelReturnApiControllerTest.updateStatus_rejectsInvalidForm",
+                "testScope": "REST API Controller Test (API Review Form Run 4: Long Admin Note)",
+                "inputData": {"adminNoteLength": 501},
+                "expectedOutcome": "Ghi chú của Admin vượt quá 500 ký tự -> HTTP 400 Bad Request"
+            }
         ]
     },
     # ==================== PHÂN HỆ 8: QUẢN TRỊ HỆ THỐNG (ADMIN MANAGEMENT) ====================
     "TC_ADM_001": {
-        "scenario": "Chặn hạ cấp (Downgrade) quyền của Admin duy nhất còn hoạt động",
-        "preCondition": "Trong DB chỉ còn 1 tài khoản ROLE_ADMIN đang Active (countActiveAdmins = 1)",
-        "adminSession": {
-            "username": "admin",
-            "role": "ROLE_ADMIN"
-        },
-        "targetAccount": {
-            "username": "target",
-            "currentRole": "ROLE_ADMIN",
-            "active": True
-        },
-        "submittedForm": {
-            "userName": "target",
-            "userRole": "ROLE_USER",
-            "active": True
-        },
-        "systemState": {
-            "countActiveAdmins": 1
-        },
-        "expectedResult": {
-            "redirectView": "redirect:/admin/user/edit?userName=target",
-            "flashAttribute": "errorMessage",
-            "retainedRole": "ROLE_ADMIN",
-            "daoPersisted": False,
-            "blockedReason": "Hệ thống bảo vệ: Không được phép hạ cấp Admin duy nhất đang hoạt động"
-        },
-        "testMethods": [
-            "UserControllerCoverageTest.userEditSave_blocksLastActiveAdminFromLosingAdminRole()"
+        "specTestCase": "TC_ADM_001 (Chặn hạ cấp quyền Admin duy nhất còn hoạt động)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra quy tắc an toàn cốt lõi: khi hệ thống chỉ còn 1 tài khoản ROLE_ADMIN active, chặn mọi hành vi hạ cấp vai trò hoặc truyền role bất hợp lệ",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_blocksLastActiveAdminFromLosingAdminRole",
+                "testScope": "Controller Unit Test (BVA Min: countActiveAdmins = 1)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'submittedRole': 'ROLE_USER', 'countActiveAdmins': 1},
+                "expectedOutcome": "Hệ thống chặn đứng, ném flash errorMessage, giữ nguyên ROLE_ADMIN và không gọi DAO persist"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_rejectsInvalidRole",
+                "testScope": "Controller Unit Test (Equivalence Partitioning: Invalid Role Normalization)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'submittedRole': 'ROLE_INVALID_NON_EXISTENT'},
+                "expectedOutcome": "Hệ thống từ chối cập nhật vai trò không hợp lệ, trả về errorMessage và giữ nguyên vai trò cũ"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_reportsMissingAccount",
+                "testScope": "Controller Unit Test (Missing Account Boundary)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'missing_account'},
+                "expectedOutcome": "Báo lỗi tài khoản không tìm thấy trong CSDL, redirect về /admin/users kèm errorMessage"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_reportsServiceValidationError",
+                "testScope": "Controller Unit Test (Service Layer Validation Failure)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'profileServiceValidation': 'invalid profile'},
+                "expectedOutcome": "Hệ thống chặn lưu khi vi phạm kiểm định service, giữ nguyên trang edit và hiển thị thông báo lỗi"
+            }
         ]
     },
     "TC_ADM_002": {
-        "scenario": "Chặn Khóa/Vô hiệu hóa (active = false) Admin duy nhất còn hoạt động",
-        "preCondition": "Trong DB chỉ còn 1 tài khoản ROLE_ADMIN đang Active (countActiveAdmins = 1)",
-        "adminSession": {
-            "username": "admin",
-            "role": "ROLE_ADMIN"
-        },
-        "targetAccount": {
-            "username": "target",
-            "currentRole": "ROLE_ADMIN",
-            "active": True
-        },
-        "submittedForm": {
-            "userName": "target",
-            "userRole": "ROLE_ADMIN",
-            "active": False
-        },
-        "systemState": {
-            "countActiveAdmins": 1
-        },
-        "expectedResult": {
-            "redirectView": "redirect:/admin/user/edit?userName=target",
-            "flashAttribute": "errorMessage",
-            "retainedActive": True,
-            "daoPersisted": False,
-            "blockedReason": "Hệ thống bảo vệ: Không được phép khóa hoặc vô hiệu hóa Admin duy nhất đang hoạt động"
-        },
-        "testMethods": [
-            "UserControllerCoverageTest.userEditSave_blocksLastActiveAdminFromLosingAdminRole()"
+        "specTestCase": "TC_ADM_002 (Chặn Khóa/Vô hiệu hóa Admin duy nhất còn hoạt động)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra quy tắc bảo toàn tài khoản quản trị tối cao: không cho phép khóa hoặc tắt active tài khoản Admin duy nhất và ánh xạ dữ liệu an toàn",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_keepsActiveUnlockedAdminWithoutCountingAdmins",
+                "testScope": "Controller Unit Test (Preserve Active & Unlocked State)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'submittedRole': 'ROLE_ADMIN', 'active': True, 'accountNonLocked': True},
+                "expectedOutcome": "Lưu thông tin thành công, giữ nguyên active=true và accountNonLocked=true mà không cần kích hoạt đếm Admin"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "UserControllerCoverageTest.userEdit_mapsExistingFullName",
+                "testScope": "Controller Unit Test (Form Mapping with Full Name)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'dbFullName': 'Target User'},
+                "expectedOutcome": "Mở form chỉnh sửa ánh xạ chính xác họ tên đầy đủ từ CSDL lên UserProfileForm"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "UserControllerCoverageTest.userEdit_usesUsernameWhenFullNameIsMissing",
+                "testScope": "Controller Unit Test (Fallback Identity When Full Name Null)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'dbFullName': None},
+                "expectedOutcome": "Tự động fallback sử dụng username làm họ tên hiển thị khi trường fullName bị null"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "UserControllerCoverageTest.userEdit_redirectsMissingAccount",
+                "testScope": "Controller Unit Test (Edit Non-existent Account)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'missing_account'},
+                "expectedOutcome": "Chặn mở form chỉnh sửa cho tài khoản không tồn tại, redirect an toàn về /admin/users"
+            }
         ]
     },
     "TC_ADM_003": {
-        "scenario": "Cho phép hạ cấp hoặc khóa Admin nếu vẫn còn ít nhất 1 Admin khác đang hoạt động",
-        "preCondition": "Trong DB có >= 2 tài khoản ROLE_ADMIN đang Active (countActiveAdmins >= 2)",
-        "adminSession": {
-            "username": "admin",
-            "role": "ROLE_ADMIN"
-        },
-        "targetAccount": {
-            "username": "target",
-            "currentRole": "ROLE_ADMIN",
-            "active": True
-        },
-        "testVariants": {
-            "variantA_downgrade": {
-                "submittedRole": "ROLE_USER",
-                "active": True,
-                "expectedRole": "ROLE_USER"
+        "specTestCase": "TC_ADM_003 (Cho phép hạ cấp hoặc khóa Admin nếu vẫn còn Admin khác)",
+        "totalTestRuns": 4,
+        "summary": "Kiểm tra biên hợp lệ BVA (countActiveAdmins >= 2): cho phép hạ cấp role, vô hiệu hóa active=false hoặc khóa accountNonLocked=false khi còn Admin khác",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_allowsAdminDowngradeWhenAnotherActiveAdminExists",
+                "testScope": "Controller Unit Test (BVA Boundary: countActiveAdmins = 2 -> Downgrade)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'submittedRole': 'ROLE_USER', 'countActiveAdmins': 2},
+                "expectedOutcome": "Hạ cấp Admin xuống ROLE_USER thành công vì còn Admin khác, lưu DB và redirect về /admin/users"
             },
-            "variantB_deactivate": {
-                "submittedRole": "ROLE_ADMIN",
-                "active": False,
-                "expectedActive": False
+            {
+                "runIndex": 2,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_deactivatesAdminWhenAnotherActiveAdminExists",
+                "testScope": "Controller Unit Test (BVA Boundary: countActiveAdmins = 2 -> Deactivate)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'submittedActive': False, 'countActiveAdmins': 2},
+                "expectedOutcome": "Vô hiệu hóa tài khoản Admin target (active=false) thành công, cập nhật CSDL và hiển thị thông báo"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_locksAdminWhenAnotherActiveAdminExists",
+                "testScope": "Controller Unit Test (BVA Boundary: countActiveAdmins = 2 -> Lock Account)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target', 'submittedNonLocked': False, 'countActiveAdmins': 2},
+                "expectedOutcome": "Khóa tài khoản Admin target (accountNonLocked=false) thành công khi vẫn còn Admin khác hoạt động"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_updatesNormalUserWithoutCountingAdmins",
+                "testScope": "Controller Unit Test (Normal User Profile Update Bypass)",
+                "inputData": {'authenticatedUser': 'admin (ROLE_ADMIN)', 'targetUser': 'target_user', 'submittedRole': 'ROLE_USER'},
+                "expectedOutcome": "Chỉnh sửa tài khoản User thông thường lưu thành công mà không kích hoạt đếm Admin"
             }
-        },
-        "systemState": {
-            "countActiveAdmins": 2
-        },
-        "expectedResult": {
-            "redirectView": "redirect:/admin/users",
-            "flashAttribute": "message",
-            "success": True,
-            "daoPersisted": True
-        },
-        "testMethods": [
-            "UserControllerCoverageTest.userEditSave_allowsAdminDowngradeWhenAnotherActiveAdminExists()",
-            "UserControllerCoverageTest.userEditSave_deactivatesAdminWhenAnotherActiveAdminExists()",
-            "UserControllerCoverageTest.userEditSave_locksAdminWhenAnotherActiveAdminExists()"
         ]
     },
     "TC_ADM_004": {
-        "scenario": "Chặn User thường (ROLE_USER) hoặc khách chưa đăng nhập truy cập trang quản trị",
-        "testedEndpoints": [
+        "specTestCase": "TC_ADM_004 (Chặn User thường cố tình vào xem / thao tác Quản trị RBAC & Account)",
+        "totalTestRuns": 53,
+        "summary": "Kiểm tra toàn diện cơ chế phân quyền RBAC trang Quản trị, phân trang danh sách User, quản lý Profile và chu trình cấp lại mật khẩu an toàn",
+        "testRunsBreakdown": [
             {
-                "url": "GET /admin/users?page=1",
-                "auth": "ROLE_USER (username: buyer)",
-                "expectedRedirect": "redirect:/403"
+                "runIndex": 1,
+                "targetMethod": "UserControllerCoverageTest.userList_redirectsNonAdmin",
+                "testScope": "RBAC Security Test (User List - ROLE_USER)",
+                "inputData": {'url': 'GET /admin/users', 'principal': 'buyer (ROLE_USER)'},
+                "expectedOutcome": "Khách hàng thường cố tình vào danh sách quản trị bị đá văng sang redirect:/403"
             },
             {
-                "url": "GET /admin/users",
-                "auth": "Unauthenticated (anonymous)",
-                "expectedRedirect": "redirect:/403"
+                "runIndex": 2,
+                "targetMethod": "UserControllerCoverageTest.userList_redirectsWithoutAuthentication",
+                "testScope": "RBAC Security Test (User List - Unauthenticated)",
+                "inputData": {'url': 'GET /admin/users', 'principal': 'anonymous (null)'},
+                "expectedOutcome": "Khách chưa đăng nhập vào xem danh sách bị đá văng sang redirect:/403"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "UserControllerCoverageTest.userList_normalizesInvalidPageForAdmin",
+                "testScope": "Pagination Normalization (Invalid Page Parameter)",
+                "inputData": {'url': 'GET /admin/users?page=invalid', 'principal': 'admin (ROLE_ADMIN)'},
+                "expectedOutcome": "Admin truy cập với page không phải số được tự động chuẩn hóa về page=1 hợp lệ"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "UserControllerCoverageTest.userEdit_redirectsNonAdmin",
+                "testScope": "RBAC Security Test (User Edit Page - ROLE_USER)",
+                "inputData": {'url': 'GET /admin/user/edit?userName=buyer', 'principal': 'buyer (ROLE_USER)'},
+                "expectedOutcome": "Người dùng thường cố tình vào trang chỉnh sửa bị chặn sang redirect:/403"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "UserControllerCoverageTest.userEdit_redirectsWithoutAuthentication",
+                "testScope": "RBAC Security Test (User Edit Page - Unauthenticated)",
+                "inputData": {'url': 'GET /admin/user/edit?userName=buyer', 'principal': 'null'},
+                "expectedOutcome": "Khách vãng lai chưa xác thực cố tình vào trang sửa user bị chặn sang redirect:/403"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_redirectsNonAdmin",
+                "testScope": "RBAC Security Test (User Edit Save POST - ROLE_USER)",
+                "inputData": {'url': 'POST /admin/user/edit', 'principal': 'buyer (ROLE_USER)'},
+                "expectedOutcome": "Người dùng thường submit form lưu user bị từ chối và đẩy sang redirect:/403"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "UserControllerCoverageTest.userEditSave_redirectsWithoutAuthentication",
+                "testScope": "RBAC Security Test (User Edit Save POST - Unauthenticated)",
+                "inputData": {'url': 'POST /admin/user/edit', 'principal': 'null'},
+                "expectedOutcome": "Khách vãng lai submit form lưu user bị chặn và đẩy sang redirect:/403"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "UserControllerCoverageTest.accountInfo_recognizesAdminRole",
+                "testScope": "Admin Dashboard Test (Role Recognition)",
+                "inputData": {'url': 'GET /admin/accountInfo', 'principal': 'admin (ROLE_ADMIN)'},
+                "expectedOutcome": "Xác nhận đúng userName='admin' và userRole='ROLE_ADMIN' hiển thị trên Dashboard"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "UserControllerCoverageTest.accountInfo_usesResolvedAccountAndUserStatistics",
+                "testScope": "Admin Dashboard Test (Business Statistics Aggregation)",
+                "inputData": {'url': 'GET /admin/accountInfo', 'principal': 'principal'},
+                "expectedOutcome": "Tổng hợp chính xác số đơn hàng (totalOrders=3), doanh thu (totalRevenue=125.0) và wishlistCount=4"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "UserControllerCoverageTest.accountInfo_usesEmptyIdentityWithoutAuthentication",
+                "testScope": "Admin Dashboard Test (Unauthenticated State Handling)",
+                "inputData": {'url': 'GET /admin/accountInfo', 'principal': 'null'},
+                "expectedOutcome": "Xử lý an toàn khi chưa đăng nhập, trả về userName='' và userRole=''"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "UserControllerCoverageTest.accountInfo_fallsBackToAuthenticationNameForUnresolvedAccount",
+                "testScope": "Admin Dashboard Test (Fallback Principal Name)",
+                "inputData": {'url': 'GET /admin/accountInfo', 'principal': 'fallback (ROLE_OTHER)'},
+                "expectedOutcome": "Fallback lấy tên Authentication Name khi tài khoản chưa được resolve trong CSDL"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "UserControllerCoverageTest.userProfile_redirectsWithoutAuthentication",
+                "testScope": "Profile Security Test (Unauthenticated Access)",
+                "inputData": {'url': 'GET /admin/user/profile', 'principal': 'null'},
+                "expectedOutcome": "Chưa đăng nhập truy cập profile bị redirect về trang login /admin/login"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "UserControllerCoverageTest.userProfile_redirectsUnauthenticatedToken",
+                "testScope": "Profile Security Test (Invalid Token Authentication)",
+                "inputData": {'url': 'GET /admin/user/profile', 'principal': 'UsernamePasswordAuthenticationToken unauthenticated'},
+                "expectedOutcome": "Token chưa xác thực truy cập profile bị redirect về trang login /admin/login"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "UserControllerCoverageTest.userProfile_redirectsWhenAccountCannotBeResolved",
+                "testScope": "Profile Security Test (Unresolved Account Redirect)",
+                "inputData": {'url': 'GET /admin/user/profile', 'principal': 'unresolved buyer'},
+                "expectedOutcome": "Không tìm thấy thông tin tài khoản trong DB -> Redirect về trang chủ /"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "UserControllerCoverageTest.userProfile_usesUsernameWhenFullNameIsMissing",
+                "testScope": "Profile View Test (Full Name Missing Fallback)",
+                "inputData": {'fullName': None, 'username': 'buyer', 'email': 'buyer@example.com'},
+                "expectedOutcome": "Họ tên trống được tự động fallback sang username trong form hiển thị"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "UserControllerCoverageTest.userProfile_mapsExistingFullName",
+                "testScope": "Profile View Test (Full Name Mapping)",
+                "inputData": {'fullName': 'Buyer Name', 'username': 'buyer'},
+                "expectedOutcome": "Ánh xạ chính xác họ tên đầy đủ 'Buyer Name' lên trường form hiển thị"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "UserControllerCoverageTest.profileSave_redirectsWithoutAuthentication",
+                "testScope": "Profile Save Security Test (Unauthenticated POST)",
+                "inputData": {'url': 'POST /admin/user/profile', 'principal': 'null'},
+                "expectedOutcome": "Chặn lưu hồ sơ khi chưa đăng nhập, chuyển hướng sang /admin/login"
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": "UserControllerCoverageTest.profileSave_redirectsUnauthenticatedToken",
+                "testScope": "Profile Save Security Test (Unauthenticated Token POST)",
+                "inputData": {'url': 'POST /admin/user/profile', 'principal': 'unauthenticated token'},
+                "expectedOutcome": "Chặn lưu hồ sơ với token unauthenticated, chuyển hướng sang /admin/login"
+            },
+            {
+                "runIndex": 19,
+                "targetMethod": "UserControllerCoverageTest.profileSave_reportsUnresolvedAccount",
+                "testScope": "Profile Save Test (Unresolved Account Error)",
+                "inputData": {'url': 'POST /admin/user/profile', 'target': 'unknown'},
+                "expectedOutcome": "Tài khoản không tìm thấy trong DB -> Báo errorMessage và redirect lại profile"
+            },
+            {
+                "runIndex": 20,
+                "targetMethod": "UserControllerCoverageTest.profileSave_reportsServiceValidationError",
+                "testScope": "Profile Save Test (Service Validation Error)",
+                "inputData": {'validationOutcome': 'invalid profile'},
+                "expectedOutcome": "Vi phạm validation tầng service -> Báo lỗi errorMessage tương ứng"
+            },
+            {
+                "runIndex": 21,
+                "targetMethod": "UserControllerCoverageTest.profileSave_rejectsMissingOldPasswordForLocalAccount",
+                "testScope": "Password Change Test (Missing Old Password)",
+                "inputData": {'accountProvider': 'LOCAL', 'oldPassword': None, 'newPassword': 'new-password'},
+                "expectedOutcome": "Tài khoản cục bộ đổi mật khẩu nhưng bỏ trống mật khẩu cũ -> Báo lỗi từ chối"
+            },
+            {
+                "runIndex": 22,
+                "targetMethod": "UserControllerCoverageTest.profileSave_rejectsWrongOldPasswordForLocalAccount",
+                "testScope": "Password Change Test (Incorrect Old Password)",
+                "inputData": {'accountProvider': 'LOCAL', 'oldPassword': 'wrong', 'newPassword': 'new-password'},
+                "expectedOutcome": "Nhập sai mật khẩu cũ -> BCrypt matches trả về false, từ chối cập nhật mật khẩu"
+            },
+            {
+                "runIndex": 23,
+                "targetMethod": "UserControllerCoverageTest.profileSave_rejectsNewPasswordConfirmationMismatch",
+                "testScope": "Password Change Test (Confirmation Mismatch)",
+                "inputData": {'newPassword': 'new-password', 'confirmPassword': 'different'},
+                "expectedOutcome": "Mật khẩu xác nhận không trùng khớp mật khẩu mới -> Báo lỗi từ chối"
+            },
+            {
+                "runIndex": 24,
+                "targetMethod": "UserControllerCoverageTest.profileSave_updatesLocalPasswordAndProfile",
+                "testScope": "Password Change Test (Successful Local Update)",
+                "inputData": {'oldPassword': 'old', 'newPassword': 'new-password', 'confirmPassword': 'new-password'},
+                "expectedOutcome": "Mật khẩu cũ đúng, mật khẩu mới khớp -> Mã hóa BCrypt và cập nhật thành công"
+            },
+            {
+                "runIndex": 25,
+                "targetMethod": "UserControllerCoverageTest.profileSave_skipsPasswordChangeForGoogleAccount",
+                "testScope": "Profile Save Test (OAuth2 Google Account Bypass)",
+                "inputData": {'accountProvider': 'GOOGLE', 'submittedNewPassword': 'ignored'},
+                "expectedOutcome": "Tài khoản Google OAuth2 bỏ qua đổi mật khẩu cục bộ, bảo lưu nguyên vẹn google-hash"
+            },
+            {
+                "runIndex": 26,
+                "targetMethod": "UserControllerCoverageTest.profileSave_treatsBlankNewPasswordAsUnchanged",
+                "testScope": "Password Change Test (Blank Password Treated As Unchanged)",
+                "inputData": {'newPassword': '   '},
+                "expectedOutcome": "Mật khẩu mới toàn khoảng trắng được coi là không đổi -> Bảo lưu mật khẩu hiện tại"
+            },
+            {
+                "runIndex": 27,
+                "targetMethod": "UserControllerCoverageTest.profileSave_preservesPasswordWhenNoNewPasswordWasSubmitted",
+                "testScope": "Password Change Test (No Password Submitted)",
+                "inputData": {'newPassword': None},
+                "expectedOutcome": "Không submit trường mật khẩu mới -> Bảo lưu mật khẩu cũ, lưu cập nhật hồ sơ"
+            },
+            {
+                "runIndex": 28,
+                "targetMethod": "UserControllerCoverageTest.forgotPasswordPage_returnsDedicatedView",
+                "testScope": "Password Recovery Test (View Resolution)",
+                "inputData": {'url': 'GET /forgotPassword'},
+                "expectedOutcome": "Trả về giao diện trang quên mật khẩu chuyên dụng 'forgotPassword'"
+            },
+            {
+                "runIndex": 29,
+                "targetMethod": "UserControllerCoverageTest.forgotPassword_rejectsBlankEmail",
+                "testScope": "Password Recovery Test (Blank Email Rejection)",
+                "inputData": {'email': '   '},
+                "expectedOutcome": "Email toàn khoảng trắng -> Từ chối và hiển thị errorMessage"
+            },
+            {
+                "runIndex": 30,
+                "targetMethod": "UserControllerCoverageTest.forgotPassword_rejectsMissingEmail [1]",
+                "testScope": "Password Recovery Test (Null Email Rejection)",
+                "inputData": {'email': None},
+                "expectedOutcome": "Email null -> Từ chối, không tra cứu DAO và báo lỗi"
+            },
+            {
+                "runIndex": 31,
+                "targetMethod": "UserControllerCoverageTest.forgotPassword_rejectsMissingEmail [2]",
+                "testScope": "Password Recovery Test (Empty Email Rejection)",
+                "inputData": {'email': ''},
+                "expectedOutcome": "Email rỗng '' -> Từ chối, không tra cứu DAO và báo lỗi"
+            },
+            {
+                "runIndex": 32,
+                "targetMethod": "UserControllerCoverageTest.forgotPassword_reportsUnknownAccount",
+                "testScope": "Password Recovery Test (Unknown Email Account)",
+                "inputData": {'email': ' missing@example.com '},
+                "expectedOutcome": "Email không tồn tại trong hệ thống -> Báo lỗi errorMessage tài khoản không tìm thấy"
+            },
+            {
+                "runIndex": 33,
+                "targetMethod": "UserControllerCoverageTest.forgotPassword_persistsResetTokenForKnownAccount",
+                "testScope": "Password Recovery Test (Reset Token Generation & Persistence)",
+                "inputData": {'email': ' Buyer@Example.com '},
+                "expectedOutcome": "Chuẩn hóa email, sinh token reset mật khẩu, lưu vào CSDL và báo successMessage"
+            },
+            {
+                "runIndex": 34,
+                "targetMethod": "UserControllerCoverageTest.resetPasswordPage_showsFormWithoutToken [1]",
+                "testScope": "Password Reset Form Test (Null Token Form Display)",
+                "inputData": {'token': None},
+                "expectedOutcome": "Mở trang đặt lại mật khẩu bình thường khi token là null"
+            },
+            {
+                "runIndex": 35,
+                "targetMethod": "UserControllerCoverageTest.resetPasswordPage_showsFormWithoutToken [2]",
+                "testScope": "Password Reset Form Test (Empty Token Form Display)",
+                "inputData": {'token': ''},
+                "expectedOutcome": "Mở trang đặt lại mật khẩu bình thường khi token là chuỗi rỗng ''"
+            },
+            {
+                "runIndex": 36,
+                "targetMethod": "UserControllerCoverageTest.resetPasswordPage_showsFormForBlankToken",
+                "testScope": "Password Reset Form Test (Blank Token Form Display)",
+                "inputData": {'token': '   '},
+                "expectedOutcome": "Mở trang đặt lại mật khẩu bình thường khi token chỉ chứa khoảng trắng"
+            },
+            {
+                "runIndex": 37,
+                "targetMethod": "UserControllerCoverageTest.resetPasswordPage_redirectsInvalidToken",
+                "testScope": "Password Reset Form Test (Invalid/Expired Token)",
+                "inputData": {'token': ' invalid '},
+                "expectedOutcome": "Token không hợp lệ hoặc đã hết hạn -> Báo errorMessage và redirect sang forgotPassword"
+            },
+            {
+                "runIndex": 38,
+                "targetMethod": "UserControllerCoverageTest.resetPasswordPage_addsNormalizedValidToken",
+                "testScope": "Password Reset Form Test (Valid Token Acceptance)",
+                "inputData": {'token': ' valid '},
+                "expectedOutcome": "Token hợp lệ trong CSDL -> Trim khoảng trắng và nạp token vào model form"
+            },
+            {
+                "runIndex": 39,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [1]",
+                "testScope": "Password Reset Process Test (Null Token Rejection)",
+                "inputData": {'token': None, 'password': 'validPassword', 'confirm': 'validPassword'},
+                "expectedOutcome": "Token null bị từ chối, hiển thị errorMessage trên form đặt lại mật khẩu"
+            },
+            {
+                "runIndex": 40,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [2]",
+                "testScope": "Password Reset Process Test (Empty Token Rejection)",
+                "inputData": {'token': '', 'password': 'validPassword', 'confirm': 'validPassword'},
+                "expectedOutcome": "Token rỗng bị từ chối, hiển thị errorMessage trên form đặt lại mật khẩu"
+            },
+            {
+                "runIndex": 41,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [3]",
+                "testScope": "Password Reset Process Test (Blank Token Rejection)",
+                "inputData": {'token': '   ', 'password': 'validPassword', 'confirm': 'validPassword'},
+                "expectedOutcome": "Token khoảng trắng bị từ chối, hiển thị errorMessage trên form"
+            },
+            {
+                "runIndex": 42,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [4]",
+                "testScope": "Password Reset Process Test (Null Password Rejection)",
+                "inputData": {'token': 'validToken', 'password': None, 'confirm': 'validPassword'},
+                "expectedOutcome": "Mật khẩu mới null bị từ chối và báo errorMessage"
+            },
+            {
+                "runIndex": 43,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [5]",
+                "testScope": "Password Reset Process Test (Empty Password Rejection)",
+                "inputData": {'token': 'validToken', 'password': '', 'confirm': 'validPassword'},
+                "expectedOutcome": "Mật khẩu mới rỗng bị từ chối và báo errorMessage"
+            },
+            {
+                "runIndex": 44,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [6]",
+                "testScope": "Password Reset Process Test (Blank Password Rejection)",
+                "inputData": {'token': 'validToken', 'password': '   ', 'confirm': 'validPassword'},
+                "expectedOutcome": "Mật khẩu mới chỉ gồm khoảng trắng bị từ chối và báo errorMessage"
+            },
+            {
+                "runIndex": 45,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_rejectsInvalidRequest [7]",
+                "testScope": "Password Reset Process Test (Confirmation Mismatch Rejection)",
+                "inputData": {'token': 'validToken', 'password': 'password123', 'confirm': 'different456'},
+                "expectedOutcome": "Mật khẩu xác nhận không khớp mật khẩu mới bị từ chối và báo errorMessage"
+            },
+            {
+                "runIndex": 46,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_reportsInvalidToken",
+                "testScope": "Password Reset Process Test (DAO Token Reset Failure)",
+                "inputData": {'token': 'invalid', 'password': 'password'},
+                "expectedOutcome": "DAO reset password trả về false do token không hợp lệ -> Báo lỗi errorMessage"
+            },
+            {
+                "runIndex": 47,
+                "targetMethod": "UserControllerCoverageTest.processResetPassword_redirectsAfterSuccessfulReset",
+                "testScope": "Password Reset Process Test (Successful Reset Flow)",
+                "inputData": {'token': 'valid', 'password': 'newValidPassword', 'confirm': 'newValidPassword'},
+                "expectedOutcome": "Mã hóa BCrypt, cập nhật CSDL thành công -> Redirect sang /admin/login kèm flash message"
+            },
+            {
+                "runIndex": 48,
+                "targetMethod": "UserControllerCoverageTest.login_returnsLoginView",
+                "testScope": "Authentication View Test (Admin Login View)",
+                "inputData": {'url': 'GET /admin/login'},
+                "expectedOutcome": "Trả về đúng tên view đăng nhập hệ thống 'login'"
+            },
+            {
+                "runIndex": 49,
+                "targetMethod": "UserControllerCoverageTest.registerPage_addsEmptyFormAndReturnsRegisterView",
+                "testScope": "Account Registration Test (Register View & Empty Form)",
+                "inputData": {'url': 'GET /register'},
+                "expectedOutcome": "Khởi tạo RegisterForm rỗng gắn vào model và trả về view 'register'"
+            },
+            {
+                "runIndex": 50,
+                "targetMethod": "UserControllerCoverageTest.initBinder_setsValidatorOnlyForRegisterForm",
+                "testScope": "Binder Security Test (RegisterFormValidator Binding)",
+                "inputData": {'targetForms': ['null', 'other', 'RegisterForm']},
+                "expectedOutcome": "Chỉ kích hoạt RegisterFormValidator đối với đối tượng RegisterForm, bỏ qua các form khác"
+            },
+            {
+                "runIndex": 51,
+                "targetMethod": "UserControllerCoverageTest.registerSave_normalizesAndPersistsValidAccount",
+                "testScope": "Account Registration Test (Successful Account Creation)",
+                "inputData": {'userName': 'newuser', 'password': 'password123', 'email': 'new@example.com'},
+                "expectedOutcome": "Chuẩn hóa thông tin, băm mật khẩu BCrypt, lưu tài khoản vào CSDL và redirect về /"
+            },
+            {
+                "runIndex": 52,
+                "targetMethod": "UserControllerCoverageTest.registerSave_returnsFormForBindingErrors",
+                "testScope": "Account Registration Test (Binding Form Errors)",
+                "inputData": {'form': 'invalid fields with binding errors'},
+                "expectedOutcome": "Form chứa lỗi ràng buộc dữ liệu -> Giữ nguyên view 'register' để người dùng sửa"
+            },
+            {
+                "runIndex": 53,
+                "targetMethod": "UserControllerCoverageTest.registerSave_returnsFormWithErrorWhenAccountSaveFails",
+                "testScope": "Account Registration Test (Persistence Error Handling)",
+                "inputData": {'form': 'valid data but DAO throws exception'},
+                "expectedOutcome": "Bắt lỗi khi lưu DB thất bại, thêm errorMessage vào form và trả về view 'register'"
             }
-        ],
-        "expectedResult": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "redirectView": "redirect:/403",
-            "accessDenied": True
-        },
-        "testMethods": [
-            "UserControllerCoverageTest.userList_redirectsNonAdmin()",
-            "UserControllerCoverageTest.userList_redirectsWithoutAuthentication()"
         ]
     },
     "TC_ADM_005": {
-        "scenario": "Chặn Admin A sửa sản phẩm thuộc quyền sở hữu của Admin B (Cross-ownership Scope)",
-        "callerSession": {
-            "username": "other",
-            "role": "ROLE_ADMIN"
-        },
-        "existingProduct": {
-            "code": "P1",
-            "name": "Original Shoes",
-            "owner": "seller"
-        },
-        "submittedForm": {
-            "code": "P1",
-            "name": "Malicious Modification",
-            "price": 999.0
-        },
-        "ownershipValidation": "caller (other) != owner (seller)",
-        "expectedResult": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "daoSaveInvoked": False,
-            "errorMessage": "Access Denied: Không thể sửa sản phẩm của tài khoản quản trị khác"
-        },
-        "testMethods": [
-            "ProductApiControllerTest.saveProduct_forbidsUpdatingForeignProduct()",
-            "ProductDAOTest.save_rejectsUpdateByDifferentOwner()"
+        "specTestCase": "TC_ADM_005 (Quản lý cập nhật sản phẩm & Chuẩn hóa Form sửa)",
+        "totalTestRuns": 5,
+        "summary": "Kiểm tra quy tắc kiểm định dữ liệu khi chỉnh sửa sản phẩm: cho phép giữ nguyên mã sản phẩm hiện tại mà không bị chặn trùng mã, và cơ chế ngắt sớm (short-circuit)",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductFormValidatorTest.validate_validEditedProduct_doesNotLookUpDuplicateCode",
+                "testScope": "Validator Unit Test (Edit Existing Product Bypass Duplicate Lookup)",
+                "inputData": {'code': 'P001', 'newProduct': False, 'action': 'Update existing product'},
+                "expectedOutcome": "Sản phẩm sửa (newProduct=false) giữ nguyên mã P001 không bị báo lỗi Duplicate và bỏ qua tra cứu CSDL"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductFormValidatorTest.validateLocalRules_validProduct_normalizesWithoutDaoLookup",
+                "testScope": "Validator Unit Test (String Normalization Without DAO Lookup)",
+                "inputData": {'code': '  P001  ', 'name': '  Running Shoe  '},
+                "expectedOutcome": "Tự động trim khoảng trắng ở hai đầu thành 'P001' và 'Running Shoe', hợp lệ mà không cần truy vấn DB"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductFormValidatorTest.validateLocalRules_existingFieldErrorShortCircuitsThatRule [1]",
+                "testScope": "Validator Unit Test (Short-circuit on Existing Price Binding Error)",
+                "inputData": {'field': 'price', 'invalidBinding': 'typeMismatch'},
+                "expectedOutcome": "Trường giá đã có lỗi typeMismatch -> Ngắt sớm không thực hiện các quy tắc kiểm tra giá tiếp theo"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductFormValidatorTest.validateLocalRules_existingFieldErrorShortCircuitsThatRule [2]",
+                "testScope": "Validator Unit Test (Short-circuit on Existing Stock Binding Error)",
+                "inputData": {'field': 'stockQuantity', 'invalidBinding': 'typeMismatch'},
+                "expectedOutcome": "Trường tồn kho đã có lỗi typeMismatch -> Ngắt sớm quy tắc kiểm định số lượng tồn kho"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductFormValidatorTest.validateLocalRules_existingFieldErrorShortCircuitsThatRule [3]",
+                "testScope": "Validator Unit Test (Short-circuit on Existing Discount Binding Error)",
+                "inputData": {'field': 'discountPercent', 'invalidBinding': 'typeMismatch'},
+                "expectedOutcome": "Trường chiết khấu đã có lỗi binding -> Ngắt sớm quy tắc kiểm định khoảng phần trăm chiết khấu"
+            }
         ]
     },
     "TC_ADM_006": {
-        "scenario": "Chặn Admin A xóa/vô hiệu hóa sản phẩm thuộc quyền sở hữu của Admin B",
-        "callerSession": {
-            "username": "seller",
-            "role": "ROLE_ADMIN"
-        },
-        "existingProduct": {
-            "code": "foreign",
-            "owner": "other"
-        },
-        "apiCall": {
-            "method": "DELETE",
-            "url": "/api/v1/products/foreign"
-        },
-        "ownershipValidation": "caller (seller) != owner (other)",
-        "expectedResult": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "daoDeleteInvoked": False,
-            "errorMessage": "Access Denied: Không thể xóa sản phẩm do tài khoản quản trị khác sở hữu"
-        },
-        "testMethods": [
-            "ProductApiControllerTest.deleteProduct_forbidsProductOwnedByAnotherPrincipal()"
+        "specTestCase": "TC_ADM_006 (Quản lý tồn kho biên & Trạng thái ngừng bán)",
+        "totalTestRuns": 6,
+        "summary": "Kiểm tra các giá trị biên tồn kho (stock) và chiết khấu (discount) khi quản lý tình trạng sản phẩm của quản trị viên",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductFormValidatorTest.validate_zeroStock_hasNoStockError",
+                "testScope": "Validator Unit Test (Stock BVA Boundary Min: stockQuantity = 0)",
+                "inputData": {'stockQuantity': 0, 'status': 'Hết hàng / Tạm ngừng bán'},
+                "expectedOutcome": "Tồn kho bằng 0 là giá trị biên hợp lệ, hasFieldErrors('stockQuantity') == false"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductFormValidatorTest.validate_negativeStock_rejectsMinimumAndSkipsDao",
+                "testScope": "Validator Unit Test (Stock BVA Boundary Min - 1: stockQuantity = -1)",
+                "inputData": {'stockQuantity': -1, 'pointType': 'Min - 1 (Invalid Boundary)'},
+                "expectedOutcome": "Tồn kho âm bị từ chối, báo lỗi Min.productForm.stockQuantity và bỏ qua gọi CSDL"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidDiscount_rejectsRangeAndSkipsDao [1]",
+                "testScope": "Validator Unit Test (Discount BVA Boundary Min - 1: discount = -1%)",
+                "inputData": {'discountPercent': -1, 'pointType': 'Min - 1 (Invalid Boundary)'},
+                "expectedOutcome": "Chiết khấu âm bị từ chối, báo lỗi Range.productForm.discountPercent và bỏ qua DAO"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidDiscount_rejectsRangeAndSkipsDao [2]",
+                "testScope": "Validator Unit Test (Discount BVA Boundary Max + 1: discount = 101%)",
+                "inputData": {'discountPercent': 101, 'pointType': 'Max + 1 (Invalid Boundary)'},
+                "expectedOutcome": "Chiết khấu vượt trần 100% bị từ chối, báo lỗi Range.productForm.discountPercent"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductFormValidatorTest.validate_discountBoundary_hasNoDiscountError [1]",
+                "testScope": "Validator Unit Test (Discount BVA Boundary Min: discount = 0%)",
+                "inputData": {'discountPercent': 0, 'pointType': 'Min Exact Boundary (Valid)'},
+                "expectedOutcome": "Chiết khấu 0% (không giảm giá) là giá trị biên hợp lệ, không có lỗi"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductFormValidatorTest.validate_discountBoundary_hasNoDiscountError [2]",
+                "testScope": "Validator Unit Test (Discount BVA Boundary Max: discount = 100%)",
+                "inputData": {'discountPercent': 100, 'pointType': 'Max Exact Boundary (Valid)'},
+                "expectedOutcome": "Chiết khấu 100% (miễn phí) là giá trị biên hợp lệ, không có lỗi"
+            }
         ]
     },
     "TC_ADM_007": {
-        "scenario": "Kiểm tra giá trị biên (BVA) & Tính toàn vẹn biểu mẫu Sản phẩm (Product Form Validation)",
-        "bvaBoundaryMatrix": {
-            "code_empty": {"code": "", "length": 0, "status": "INVALID_EMPTY"},
-            "code_blank": {"code": " ", "status": "INVALID_BLANK"},
-            "code_min": {"code": "P", "length": 1, "status": "VALID_MIN"},
-            "code_max": {"code": "P" * 20, "length": 20, "status": "VALID_MAX"},
-            "code_max_plus_1": {"code": "P" * 21, "length": 21, "status": "INVALID_TOO_LONG"},
-            "name_empty": {"name": "", "length": 0, "status": "INVALID_EMPTY"},
-            "name_blank": {"name": " ", "status": "INVALID_BLANK"},
-            "name_min": {"name": "N", "length": 1, "status": "VALID_MIN"},
-            "name_max": {"name": "N" * 255, "length": 255, "status": "VALID_MAX"},
-            "name_max_plus_1": {"name": "N" * 256, "length": 256, "status": "INVALID_TOO_LONG"},
-            "price_negative": {"price": -1.0, "status": "INVALID_NEGATIVE"},
-            "price_nan_infinite": {"price": "NaN / Infinity", "status": "INVALID_NUMERIC"}
-        },
-        "expectedResult": {
-            "httpStatus": 400,
-            "statusName": "HttpStatus.BAD_REQUEST",
-            "exception": "IllegalArgumentException: invalid product",
-            "daoPersistInvoked": False
-        },
-        "testMethods": [
-            "ProductDAOTest.save_rejectsEveryInvalidFormBoundary()",
-            "ProductApiControllerTest.saveProduct_mapsDaoException()"
+        "specTestCase": "TC_ADM_007 (Báo lỗi khi tạo sản phẩm thiếu Mã/Tên & Toàn diện biên BVA)",
+        "totalTestRuns": 18,
+        "summary": "Kiểm thử toàn diện Phân tích giá trị biên (BVA) độ dài Mã Code, Tên sản phẩm, Giá bán và tính duy nhất của mã sản phẩm mới",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductFormValidatorTest.validate_blankRequiredField_rejectsThatFieldAndSkipsDao [1]",
+                "testScope": "Validator Unit Test (Required Field BVA: code is null)",
+                "inputData": {'field': 'code', 'value': None},
+                "expectedOutcome": "Mã sản phẩm là null -> Báo lỗi NotEmpty.productForm.code và bỏ qua truy vấn CSDL"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductFormValidatorTest.validate_blankRequiredField_rejectsThatFieldAndSkipsDao [2]",
+                "testScope": "Validator Unit Test (Required Field BVA: code is empty '')",
+                "inputData": {'field': 'code', 'value': ''},
+                "expectedOutcome": "Mã sản phẩm là chuỗi rỗng '' -> Báo lỗi NotEmpty.productForm.code"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "ProductFormValidatorTest.validate_blankRequiredField_rejectsThatFieldAndSkipsDao [3]",
+                "testScope": "Validator Unit Test (Required Field BVA: name is null)",
+                "inputData": {'field': 'name', 'value': None},
+                "expectedOutcome": "Tên sản phẩm là null -> Báo lỗi NotEmpty.productForm.name và bỏ qua truy vấn CSDL"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "ProductFormValidatorTest.validate_blankRequiredField_rejectsThatFieldAndSkipsDao [4]",
+                "testScope": "Validator Unit Test (Required Field BVA: name is blank '   ')",
+                "inputData": {'field': 'name', 'value': '   '},
+                "expectedOutcome": "Tên sản phẩm toàn khoảng trắng -> Báo lỗi NotEmpty.productForm.name"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "ProductFormValidatorTest.validate_codeAtMaximumLength_hasNoCodeError",
+                "testScope": "Validator Unit Test (Code Length BVA Max: 20 characters)",
+                "inputData": {'code': 'cccccccccccccccccccc', 'length': 20, 'pointType': 'Max Boundary (Valid)'},
+                "expectedOutcome": "Mã sản phẩm đúng 20 ký tự hợp lệ, hasFieldErrors('code') == false"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "ProductFormValidatorTest.validate_codeOverMaximumLength_rejectsLengthAndSkipsDao",
+                "testScope": "Validator Unit Test (Code Length BVA Max + 1: 21 characters)",
+                "inputData": {'code': 'ccccccccccccccccccccc', 'length': 21, 'pointType': 'Max + 1 (Invalid Boundary)'},
+                "expectedOutcome": "Mã sản phẩm 21 ký tự vượt biên -> Báo lỗi Length.productForm.code và bỏ qua DAO"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "ProductFormValidatorTest.validate_nameAtMaximumLength_hasNoNameError",
+                "testScope": "Validator Unit Test (Name Length BVA Max: 255 characters)",
+                "inputData": {'name': 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', 'length': 255, 'pointType': 'Max Boundary (Valid)'},
+                "expectedOutcome": "Tên sản phẩm đúng 255 ký tự hợp lệ, hasFieldErrors('name') == false"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "ProductFormValidatorTest.validate_nameOverMaximumLength_rejectsLengthAndSkipsDao",
+                "testScope": "Validator Unit Test (Name Length BVA Max + 1: 256 characters)",
+                "inputData": {'name': 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn', 'length': 256, 'pointType': 'Max + 1 (Invalid Boundary)'},
+                "expectedOutcome": "Tên sản phẩm 256 ký tự vượt biên -> Báo lỗi Length.productForm.name và bỏ qua DAO"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidPrice_rejectsValueAndSkipsDao [1]",
+                "testScope": "Validator Unit Test (Price BVA Boundary: price = -1.0)",
+                "inputData": {'price': -1.0, 'pointType': 'Negative Price (Invalid)'},
+                "expectedOutcome": "Giá bán âm bị từ chối, báo lỗi Min.productForm.price và bỏ qua gọi CSDL"
+            },
+            {
+                "runIndex": 10,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidPrice_rejectsValueAndSkipsDao [2]",
+                "testScope": "Validator Unit Test (Price BVA Boundary: price = 0.0)",
+                "inputData": {'price': 0.0, 'pointType': 'Zero Price (Invalid)'},
+                "expectedOutcome": "Giá bán bằng 0 bị từ chối, báo lỗi Min.productForm.price và bỏ qua gọi CSDL"
+            },
+            {
+                "runIndex": 11,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidPrice_rejectsValueAndSkipsDao [3]",
+                "testScope": "Validator Unit Test (Price Robustness: Double.NaN)",
+                "inputData": {'price': 'Double.NaN', 'pointType': 'Not-a-Number (Invalid)'},
+                "expectedOutcome": "Giá bán NaN bị từ chối, báo lỗi Min.productForm.price và bỏ qua gọi CSDL"
+            },
+            {
+                "runIndex": 12,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidPrice_rejectsValueAndSkipsDao [4]",
+                "testScope": "Validator Unit Test (Price Robustness: Double.POSITIVE_INFINITY)",
+                "inputData": {'price': 'Double.POSITIVE_INFINITY', 'pointType': 'Positive Infinity (Invalid)'},
+                "expectedOutcome": "Giá bán dương vô cùng bị từ chối, báo lỗi Min.productForm.price"
+            },
+            {
+                "runIndex": 13,
+                "targetMethod": "ProductFormValidatorTest.validate_invalidPrice_rejectsValueAndSkipsDao [5]",
+                "testScope": "Validator Unit Test (Price Robustness: Double.NEGATIVE_INFINITY)",
+                "inputData": {'price': 'Double.NEGATIVE_INFINITY', 'pointType': 'Negative Infinity (Invalid)'},
+                "expectedOutcome": "Giá bán âm vô cùng bị từ chối, báo lỗi Min.productForm.price"
+            },
+            {
+                "runIndex": 14,
+                "targetMethod": "ProductFormValidatorTest.validate_positiveFinitePrice_hasNoPriceError",
+                "testScope": "Validator Unit Test (Price BVA Boundary Min: price = 0.01)",
+                "inputData": {'price': 0.01, 'pointType': 'Min Positive Price (Valid)'},
+                "expectedOutcome": "Giá bán dương hữu hạn 0.01 hợp lệ, hasFieldErrors('price') == false"
+            },
+            {
+                "runIndex": 15,
+                "targetMethod": "ProductFormValidatorTest.validate_duplicateNewProduct_rejectsCode",
+                "testScope": "Validator Unit Test (Duplicate Code Check for New Product)",
+                "inputData": {'code': 'P001', 'newProduct': True, 'existingInDb': True},
+                "expectedOutcome": "Tạo sản phẩm mới trùng mã Code đã có trong DB -> Báo lỗi Duplicate.productForm.code"
+            },
+            {
+                "runIndex": 16,
+                "targetMethod": "ProductFormValidatorTest.validate_validNewProduct_normalizesInputAndLooksUpCodeOnce",
+                "testScope": "Validator Unit Test (Successful New Product Creation & Normalization)",
+                "inputData": {'code': '  P001  ', 'name': '  Running Shoe  ', 'price': 100.0, 'newProduct': True},
+                "expectedOutcome": "Chuẩn hóa trim khoảng trắng, kiểm tra trùng lặp qua DAO đúng 1 lần, không có lỗi"
+            },
+            {
+                "runIndex": 17,
+                "targetMethod": "ProductFormValidatorTest.supports_productForm_returnsTrue",
+                "testScope": "Validator Unit Test (Class Support: ProductForm.class)",
+                "inputData": {'targetClass': 'ProductForm.class'},
+                "expectedOutcome": "Validator xác nhận hỗ trợ đúng lớp ProductForm.class, trả về true"
+            },
+            {
+                "runIndex": 18,
+                "targetMethod": "ProductFormValidatorTest.supports_otherClass_returnsFalse",
+                "testScope": "Validator Unit Test (Class Support: Other Classes)",
+                "inputData": {'targetClass': 'CustomerForm.class'},
+                "expectedOutcome": "Validator từ chối các lớp form khác như CustomerForm.class, trả về false"
+            }
         ]
     },
     "TC_ADM_008": {
-        "scenario": "Chặn Admin cập nhật trạng thái đơn hàng nằm ngoài phạm vi phân quyền quản lý (Management Scope)",
-        "adminSession": {
-            "username": "admin",
-            "role": "ROLE_ADMIN"
-        },
-        "orderContext": {
-            "orderId": "O1",
-            "status": "PENDING"
-        },
-        "scopeValidation": {
-            "canManageOrder": False
-        },
-        "apiCall": {
-            "method": "PUT",
-            "url": "/api/v1/orders/O1/status",
-            "payload": {"status": "PENDING"}
-        },
-        "expectedResult": {
-            "httpStatus": 403,
-            "statusName": "HttpStatus.FORBIDDEN",
-            "success": False,
-            "daoUpdateInvoked": False,
-            "errorMessage": "Access Denied: Đơn hàng nằm ngoài phạm vi phân công quản lý"
-        },
-        "testMethods": [
-            "OrderApiControllerTest.updateStatus_rejectsPrincipalOutsideManagementScope()"
+        "specTestCase": "TC_ADM_008 (Chặn Admin thao tác đơn hàng ngoài phạm vi quản lý)",
+        "totalTestRuns": 9,
+        "summary": "Kiểm tra phân quyền phạm vi quản lý đơn hàng (Management Scope) và cơ chế bảo mật truy cập REST API",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderApiControllerTest.updateStatus_rejectsPrincipalOutsideManagementScope",
+                "testScope": "REST API Controller Test (Update Status - Foreign Scope)",
+                "inputData": {'endpoint': 'PUT /api/v1/orders/O1/status', 'principal': 'admin', 'canManageOrder': False},
+                "expectedOutcome": "Admin thao tác đơn ngoài phân công quản lý -> Bị từ chối HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderApiControllerTest.getOrder_rejectsAuthenticatedPrincipalOutsideOrderScope",
+                "testScope": "REST API Controller Test (Get Order Detail - Foreign Scope)",
+                "inputData": {'endpoint': 'GET /api/v1/orders/O1', 'principal': 'admin', 'canAccessOrder': False},
+                "expectedOutcome": "Admin xem chi tiết đơn ngoài phạm vi quyền hạn -> Bị từ chối HTTP 403 Forbidden"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderApiControllerTest.getOrders_normalizesPageAndResolvesPrincipalScope [1]",
+                "testScope": "REST API Controller Test (Order List Scope: ALL)",
+                "inputData": {'endpoint': 'GET /api/v1/orders?page=1', 'principal': 'superadmin', 'scope': 'ALL'},
+                "expectedOutcome": "Phân giải Scope ALL, tải toàn bộ đơn hàng hệ thống theo phân trang chuẩn hóa"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderApiControllerTest.getOrders_normalizesPageAndResolvesPrincipalScope [2]",
+                "testScope": "REST API Controller Test (Order List Scope: ASSIGNED)",
+                "inputData": {'endpoint': 'GET /api/v1/orders?page=1', 'principal': 'manager', 'scope': 'ASSIGNED'},
+                "expectedOutcome": "Phân giải Scope ASSIGNED, chỉ tải các đơn hàng được phân công cho quản trị viên"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderApiControllerTest.getOrders_normalizesPageAndResolvesPrincipalScope [3]",
+                "testScope": "REST API Controller Test (Order List Scope: CUSTOMER)",
+                "inputData": {'endpoint': 'GET /api/v1/orders?page=1', 'principal': 'buyer', 'scope': 'CUSTOMER'},
+                "expectedOutcome": "Phân giải Scope CUSTOMER, chỉ tải các đơn hàng thuộc sở hữu của chính người dùng"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderApiControllerTest.getOrder_rejectsLoginRequiredAuthentication [1]",
+                "testScope": "REST API Controller Test (Unauthenticated Token)",
+                "inputData": {'endpoint': 'GET /api/v1/orders/O1', 'auth': 'Unauthenticated Token'},
+                "expectedOutcome": "Yêu cầu đăng nhập, trả về mã lỗi HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderApiControllerTest.getOrder_rejectsLoginRequiredAuthentication [2]",
+                "testScope": "REST API Controller Test (Anonymous User)",
+                "inputData": {'endpoint': 'GET /api/v1/orders/O1', 'auth': 'anonymousUser'},
+                "expectedOutcome": "Người dùng ẩn danh chưa đăng nhập -> Trả về mã lỗi HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderApiControllerTest.getOrder_rejectsLoginRequiredAuthentication [3]",
+                "testScope": "REST API Controller Test (Null Authentication)",
+                "inputData": {'endpoint': 'GET /api/v1/orders/O1', 'auth': None},
+                "expectedOutcome": "Đối tượng Authentication null -> Trả về mã lỗi HTTP 401 Unauthorized"
+            },
+            {
+                "runIndex": 9,
+                "targetMethod": "OrderApiControllerTest.getOrder_returnsNotFoundBeforeAuthorization",
+                "testScope": "REST API Controller Test (Fast-fail Non-existent Order)",
+                "inputData": {'endpoint': 'GET /api/v1/orders/NON_EXISTENT', 'auth': 'admin'},
+                "expectedOutcome": "Đơn hàng không tồn tại trong DB -> Trả về HTTP 404 Not Found trước bước phân quyền"
+            }
         ]
     },
     "TC_ADM_009": {
-        "scenario": "Tự động tính lại giá trị (Recalculate Amount) từ chi tiết dòng hàng khi Admin xem đơn của khách",
-        "adminSession": {
-            "username": "admin",
-            "role": "ROLE_ADMIN"
-        },
-        "orderContext": {
-            "orderId": "S1",
-            "isOrderCustomer": False,
-            "canAccessOrder": True
-        },
-        "orderDetails": [
-            {"lineItem": 1, "productCode": "P01", "amount": 10.0},
-            {"lineItem": 2, "productCode": "P02", "amount": 15.0}
-        ],
-        "recalculationFormula": "sum(orderDetail.amount) = 10.0 + 15.0 = 25.0",
-        "expectedResult": {
-            "httpStatus": 200,
-            "statusName": "HttpStatus.OK",
-            "calculatedTotalAmount": 25.0,
-            "isRecalculated": True,
-            "algorithmNote": "Khi Admin xem đơn khách hàng, hệ thống tự động tính lại tổng tiền từ chi tiết dòng hàng"
-        },
-        "testMethods": [
-            "OrderApiControllerTest.getOrder_recalculatesAmountWhenAdminIsNotOrderCustomer()"
+        "specTestCase": "TC_ADM_009 (Tự động tính lại giá trị khi xem đơn của Khách)",
+        "totalTestRuns": 3,
+        "summary": "Kiểm thử thuật toán phân định thông minh: khi Admin xem đơn khách (isOrderCustomer = false), tự động tính lại giá trị thực tế từ các dòng chi tiết hàng",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderApiControllerTest.getOrder_recalculatesAmountWhenAdminIsNotOrderCustomer",
+                "testScope": "REST API Controller Test (Recalculate Algorithm for Foreign Order)",
+                "inputData": {'orderId': 'S1', 'adminUser': 'admin', 'isOrderCustomer': False, 'lineItems': [{'code': 'P1', 'amount': 10.0}, {'code': 'P2', 'amount': 15.0}]},
+                "expectedOutcome": "Kích hoạt thuật toán recalculateAmount, tính lại tổng tiền chính xác = 25.0$ từ chi tiết đơn"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderApiControllerTest.getOrder_preservesAmountWhenAdminIsOrderCustomer",
+                "testScope": "REST API Controller Test (Preserve Original Amount for Own Order)",
+                "inputData": {'orderId': 'S1', 'adminUser': 'admin', 'isOrderCustomer': True, 'storedAmount': 100.0},
+                "expectedOutcome": "Admin xem đơn do chính mình mua đóng vai khách -> Bảo lưu nguyên giá trị gốc 100.0$, không tính lại"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderApiControllerTest.getOrder_loadsUserDetailsWithoutRecalculatingAmount",
+                "testScope": "REST API Controller Test (Load Customer Details Structure)",
+                "inputData": {'orderId': 'S1', 'customerEmail': 'customer@example.com', 'customerPhone': '0912345678'},
+                "expectedOutcome": "Tải đầy đủ thông tin chi tiết khách hàng và địa chỉ giao hàng liên kết với đơn"
+            }
         ]
     },
     "TC_ADM_010": {
-        "scenario": "Chặn Admin ép trạng thái đơn hàng sai luồng chuyển đổi trạng thái FSM (ví dụ CANCELLED -> SHIPPING)",
-        "adminSession": {
-            "username": "admin",
-            "role": "ROLE_ADMIN"
-        },
-        "orderContext": {
-            "orderId": "O1",
-            "currentStatus": "CANCELLED"
-        },
-        "illegalTransitionCall": {
-            "method": "PUT",
-            "url": "/api/v1/orders/O1/status",
-            "requestedStatus": "SHIPPING"
-        },
-        "fsmTransitionRule": "Hủy (CANCELLED) là trạng thái kết thúc (Terminal State), không cho phép chuyển tiếp sang SHIPPING/APPROVED",
-        "expectedResult": {
-            "httpStatus": 409,
-            "statusName": "HttpStatus.CONFLICT",
-            "exception": "IllegalStateException: invalid transition",
-            "success": False,
-            "daoPersisted": False
-        },
-        "testMethods": [
-            "OrderApiControllerTest.updateStatus_mapsDaoException()",
-            "OrderDAOTest.updateOrderStatus_rejectsInvalidTransition()"
+        "specTestCase": "TC_ADM_010 (Chặn Admin ép trạng thái đơn hàng sai luồng FSM)",
+        "totalTestRuns": 8,
+        "summary": "Kiểm thử máy trạng thái FSM (Finite State Machine) và tính toàn vẹn payload khi Admin cập nhật trạng thái đơn hàng",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "OrderApiControllerTest.updateStatus_mapsDaoException [1]",
+                "testScope": "REST API Controller Test (FSM Invalid Transition: CANCELLED -> SHIPPING)",
+                "inputData": {'currentStatus': 'CANCELLED', 'requestedStatus': 'SHIPPING'},
+                "expectedOutcome": "Đơn hàng đã bị hủy không thể ép sang giao hàng -> Bị FSM chặn đứng, trả về HTTP 409 Conflict"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "OrderApiControllerTest.updateStatus_mapsDaoException [2]",
+                "testScope": "REST API Controller Test (FSM DAO Exception Mapping)",
+                "inputData": {'daoException': 'IllegalStateException (invalid state transition)'},
+                "expectedOutcome": "Bắt ngoại lệ trạng thái sai luồng từ DAO và ánh xạ chuẩn sang mã HTTP 409 Conflict"
+            },
+            {
+                "runIndex": 3,
+                "targetMethod": "OrderApiControllerTest.updateStatus_rejectsInvalidPayload [1]",
+                "testScope": "REST API Controller Test (Null Payload Body)",
+                "inputData": {'body': None},
+                "expectedOutcome": "Body JSON gửi lên là null -> Trả về mã lỗi HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 4,
+                "targetMethod": "OrderApiControllerTest.updateStatus_rejectsInvalidPayload [2]",
+                "testScope": "REST API Controller Test (Missing Status Field)",
+                "inputData": {'body': {'otherField': 'value'}},
+                "expectedOutcome": "Body JSON thiếu trường 'status' bắt buộc -> Trả về mã lỗi HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 5,
+                "targetMethod": "OrderApiControllerTest.updateStatus_rejectsInvalidPayload [3]",
+                "testScope": "REST API Controller Test (Blank Status Value)",
+                "inputData": {'body': {'status': '   '}},
+                "expectedOutcome": "Giá trị status toàn khoảng trắng -> Trả về mã lỗi HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 6,
+                "targetMethod": "OrderApiControllerTest.updateStatus_rejectsInvalidPayload [4]",
+                "testScope": "REST API Controller Test (Invalid Enum Status Value)",
+                "inputData": {'body': {'status': 'UNKNOWN_INVALID_STATUS'}},
+                "expectedOutcome": "Trạng thái không thuộc enum OrderStatus hợp lệ -> Trả về mã lỗi HTTP 400 Bad Request"
+            },
+            {
+                "runIndex": 7,
+                "targetMethod": "OrderApiControllerTest.updateStatus_returnsNotFoundWhenOrderDoesNotExist",
+                "testScope": "REST API Controller Test (Update Non-existent Order)",
+                "inputData": {'orderId': 'NON_EXISTENT_ORDER', 'status': 'SHIPPING'},
+                "expectedOutcome": "Đơn hàng không tồn tại trong CSDL -> Trả về mã lỗi HTTP 404 Not Found"
+            },
+            {
+                "runIndex": 8,
+                "targetMethod": "OrderApiControllerTest.updateStatus_normalizesAndReturnsUpdatedOrder",
+                "testScope": "REST API Controller Test (Valid FSM State Transition)",
+                "inputData": {'orderId': 'O1', 'currentStatus': 'PENDING', 'requestedStatus': 'SHIPPING'},
+                "expectedOutcome": "Chuyển trạng thái hợp lệ theo FSM, lưu CSDL thành công và trả về đơn hàng đã chuẩn hóa HTTP 200 OK"
+            }
         ]
     },
     # ==================== PHÂN HỆ 9: TRÍ TUỆ NHÂN TẠO (COMPUTER VISION INSPECTION) ====================
     "TC_AI_001": {
-        "scenario": "Kiểm định ảnh giày rõ nét hợp lệ (Rule 5: Valid JPEG/PNG, Size <= 5MB, Đúng giày, Blur >= 70)",
-        "preCondition": "Vi dịch vụ AI FastAPI đang chạy tại http://localhost:8000/api/v1/analyze",
-        "input": {
-            "endpoint": "POST /api/v1/analyze",
-            "contentType": "multipart/form-data",
-            "filename": "shoe_clear.jpg",
-            "imageFormat": "image/jpeg",
-            "fileSize": "2.4 MB (dưới ngưỡng biên 5.0 MB)",
-            "subject": "Giày Sneaker thể thao (Nike Air Force 1)",
-            "measuredMetrics": {
-                "blurScore": 84.5,
-                "salientRatio": "45.2% (> 8%)",
-                "clutterDensity": "4.8% (< 14%)"
-            }
-        },
-        "decisionTableRule": "Rule 5: C1=Y, C2=Y, C3=Y, C4=Y -> Action A5 (APPROVED)",
-        "expectedResult": {
-            "httpStatus": 200,
-            "responseBody": {
-                "approved": True,
-                "status": "APPROVED",
-                "reason": "Ảnh rõ nét, ánh sáng tốt và nhận diện đúng sản phẩm giày",
-                "quality_score": 0.95,
-                "metrics": {
-                    "blur_score": 84.5
-                }
+        "specTestCase": "TC_AI_001 (Kiểm định ảnh giày rõ nét hợp lệ)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra kiểm định ảnh sản phẩm giày chụp rõ nét, ánh sáng tốt, đúng đối tượng giày; AI FastAPI phê duyệt (approved=true) và hệ thống Spring Boot lưu thông tin sản phẩm vào cơ sở dữ liệu",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "AiServiceIntegrationTest.shouldSendMultipartImageAndPersistProductWhenAiApproves",
+                "testScope": "Integration Test (Spring Boot MockMvc & AI Service Mock Server)",
+                "inputData": {'endpoint': 'POST /api/v1/analyze', 'contentType': 'multipart/form-data', 'filename': 'shoe_clear.jpg', 'aiMockResponse': {'approved': True, 'status': 'APPROVED', 'metrics': {'blur_score': 84.5}}},
+                "expectedOutcome": "Ảnh rõ nét hợp lệ được AI phê duyệt (approved=true), Controller lưu sản phẩm vào DB và redirect sang /productList kèm flash message 'Thêm sản phẩm thành công'"
             },
-            "springBootControllerAction": {
-                "redirectView": "redirect:/productList",
-                "flashMessage": "Thêm sản phẩm thành công",
-                "productPersistedInDB": True
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductControllerCoverageTest.productSave_acceptsApprovedImageAndUsesFallbackFilename",
+                "testScope": "Unit Test (Product Controller & Fallback Filename Handling)",
+                "inputData": {'productCode': 'P1', 'originalFilename': None, 'aiResponse': {'approved': True}},
+                "expectedOutcome": "Khi ảnh được AI phê duyệt và originalFilename bị null, Controller tự động gán tên tệp fallback an toàn và lưu sản phẩm thành công vào cơ sở dữ liệu"
             }
-        },
-        "testMethods": [
-            "AiServiceIntegrationTest.shouldSendMultipartImageAndPersistProductWhenAiApproves()",
-            "ProductControllerCoverageTest.productSave_acceptsApprovedImageAndUsesFallbackFilename()"
         ]
     },
     "TC_AI_002": {
-        "scenario": "Từ chối ảnh giày bị mờ nét (Rule 4: Ảnh mờ, điểm độ nét Blur Score < 70.0)",
-        "preCondition": "Vi dịch vụ AI FastAPI đang hoạt động",
-        "input": {
-            "endpoint": "POST /api/v1/analyze",
-            "contentType": "multipart/form-data",
-            "filename": "shoe_blurred.jpg",
-            "imageFormat": "image/jpeg",
-            "fileSize": "1.8 MB",
-            "subject": "Giày thể thao bị rung tay / mất nét khi chụp",
-            "measuredMetrics": {
-                "blurScore": 10.0,
-                "thresholdRequired": 70.0,
-                "blurDeficit": -60.0
-            }
-        },
-        "decisionTableRule": "Rule 4: C1=Y, C2=Y, C3=Y, C4=N -> Action A4 (REJECTED do ảnh mờ)",
-        "expectedResult": {
-            "httpStatus": 200,
-            "responseBody": {
-                "approved": False,
-                "status": "REJECTED",
-                "reason": "Image is blurred: Điểm độ nét (10.0) thấp hơn ngưỡng tối thiểu (70.0)",
-                "quality_score": 0.35,
-                "metrics": {
-                    "blur_score": 10.0
-                }
+        "specTestCase": "TC_AI_002 (Từ chối ảnh giày bị mờ nét)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra thuật toán đánh giá độ nét (Blur Score) của AI: từ chối các ảnh chụp bị rung tay, mất nét có điểm độ nét dưới ngưỡng tối thiểu (Blur Score < 70.0), Controller giữ nguyên view và báo lỗi",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "AiServiceIntegrationTest.shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage",
+                "testScope": "Integration Test (AI Inspection: Blurred Image Rejection)",
+                "inputData": {'endpoint': 'POST /api/v1/analyze', 'filename': 'shoe_blurred.jpg', 'aiMockResponse': {'approved': False, 'status': 'REJECTED', 'reason': 'Image is blurred', 'metrics': {'blur_score': 10.0}}},
+                "expectedOutcome": "AI từ chối ảnh mờ nét (blur_score=10.0 < 70.0), Controller giữ nguyên view 'product', gắn model attribute 'aiError: Image is blurred' và không lưu vào DB"
             },
-            "springBootControllerAction": {
-                "returnedView": "product",
-                "modelError": "aiError: Image is blurred",
-                "aiMetricsAttributeExposed": True,
-                "productPersistedInDB": False
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductControllerCoverageTest.productSave_rejectsImageWhenAiDoesNotApprove",
+                "testScope": "Unit Test (Controller AI Rejection Flow)",
+                "inputData": {'productCode': 'P1', 'aiResponse': {'approved': False, 'reason': 'blurred', 'metrics': {'score': 0.1}}},
+                "expectedOutcome": "Controller xử lý phản hồi từ chối từ AI, hiển thị thông báo lỗi trên form sản phẩm và ngăn chặn gọi DAO save"
             }
-        },
-        "testMethods": [
-            "AiServiceIntegrationTest.shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage()",
-            "ProductControllerCoverageTest.productSave_rejectsImageWhenAiDoesNotApprove()"
         ]
     },
     "TC_AI_003": {
-        "scenario": "Từ chối ảnh sai đối tượng (Rule 3: Ảnh ô tô/thú cưng/phong cảnh hoặc kích thước quá nhỏ)",
-        "preCondition": "Mô hình YOLOv8n object detection đang hoạt động trong AI Service",
-        "input": {
-            "endpoint": "POST /api/v1/analyze",
-            "contentType": "multipart/form-data",
-            "filename": "car_photo.jpg",
-            "imageFormat": "image/jpeg",
-            "fileSize": "3.1 MB",
-            "detectedObjects": [
-                {"class": "car", "confidence": 0.94},
-                {"class": "person", "confidence": 0.81}
-            ],
-            "shoeObjectDetected": False
-        },
-        "decisionTableRule": "Rule 3: C1=Y, C2=Y, C3=N -> Action A3 (REJECTED không nhận diện được giày)",
-        "expectedResult": {
-            "httpStatus": 200,
-            "responseBody": {
-                "approved": False,
-                "status": "REJECTED",
-                "reason": "Không phát hiện sản phẩm giày trong hình ảnh (Vật thể phát hiện: car)",
-                "quality_score": 0.20,
-                "detected_classes": ["car"]
-            },
-            "springBootControllerAction": {
-                "returnedView": "product",
-                "modelError": "aiError: Không phát hiện sản phẩm giày",
-                "productPersistedInDB": False
+        "specTestCase": "TC_AI_003 (Từ chối ảnh không phải giày hoặc kích thước quá nhỏ)",
+        "totalTestRuns": 1,
+        "summary": "Kiểm tra vi dịch vụ AI FastAPI thực tế (Live Service) với mô hình phát hiện đối tượng: từ chối ảnh không chứa sản phẩm giày hoặc kích thước ảnh quá nhỏ không đủ dữ liệu phân tích",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ActualFastApiIntegrationTest.shouldRenderRejectionAndAvoidPersistenceWhenActualFastApiRejectsSmallImage",
+                "testScope": "Live Integration Test (Actual FastAPI Service & Tiny Image Rejection)",
+                "inputData": {'endpoint': 'POST /api/v1/analyze', 'filename': 'tiny.png', 'contentType': 'image/png', 'fileSize': '68 bytes (TINY_PNG: 1x1 pixel)', 'subject': 'Ảnh quá nhỏ / không có giày'},
+                "expectedOutcome": "Dịch vụ FastAPI thực tế phân tích và từ chối ảnh quá nhỏ/không chứa sản phẩm giày, view trả về trang product báo lỗi aiError và database không bị thay đổi"
             }
-        },
-        "testMethods": [
-            "ActualFastApiIntegrationTest.shouldRenderRejectionAndAvoidPersistenceWhenActualFastApiRejectsSmallImage()",
-            "AiServiceIntegrationTest.shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage()"
         ]
     },
     "TC_AI_004": {
-        "scenario": "Chặn ảnh vượt dung lượng (> 5MB) & Cơ chế Phục hồi khi AI Server gặp sự cố (HTTP 500)",
-        "preCondition": "Hệ thống kiểm định biên kích thước file và xử lý ngoại lệ resilience",
-        "bvaBoundaryTesting": {
-            "point_nom": {"fileSize": "4.9 MB", "expected": "Accepted"},
-            "point_max": {"fileSize": "5.0 MB", "expected": "Accepted"},
-            "point_max_plus_1": {"fileSize": "5.1 MB (hoặc 6.0 MB)", "expected": "HTTP 413 Payload Too Large"}
-        },
-        "input": {
-            "endpoint": "POST /api/v1/analyze",
-            "filename": "shoe_6MB.jpg",
-            "fileSize": "6.0 MB (> 5.0 MB Max Limit)"
-        },
-        "decisionTableRule": "Rule 2: C1=Y, C2=N -> Action A2 (HTTP 413 Payload Too Large)",
-        "resilienceFallbackMode": {
-            "aiServerErrorResponse": {
-                "httpStatus": 500,
-                "statusName": "INTERNAL_SERVER_ERROR",
-                "reason": "AI unavailable"
+        "specTestCase": "TC_AI_004 (Chặn ảnh lỗi hoặc phục hồi khi AI Service gặp sự cố)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra cơ chế chịu lỗi và tự phục hồi (Fault Tolerance / Resilience): khi AI Service gặp sự cố HTTP 500 hoặc lỗi đọc file IOException, hệ thống gắn cảnh báo aiWarning nhưng vẫn cho phép lưu sản phẩm",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "AiServiceIntegrationTest.shouldWarnAndPersistProductWhenAiReturnsServerError",
+                "testScope": "Integration Test (Fault Tolerance & AI 500 Server Error)",
+                "inputData": {'endpoint': 'POST /api/v1/analyze', 'aiServerError': {'status': 500, 'error': 'Internal Server Error'}},
+                "expectedOutcome": "Khi AI Service gặp sự cố HTTP 500, hệ thống chuyển sang chế độ dự phòng (Fault Tolerance), gắn cảnh báo aiWarning nhưng vẫn lưu sản phẩm để không làm gián đoạn kinh doanh"
             },
-            "systemBehavior": "Hệ thống phát cảnh báo aiWarning nhưng vẫn bảo toàn lưu thông tin sản phẩm (Fault Tolerance)"
-        },
-        "expectedResult": {
-            "apiValidationStatus": 413,
-            "apiValidationMessage": "Payload Too Large: Dung lượng ảnh vượt quá giới hạn 5MB",
-            "resilienceControllerView": "redirect:/productList",
-            "productSavedWithWarning": True
-        },
-        "testMethods": [
-            "AiServiceIntegrationTest.shouldWarnAndPersistProductWhenAiReturnsServerError()",
-            "ProductControllerCoverageTest.productSave_warnsAndContinuesWhenAiRequestFails()"
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductControllerCoverageTest.productSave_warnsAndContinuesWhenAiRequestFails",
+                "testScope": "Unit Test (IO Failure & Resilience Handling)",
+                "inputData": {'productCode': 'P3', 'fileReadException': "IOException('read failed')"},
+                "expectedOutcome": "Khi đọc file hoặc kết nối AI ném IOException, Controller gắn model attribute 'aiWarning' và tiếp tục lưu sản phẩm thành công"
+            }
         ]
     },
     "TC_AI_005": {
-        "scenario": "Chặn file sai định dạng (Rule 1: PDF/MP4/TXT) & Xử lý an toàn khi phản hồi AI khuyết thiếu",
-        "preCondition": "AI FastAPI & Spring Boot Controller xác thực MIME Type",
-        "input": {
-            "endpoint": "POST /api/v1/analyze",
-            "filename": "document.pdf",
-            "contentType": "application/pdf",
-            "allowedTypes": ["image/jpeg", "image/png", "image/jpg"]
-        },
-        "decisionTableRule": "Rule 1: C1=N -> Action A1 (HTTP 422 Unprocessable Entity)",
-        "undecidedResponseHandling": {
-            "missingBodyResponse": "HTTP 200 with Empty Body",
-            "undecidedResponse": "{\"approved\": null, \"reason\": \"unknown\"}",
-            "controllerSafeHandling": "Controller bỏ qua lỗi khuyết thiếu và tiếp tục quy trình lưu sản phẩm bình thường"
-        },
-        "expectedResult": {
-            "httpStatus": 422,
-            "statusName": "HttpStatus.UNPROCESSABLE_ENTITY",
-            "errorDetail": "Unsupported File Format: Chỉ hỗ trợ các tệp hình ảnh định dạng JPG, JPEG hoặc PNG",
-            "controllerView": "redirect:/productList"
-        },
-        "testMethods": [
-            "ProductControllerCoverageTest.productSave_allowsUndecidedAiResponse()",
-            "ProductControllerCoverageTest.productSave_allowsMissingAiResponseBody()"
+        "specTestCase": "TC_AI_005 (Xử lý phản hồi AI khuyết thiếu hoặc không xác định)",
+        "totalTestRuns": 2,
+        "summary": "Kiểm tra xử lý biên khi dịch vụ AI trả về phản hồi không xác định (approved=null) hoặc phản hồi rỗng (empty body), hệ thống phòng thủ không bị lỗi NullPointer và bảo toàn luồng nghiệp vụ",
+        "testRunsBreakdown": [
+            {
+                "runIndex": 1,
+                "targetMethod": "ProductControllerCoverageTest.productSave_allowsUndecidedAiResponse",
+                "testScope": "Unit Test (Undecided AI Response: approved is null)",
+                "inputData": {'aiResponse': {'approved': None, 'reason': 'unknown'}},
+                "expectedOutcome": "Khi AI trả về approved = null (chưa quyết định/không chắc chắn), hệ thống xử lý an toàn cho phép lưu sản phẩm và redirect sang /productList"
+            },
+            {
+                "runIndex": 2,
+                "targetMethod": "ProductControllerCoverageTest.productSave_allowsMissingAiResponseBody",
+                "testScope": "Unit Test (Empty Body AI Response: HTTP 200 with Empty Body)",
+                "inputData": {'aiResponse': '', 'httpStatus': 200},
+                "expectedOutcome": "Khi AI trả về body rỗng (empty body), Controller không bị lỗi NullPointer, tiếp tục quy trình lưu sản phẩm bình thường"
+            }
         ]
-    }
+    },
 }
 
 
@@ -2163,17 +6152,16 @@ def extract_all_test_cases():
             if not line.startswith("|") or "---" in line:
                 continue
                 
-            m = re.search(r"\|\s*\*?\*?(TC_[A-Z0-9_]+)\*?\*?\s*\|", line)
+            parts = [p.strip().replace("**", "").replace("`", "") for p in line.split("|")[1:-1]]
+            if not parts or len(parts) < 4:
+                continue
+                
+            # Chỉ nhận diện kịch bản kiểm thử khi Mã ID nằm ở CỘT ĐẦU TIÊN (chuẩn bảng đặc tả chính)
+            m = re.match(r"^(TC_[A-Z0-9_]+)$", parts[0])
             if not m:
                 continue
                 
             tc_id = m.group(1)
-            parts = [p.strip().replace("**", "").replace("`", "") for p in line.split("|")[1:-1]]
-            if len(parts) < 4:
-                continue
-                
-            if "Test Case Tương ứng" in parts[0] or "Test Case Tiêu biểu" in parts[0]:
-                continue
                 
             tech = parts[1] if len(parts) > 1 else "BVA / EP"
             title = parts[2] if len(parts) > 2 else "Kịch bản kiểm thử"
@@ -2216,6 +6204,28 @@ def extract_all_test_cases():
             seen.add(tc["id"])
             unique_tcs.append(tc)
             
+    # Đảm bảo sắp xếp chuẩn tự nhiên theo phân hệ (1-9) và mã ID tăng dần
+    def get_tc_sort_key(tc):
+        mod_order = {
+            "AUTH": 1,
+            "SEARCH": 2,
+            "CART": 3,
+            "VOUCHER": 4,
+            "CHECKOUT": 5,
+            "REVIEW": 6,
+            "CANCEL": 7,
+            "ADMIN": 8,
+            "AI": 9
+        }
+        parts = tc["id"].split("_")
+        prefix = parts[1] if len(parts) > 1 else ""
+        num_str = parts[-1]
+        num = int(num_str) if num_str.isdigit() else 0
+        sub_order = {"SRCH": 1, "PAG": 2, "PROD": 3, "CHK": 1, "ORD": 2}
+        sub_rank = sub_order.get(prefix, 0)
+        return (mod_order.get(tc.get("mod_code", ""), 99), sub_rank, num)
+
+    unique_tcs.sort(key=get_tc_sort_key)
     return unique_tcs
 
 
@@ -6416,6 +10426,21 @@ def generate_portal_html():
                 }}
 
                 return true;
+            }});
+
+            // Sắp xếp chuẩn tự nhiên theo phân hệ (1-9) và mã ID tăng dần
+            const modOrder = {{'AUTH': 1, 'SEARCH': 2, 'CART': 3, 'VOUCHER': 4, 'CHECKOUT': 5, 'REVIEW': 6, 'CANCEL': 7, 'ADMIN': 8, 'AI': 9}};
+            const subOrder = {{'SRCH': 1, 'PAG': 2, 'PROD': 3, 'CHK': 1, 'ORD': 2}};
+            filtered.sort((a, b) => {{
+                const mA = modOrder[a.mod_code] || 99;
+                const mB = modOrder[b.mod_code] || 99;
+                if (mA !== mB) return mA - mB;
+                const prefA = (a.id.split('_')[1] || '');
+                const prefB = (b.id.split('_')[1] || '');
+                const sA = subOrder[prefA] || 0;
+                const sB = subOrder[prefB] || 0;
+                if (sA !== sB) return sA - sB;
+                return a.id.localeCompare(b.id, undefined, {{ numeric: true, sensitivity: 'base' }});
             }});
 
             countDisplay.innerText = filtered.length;
