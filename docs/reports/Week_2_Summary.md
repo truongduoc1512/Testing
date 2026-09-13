@@ -79,7 +79,22 @@
 
 ---
 
-## ⚠️ 5. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
+## 💻 5. TỔNG HỢP LỆNH CHẠY KIỂM THỬ (TEST COMMANDS)
+
+Bảng tổng hợp toàn bộ các câu lệnh nạp dữ liệu mẫu, khởi động server giả lập và thực thi bộ Unit Tests của Sprint 2:
+
+| STT | Phân loại | Mục đích kiểm thử | Lệnh thực thi (CLI / Maven / PowerShell) | Môi trường / Điều kiện tiên quyết | Kết quả ghi nhận |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | **Dữ liệu mẫu** | Nạp 279 bản ghi Seed Data vào CSDL MySQL Container | `Get-Content seed_data.sql \| docker exec -i shoeshop-mysql mysql -uroot -ptruonghoaiduoc shoe_shopdb` | Container `shoeshop-mysql` đang chạy | 6 bảng cốt lõi được nạp đầy đủ dữ liệu mẫu chuẩn |
+| 2 | **Giả lập AI** | Khởi chạy AI Mock Server cục bộ phản hồi siêu tốc | `python .\scripts\mock_ai_server.py` | Python 3.10+, cổng 5000 trống | Endpoint `/api/v1/mock/analyze` phản hồi `< 10ms` |
+| 3 | **Unit Test** | Kiểm thử đơn vị Form Validators (EP & BVA) | `mvn test -Dtest="CustomerFormValidatorTest,ProductFormValidatorTest,RegisterFormValidatorTest"` | Đã cấu hình Maven & JDK 17 | 3 lớp Validator test thành công 100% |
+| 4 | **Unit Test** | Kiểm thử đơn vị 10 lớp DAO (Mocking Hibernate) | `mvn test -Dtest=*DAOTest` | Cô lập hoàn toàn với CSDL thật | 10 file DAO test pass, xác minh logic CRUD & Query |
+| 5 | **Unit Test** | Chạy toàn bộ 100% bài kiểm thử đơn vị của Sprint 2 | `mvn test` | Môi trường test đầy đủ | 4.199 dòng code test Java thực thi không lỗi |
+| 6 | **DevOps** | Đóng gói và gắn nhãn Release Milestone `v1.0.0` | `git tag -a v1.0.0 -m "Release v1.0.0" && git push origin v1.0.0` | Nhánh sạch sau khi review PR | Đánh tag `v1.0.0` thành công trên GitHub |
+
+---
+
+## ⚠️ 6. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
 
 | STT | Vấn đề phát sinh (Blocker) | Nguyên nhân gốc rễ | Giải pháp kỹ thuật đã xử lý | Kết quả |
 | :---: | :--- | :--- | :--- | :---: |
@@ -89,7 +104,7 @@
 
 ---
 
-## 🚀 6. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 3)
+## 🚀 7. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 3)
 Sprint 3 sẽ tập trung vào **Tự động hóa kiểm thử API (API Automation)**, **Đo lường độ bao phủ White-box JaCoCo** và **Thiết lập Quy trình quản lý lỗi (Bug Lifecycle)**:
 - **Được (Leader):** Xây dựng bộ Master Postman Collection 46 kịch bản tự động hóa API (`TEST-15`, `TEST-16`).
 - **Phương:** Mở rộng bộ test Java lên 1,074 bài test và đo lường độ phủ JaCoCo đạt >99% (`TEST-17`).

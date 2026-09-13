@@ -6165,10 +6165,13 @@ def extract_all_test_cases():
                 
             tech = parts[1] if len(parts) > 1 else "BVA / EP"
             title = parts[2] if len(parts) > 2 else "Kịch bản kiểm thử"
-            precond, steps, test_data, expected, actual = "", "", "", "", ""
+            precond, steps, test_data, expected, tags_covered, actual = "", "", "", "", "", ""
             status = "Pass"
             
-            if len(parts) >= 9:
+            if len(parts) >= 10:
+                precond, steps, test_data, expected, tags_covered, actual = parts[3], parts[4], parts[5], parts[6], parts[7], parts[8]
+                status = parts[9] if parts[9] in ["Pass", "Fail", "Blocked", "Skipped"] else "Pass"
+            elif len(parts) == 9:
                 precond, steps, test_data, expected, actual = parts[3], parts[4], parts[5], parts[6], parts[7]
                 status = parts[8] if parts[8] in ["Pass", "Fail", "Blocked", "Skipped"] else "Pass"
             elif len(parts) == 8:
@@ -6193,6 +6196,7 @@ def extract_all_test_cases():
                 "steps": steps,
                 "data": format_tc_data_to_json(tc_id, mod_code, test_data, title, steps),
                 "expected": expected,
+                "tags_covered": tags_covered,
                 "actual": actual,
                 "status": status
             })
@@ -6326,9 +6330,28 @@ def extract_all_weekly_reports():
                         items.append(re.sub(r"^[-\*]\s*", "", l_str))
                 members.append({"member": title, "items": items})
                 
-        # 5. Blockers Table
+        # 5. Test Commands Table
+        test_commands = []
+        cmd_sec = re.search(r"## 💻 \d+\. TỔNG HỢP LỆNH CHẠY KIỂM THỬ.*?\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
+        if cmd_sec:
+            for line in cmd_sec.group(1).strip().split("\n"):
+                line = line.strip()
+                if not line.startswith("|") or "---" in line or "Lệnh thực thi" in line or "Mục đích kiểm thử" in line:
+                    continue
+                parts = [p.strip() for p in line.split("|")[1:-1]]
+                if len(parts) >= 5:
+                    test_commands.append({
+                        "stt": parts[0],
+                        "category": parts[1].replace("**", ""),
+                        "purpose": parts[2],
+                        "command": parts[3].replace("`", "").strip(),
+                        "prereq": parts[4],
+                        "result": parts[5] if len(parts) > 5 else ""
+                    })
+
+        # 6. Blockers Table
         blockers = []
-        block_sec = re.search(r"## ⚠️ 5\. VẤN ĐỀ PHÁT SINH.*?\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
+        block_sec = re.search(r"## ⚠️ \d+\. VẤN ĐỀ PHÁT SINH.*?\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
         if block_sec:
             for line in block_sec.group(1).strip().split("\n"):
                 line = line.strip()
@@ -6359,6 +6382,7 @@ def extract_all_weekly_reports():
             "tasks": tasks,
             "metrics": metrics,
             "members": members,
+            "test_commands": test_commands,
             "blockers": blockers
         })
         
@@ -6601,7 +6625,7 @@ def extract_git_branch_graph(project_root):
 def generate_portal_html():
     """Tạo mã nguồn HTML hoàn chỉnh của ứng dụng SPA QA & SCI Management Portal."""
     all_test_cases_data = extract_all_test_cases()
-    test_commands_data = [{'id': 'CMD-01', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Khởi động Môi trường Docker Test Stack tự động', 'tool': 'PowerShell', 'command': 'powershell .\\scripts\\start-test-env.ps1', 'desc': 'Tự động dừng container cũ, dựng MySQL 8.0, chờ healthcheck đạt trạng thái healthy và nạp 279 dòng dữ liệu từ seed_data.sql.', 'flags': 'Không cần tham số', 'output': 'Docker containers running: shoeshop-mysql, redis, app'}, {'id': 'CMD-02', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Dựng Docker Containers kiểm thử ở chế độ nền (Background)', 'tool': 'Docker Compose', 'command': 'docker compose up -d --build', 'desc': 'Biên dịch lại Dockerfile và khởi chạy 4 service containers gồm MySQL, Redis, Spring Boot backend và AI service.', 'flags': '-d (detached), --build (rebuild images)', 'output': '4 Containers active on local network'}, {'id': 'CMD-03', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Nạp 279 dòng Seed Data vào MySQL Container thủ công', 'tool': 'MySQL CLI / Docker', 'command': 'Get-Content seed_data.sql | docker exec -i shoeshop-mysql mysql -uroot -ptruonghoaiduoc shoe_shopdb', 'desc': 'Bơm dữ liệu tài khoản, sản phẩm, khuyến mãi, đơn hàng mẫu vào database shoe_shopdb trong container.', 'flags': '-i (interactive stdin), user=root, pass=truonghoaiduoc', 'output': '6 tables populated with 279 test records'}, {'id': 'CMD-04', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Khởi động AI Mock Server giả lập Computer Vision', 'tool': 'Python 3.12', 'command': 'python .\\scripts\\mock_ai_server.py', 'desc': 'Khởi chạy server HTTP cục bộ giả lập endpoint /api/v1/mock/analyze phản hồi dưới 10ms phục vụ kiểm thử tích hợp.', 'flags': 'Port mặc định: 5000', 'output': 'Mock AI Server listening on http://localhost:5000'}, {'id': 'CMD-05', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Khởi động Ứng dụng Backend Spring Boot cục bộ', 'tool': 'Maven / Spring Boot', 'command': 'mvn spring-boot:run', 'desc': 'Khởi chạy máy chủ ứng dụng web Spring Boot trên cổng 8080 kết nối với CSDL MySQL kiểm thử.', 'flags': 'Profiles: dev / local', 'output': 'Tomcat started on port 8080 (http://localhost:8080)'}, {'id': 'CMD-06', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Kiểm tra Chuẩn Định dạng Code Java (Checkstyle)', 'tool': 'Maven Checkstyle', 'command': 'mvn checkstyle:check', 'desc': 'Quét toàn bộ mã nguồn Java theo bộ quy tắc Google Java Style Guide (đặt tên, thụt đầu dòng, import thừa).', 'flags': 'Rule config: checkstyle.xml', 'output': 'target/checkstyle-result.xml'}, {'id': 'CMD-07', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Quét Lỗi Tiềm ẩn & Bug tĩnh Java (SpotBugs)', 'tool': 'Maven SpotBugs', 'command': 'mvn spotbugs:check', 'desc': 'Phân tích bytecode Java tìm kiếm các nguy cơ tiềm ẩn như NullPointerException, rò rỉ kết nối, bất biến.', 'flags': 'Exclude filter: config/spotbugs/spotbugs-exclude.xml', 'output': 'target/spotbugsXml.xml'}, {'id': 'CMD-08', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Kiểm tra Chuẩn Code Python AI Service (Flake8)', 'tool': 'Flake8 Linter', 'command': 'flake8 ai-service/', 'desc': 'Kiểm tra chuẩn PEP8, các biến không sử dụng và lỗi cú pháp trong module Python Computer Vision.', 'flags': 'Config file: .flake8', 'output': 'Terminal report (0 errors)'}, {'id': 'CMD-09', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Quét Toàn diện Nợ Kỹ thuật & Chất lượng Mã nguồn (SonarQube)', 'tool': 'SonarQube Scanner', 'command': 'mvn sonar:sonar -Dsonar.projectKey=shoeshop -Dsonar.host.url=http://localhost:9000', 'desc': 'Đẩy số liệu kiểm thử tĩnh, độ phức tạp Cyclomatic và nợ kỹ thuật lên máy chủ SonarQube trung tâm.', 'flags': '-Dsonar.host.url, -Dsonar.projectKey', 'output': 'SonarQube Web Dashboard Report'}, {'id': 'CMD-10', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Chạy Toàn bộ 1.068 Bài Kiểm thử Đơn vị (All Unit Tests)', 'tool': 'Maven Surefire', 'command': 'mvn test', 'desc': 'Thực thi toàn bộ kịch bản kiểm thử đơn vị của tầng DAO, Service, Form Validators và Controllers.', 'flags': 'Surefire default execution', 'output': '1.068 tests passed, 0 failures'}, {'id': 'CMD-11', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Kiểm thử Đơn vị riêng cho Tầng Truy xuất Dữ liệu (10 DAO Classes)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest=*DAOTest', 'desc': 'Kiểm thử các câu lệnh SQL, ánh xạ thực thể và ràng buộc nghiệp vụ trong 10 lớp DAO.', 'flags': '-Dtest=*DAOTest (pattern match)', 'output': 'All DAO tests executed'}, {'id': 'CMD-12', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Kiểm thử Đơn vị riêng cho Tầng Xác thực Biểu mẫu (Validators)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest=*ValidatorTest', 'desc': 'Kiểm thử các giá trị biên độ dài, định dạng email, mật khẩu và dữ liệu nhập form.', 'flags': '-Dtest=*ValidatorTest', 'output': 'RegisterForm, ProductForm, OrderForm tests'}, {'id': 'CMD-13', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 1: Kiểm thử Xác thực, Phân quyền & Đăng nhập (Auth)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="UserDetailsServiceImplTest,CustomOAuth2UserServiceTest,RegisterFormValidatorTest,AccountDAOTest"', 'desc': 'Kiểm thử đăng nhập hợp lệ/sai mật khẩu, tài khoản bị khóa, Google OAuth2 và giải thuật BCrypt.', 'flags': '-Dtest="Class1,Class2,..."', 'output': '62 test invocations, 99.7% statement coverage'}, {'id': 'CMD-14', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 2: Kiểm thử Tìm kiếm & Phân trang Sản phẩm (Search & Pagination)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="ProductDAOTest,ProductApiControllerTest,PaginationResultTest"', 'desc': 'Kiểm tra tìm kiếm từ khóa, kết hợp lọc giá/thương hiệu, thuật toán phân trang và SQL Injection.', 'flags': '-Dtest="Class1,Class2,..."', 'output': '79 test invocations, 100.0% statement coverage'}, {'id': 'CMD-15', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 3: Kiểm thử Giỏ hàng & Cập nhật Số lượng (Shopping Cart)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="CartDAOTest,ShoppingCartTest"', 'desc': 'Kiểm thử thêm sản phẩm vào giỏ, cập nhật số lượng biên, xóa sản phẩm và tính toán phụ phí.', 'flags': '-Dtest="CartDAOTest,ShoppingCartTest"', 'output': '91 test invocations, 100% pass'}, {'id': 'CMD-16', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 4: Kiểm thử Quản lý & Áp dụng Mã Giảm Giá (Vouchers)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="VoucherDAOTest,VoucherApiControllerTest"', 'desc': 'Kiểm thử bảng quyết định 12 rules, hạn mức đơn tối thiểu (499k/500k), voucher phần trăm và tiền mặt.', 'flags': '-Dtest="VoucherDAOTest,VoucherApiControllerTest"', 'output': '52 test invocations, 100% pass'}, {'id': 'CMD-17', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 5: Kiểm thử Quy trình Đặt hàng & Thanh toán (Checkout & Order)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="OrderDAOTest,OrderApiControllerTest,CheckoutTest"', 'desc': 'Kiểm thử lưu đơn hàng, kiểm tra tồn kho, trừ kho an toàn, thanh toán COD và cổng VNPAY.', 'flags': '-Dtest="OrderDAOTest,OrderApiControllerTest,CheckoutTest"', 'output': '60 test invocations, 100% pass'}, {'id': 'CMD-18', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 6: Kiểm thử Đánh giá & Bình luận Sản phẩm (Review & Rating)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="ReviewDAOTest,ReviewApiControllerTest"', 'desc': 'Kiểm thử đánh giá 1 đến 5 sao, chặn đánh giá ngoài biên (0, 6 sao) và quyền đánh giá sau mua.', 'flags': '-Dtest="ReviewDAOTest,ReviewApiControllerTest"', 'output': '48 test invocations, 100% pass'}, {'id': 'CMD-19', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 7: Kiểm thử Hủy đơn hàng & Yêu cầu Trả hàng (Cancel & Return)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="OrderCancelReturnDAOTest,OrderCancelReturnControllerTest"', 'desc': 'Kiểm thử máy trạng thái FSM: cho phép hủy đơn PENDING, chặn hủy đơn SHIPPING/COMPLETED.', 'flags': '-Dtest="OrderCancelReturnDAOTest,OrderCancelReturnControllerTest"', 'output': '91 test invocations, 100% pass'}, {'id': 'CMD-20', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 8: Kiểm thử Phân quyền Quản trị & Điều hành (Admin Management)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="AdminManagementDAOTest,AdminApiControllerTest"', 'desc': 'Kiểm thử phân quyền RBAC, kiểm soát phạm vi đơn hàng và chặn hạ cấp/khóa tài khoản Admin duy nhất.', 'flags': '-Dtest="AdminManagementDAOTest,AdminApiControllerTest"', 'output': '45 test invocations, 100% pass'}, {'id': 'CMD-21', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 9: Kiểm thử Tích hợp AI Thị giác Máy tính (AI Vision Inspection)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="ComputerVisionInspectionTest"', 'desc': 'Kiểm thử tải ảnh giày lên cổng AI, phân tích độ mòn đế giày, lỗi da và cơ chế xử lý ngoại lệ.', 'flags': '-Dtest="ComputerVisionInspectionTest"', 'output': '12 test invocations, 100% pass'}, {'id': 'CMD-22', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Đo lường Độ phủ Mã nguồn & Xuất Báo cáo JaCoCo HTML', 'tool': 'JaCoCo Maven Plugin', 'command': 'mvn clean test jacoco:report', 'desc': 'Thu thập dữ liệu thực thi bytecode và sinh báo cáo HTML độ phủ câu lệnh và nhánh rẽ chi tiết.', 'flags': 'clean test jacoco:report', 'output': 'target/site/jacoco/index.html'}, {'id': 'CMD-23', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Gác cổng Chất lượng Độ phủ JaCoCo Quality Gate (Chặn nếu < 70%)', 'tool': 'JaCoCo Check', 'command': 'mvn jacoco:check', 'desc': 'Xác thực điều kiện Quality Gate: Tỷ lệ phủ dòng >= 70%, phủ nhánh >= 70%. Báo lỗi build nếu không đạt.', 'flags': 'Rule: Line >= 0.70, Branch >= 0.70', 'output': '[INFO] All coverage checks have been met.'}, {'id': 'CMD-24', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Đo Độ phủ Cách ly bằng CSDL Tạm thời (PowerShell Safe Runner)', 'tool': 'PowerShell Script', 'command': 'powershell .\\scripts\\test-coverage.ps1 -OpenReport', 'desc': 'Tạo CSDL tạm thời shoeshop_cov_xxx trên MySQL container, đo độ phủ, tự động hủy DB và mở báo cáo.', 'flags': '-OpenReport, -TestSelector', 'output': 'Tự động mở target/site/jacoco/index.html'}, {'id': 'CMD-25', 'category': 'INTEG', 'category_name': '4. Tích hợp CSDL & Bug Retest', 'title': 'Chạy Bộ Kiểm thử Tích hợp CSDL MySQL Thật (Integration Tests)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest=*IntegrationTest', 'desc': 'Kiểm thử tích hợp kết nối tới MySQL container thật, kiểm chứng giao dịch rollback và khóa ngoại.', 'flags': '-Dtest=*IntegrationTest', 'output': '6 Integration tests executed'}, {'id': 'CMD-26', 'category': 'INTEG', 'category_name': '4. Tích hợp CSDL & Bug Retest', 'title': 'Kiểm chứng Hồi quy Tất cả các Bug đã Fix (TEST-26 Retest Runner)', 'tool': 'Python Script', 'command': 'python .\\scripts\\verify_resolved_bugs.py', 'desc': 'Tự động retest toàn bộ các lỗi đã khắc phục (BUG-01 đến BUG-06) đảm bảo không phát sinh hồi quy.', 'flags': 'Zero external dependencies', 'output': 'All 6 bug tickets verified (PASS)'}, {'id': 'CMD-27', 'category': 'INTEG', 'category_name': '4. Tích hợp CSDL & Bug Retest', 'title': 'Kiểm chứng Tổ hợp Biên Cực đại Tìm kiếm (TEST-20 Worst-Case 5^n)', 'tool': 'Python Script', 'command': 'python .\\scripts\\test_search_pagination_api.py', 'desc': 'Gửi tự động 25 request HTTP tổ hợp giá trị biên (min-, min, nom, max, max+) của tham số page, size, likeName.', 'flags': 'Python standard library urllib', 'output': '25/25 scenarios passed (100% OK)'}, {'id': 'CMD-28', 'category': 'API', 'category_name': '5. API Automation & Newman', 'title': 'Chạy Toàn bộ 46 API Tests qua PowerShell Runner (Xuất HTML Report)', 'tool': 'PowerShell / Newman', 'command': 'powershell .\\scripts\\run-api-tests.ps1', 'desc': 'Thực thi toàn bộ Postman Collection 46 APIs qua Newman CLI và xuất báo cáo htmlextra đẹp mắt.', 'flags': 'Auto-downloads Newman via npx', 'output': 'target/newman-report.html'}, {'id': 'CMD-29', 'category': 'API', 'category_name': '5. API Automation & Newman', 'title': 'Chạy Trực tiếp Newman CLI với Báo cáo htmlextra', 'tool': 'Newman CLI', 'command': 'npx --yes newman run docs/Shoeshop_API_Collection.json -e docs/Shoeshop_Postman_Environment.json -r cli,htmlextra --reporter-htmlextra-export target/newman-report.html --insecure', 'desc': 'Chạy bộ kịch bản Postman từ dòng lệnh với file môi trường và xuất báo cáo htmlextra nâng cao.', 'flags': '-r cli,htmlextra, --reporter-htmlextra-export, --insecure', 'output': 'target/newman-report.html (46 Pass / 0 Fail)'}, {'id': 'CMD-30', 'category': 'API', 'category_name': '5. API Automation & Newman', 'title': 'Chạy Newman API Test độc lập trong Docker Container (Chế độ CI/CD)', 'tool': 'Docker / Newman', 'command': 'docker run --network="host" -v "%cd%/docs:/etc/newman" postman/newman run /etc/newman/Shoeshop_API_Collection.json -e /etc/newman/Shoeshop_Postman_Environment.json -r cli', 'desc': 'Chạy Newman trong image chính thức postman/newman không cần cài NodeJS trên máy host.', 'flags': '--network=host, -v volume mount', 'output': 'Console CLI summary table'}, {'id': 'CMD-31', 'category': 'UI', 'category_name': '6. UI Automation & Selenium', 'title': 'Kiểm thử Tự động Giao diện Selenium POM (Desktop Chrome)', 'tool': 'Selenium WebDriver POM', 'command': 'mvn test -Dtest="AuthenticationUiTest,CheckoutUiTest"', 'desc': 'Tự động hóa luồng tương tác người dùng: Đăng nhập, thêm vào giỏ, điền form và thanh toán theo mẫu Page Object Model.', 'flags': '-Dtest="AuthenticationUiTest,CheckoutUiTest"', 'output': '6 UI tests passed'}, {'id': 'CMD-32', 'category': 'UI', 'category_name': '6. UI Automation & Selenium', 'title': 'Kiểm thử Tương thích Đa Trình duyệt & Thiết bị Di động (TEST-25)', 'tool': 'Python Script', 'command': 'python .\\scripts\\test_cross_browser.py', 'desc': 'Kiểm tra độ tương thích trên 5 nền tảng: Chrome, Firefox, Edge, iPhone 14/15 Safari và Galaxy S23 Android.', 'flags': 'Multi-browser user-agent & viewport simulation', 'output': 'Cross-browser matrix: 100% Compatible'}, {'id': 'CMD-33', 'category': 'SEC', 'category_name': '7. Bảo mật & Quét Thư viện (SCA)', 'title': 'Quét Lỗ hổng Thư viện Phụ thuộc (OWASP Dependency-Check Maven)', 'tool': 'OWASP Dependency-Check', 'command': 'mvn org.owasp:dependency-check-maven:check', 'desc': 'Quét toàn bộ dependencies trong pom.xml, tải dữ liệu CVE từ NIST NVD và đánh giá rủi ro an toàn.', 'flags': 'Goal: check', 'output': 'target/dependency-check-report.html'}, {'id': 'CMD-34', 'category': 'SEC', 'category_name': '7. Bảo mật & Quét Thư viện (SCA)', 'title': 'Chạy OWASP Dependency-Check với Ngưỡng CVSS Gate (PowerShell Runner)', 'tool': 'PowerShell Script', 'command': 'powershell .\\scripts\\run-dependency-check.ps1 -FailOnCVSS 8', 'desc': 'Tự động nạp NVD_API_KEY từ .env, thiết lập ngưỡng chặn CVSS >= 8 (Quality Gate) và xuất báo cáo.', 'flags': '-FailOnCVSS 8', 'output': 'Quality gate status & target/dependency-check-report.html'}, {'id': 'CMD-35', 'category': 'SEC', 'category_name': '7. Bảo mật & Quét Thư viện (SCA)', 'title': 'Chạy OWASP Dependency-Check chế độ Audit (Không làm dừng Build)', 'tool': 'PowerShell Script', 'command': 'powershell .\\scripts\\run-dependency-check.ps1 -AuditOnly', 'desc': 'Tạo báo cáo kiểm toán bảo mật đầy đủ mà không làm gián đoạn quy trình đóng gói phần mềm.', 'flags': '-AuditOnly (-DfailBuildOnCVSS=11)', 'output': 'Audit report generated without failure'}, {'id': 'CMD-36', 'category': 'LOAD', 'category_name': '8. Hiệu năng & Tải JMeter', 'title': 'Chạy Kịch bản Tải JMeter ở chế độ Dòng lệnh (Non-GUI Mode)', 'tool': 'Apache JMeter CLI', 'command': 'jmeter -n -t docs\\jmeter\\Shoeshop_Load_Test.jmx -l target\\jmeter\\results.jtl -e -o target\\jmeter\\dashboard\\', 'desc': 'Thực thi test plan JMeter không qua giao diện GUI để đạt hiệu năng tối đa và xuất Dashboard HTML chuyên sâu.', 'flags': '-n (non-GUI), -t (test plan), -l (results log), -e -o (generate dashboard)', 'output': 'target/jmeter/dashboard/index.html'}, {'id': 'CMD-37', 'category': 'LOAD', 'category_name': '8. Hiệu năng & Tải JMeter', 'title': 'Kiểm thử Tải Tiêu chuẩn qua PowerShell (100 Virtual Users)', 'tool': 'PowerShell Runner', 'command': 'powershell .\\scripts\\run-load-test.ps1 -Threads 100 -RampUp 10 -Duration 60', 'desc': 'Kiểm thử tải đồng thời 100 người dùng, ramp-up 10 giây trong 60 giây, tự động mở báo cáo phân tích.', 'flags': '-Threads 100 -RampUp 10 -Duration 60', 'output': 'target/jmeter/html_report_100vu/index.html'}, {'id': 'CMD-38', 'category': 'LOAD', 'category_name': '8. Hiệu năng & Tải JMeter', 'title': 'Kiểm thử Áp lực & Xác định Điểm gãy Hệ thống (500 Virtual Users - Stress Test)', 'tool': 'PowerShell Runner', 'command': 'powershell .\\scripts\\run-load-test.ps1 -Threads 500 -RampUp 30 -Duration 120', 'desc': 'Kiểm thử áp lực cực đại 500 VUs đạt 1.273,3 RPS, độ trễ 186.4ms, xác định ngưỡng giới hạn ~650 VUs.', 'flags': '-Threads 500 -RampUp 30 -Duration 120', 'output': 'target/jmeter/html_report_500vu/index.html'}, {'id': 'CMD-39', 'category': 'PORTAL', 'category_name': '9. Cổng thông tin & Đối chiếu', 'title': 'Đối chiếu 9 Modules Đặc tả & Phân tích Độ phủ Mã nguồn (Spec Checker)', 'tool': 'Python Script', 'command': 'python .\\scripts\\check_module_testcases.py', 'desc': 'Quét 9 tài liệu đặc tả trong docs/test_cases/, đối chiếu mã Java src/test/java/ và mở báo cáo HTML.', 'flags': 'Interactive menu (chọn module 1 -> 9)', 'output': 'target/testcase_check_report.html'}, {'id': 'CMD-40', 'category': 'PORTAL', 'category_name': '9. Cổng thông tin & Đối chiếu', 'title': 'Khởi động Cổng thông tin Quản lý Kiểm thử & SCI (QA & SCI Portal)', 'tool': 'Python Script', 'command': 'python .\\scripts\\qa_management_portal.py', 'desc': 'Tạo ứng dụng Web Single-Page Application (SPA) chủ đề Sáng tổng hợp đầy đủ số liệu kiểm thử & SCM.', 'flags': 'Tự động mở trên trình duyệt mặc định', 'output': 'target/qa_management_portal.html'}, {'id': 'CMD-41', 'category': 'CICD', 'category_name': '10. CI/CD GitHub Actions', 'title': 'CI Job 1: Build Mã nguồn, Chạy Unit Test & Kiểm định JaCoCo Gate', 'tool': 'GitHub Actions / Maven', 'command': 'mvn -B clean test jacoco:report jacoco:check', 'desc': 'Bước kiểm tra tự động chạy trên GitHub runner với container dịch vụ MySQL 8.0, gác cổng độ phủ >= 70%.', 'flags': '-B (batch mode non-interactive)', 'output': 'GitHub Action Step: Succeeded'}, {'id': 'CMD-42', 'category': 'CICD', 'category_name': '10. CI/CD GitHub Actions', 'title': 'CI Job 2: Quét An toàn Bảo mật & Phân tích Thành phần (SCA Check)', 'tool': 'GitHub Actions / OWASP', 'command': 'mvn -B org.owasp:dependency-check-maven:check -DsuppressionFile=config/owasp-suppressions.xml', 'desc': 'Tự động quét lỗ hổng thư viện phụ thuộc của dự án trên hạ tầng GitHub Actions.', 'flags': '-DsuppressionFile=config/owasp-suppressions.xml', 'output': 'GitHub Action Step: Succeeded'}, {'id': 'CMD-43', 'category': 'CICD', 'category_name': '10. CI/CD GitHub Actions', 'title': 'CI Job 3: Dựng Docker Stack & Thực thi Kiểm thử API Newman E2E', 'tool': 'GitHub Actions / Docker / Newman', 'command': 'docker compose -f docker-compose.ci.yml up -d && newman run docs/Shoeshop_API_Collection.json -e docs/Shoeshop_Postman_Environment.json', 'desc': 'Khởi động toàn bộ dịch vụ trên Docker CI và chạy kiểm thử hồi quy 46 REST API qua Newman.', 'flags': '-f docker-compose.ci.yml up -d', 'output': 'GitHub Action Step: Succeeded (46/46 Passed)'}]
+    test_commands_data = [{'id': 'CMD-01', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Khởi động Môi trường Docker Test Stack tự động', 'tool': 'PowerShell', 'command': 'powershell .\\scripts\\start-test-env.ps1', 'desc': 'Tự động dừng container cũ, dựng MySQL 8.0, chờ healthcheck đạt trạng thái healthy và nạp 279 dòng dữ liệu từ seed_data.sql.', 'flags': 'Không cần tham số', 'output': 'Docker containers running: shoeshop-mysql, redis, app'}, {'id': 'CMD-02', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Dựng Docker Containers kiểm thử ở chế độ nền (Background)', 'tool': 'Docker Compose', 'command': 'docker compose up -d --build', 'desc': 'Biên dịch lại Dockerfile và khởi chạy 4 service containers gồm MySQL, Redis, Spring Boot backend và AI service.', 'flags': '-d (detached), --build (rebuild images)', 'output': '4 Containers active on local network'}, {'id': 'CMD-03', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Nạp 279 dòng Seed Data vào MySQL Container thủ công', 'tool': 'MySQL CLI / Docker', 'command': 'Get-Content seed_data.sql | docker exec -i shoeshop-mysql mysql -uroot -ptruonghoaiduoc shoe_shopdb', 'desc': 'Bơm dữ liệu tài khoản, sản phẩm, khuyến mãi, đơn hàng mẫu vào database shoe_shopdb trong container.', 'flags': '-i (interactive stdin), user=root, pass=truonghoaiduoc', 'output': '6 tables populated with 279 test records'}, {'id': 'CMD-04', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Khởi động AI Mock Server giả lập Computer Vision', 'tool': 'Python 3.12', 'command': 'python .\\scripts\\mock_ai_server.py', 'desc': 'Khởi chạy server HTTP cục bộ giả lập endpoint /api/v1/mock/analyze phản hồi dưới 10ms phục vụ kiểm thử tích hợp.', 'flags': 'Port mặc định: 5000', 'output': 'Mock AI Server listening on http://localhost:5000'}, {'id': 'CMD-05', 'category': 'ENV', 'category_name': '1. Môi trường & CSDL', 'title': 'Khởi động Ứng dụng Backend Spring Boot cục bộ', 'tool': 'Maven / Spring Boot', 'command': 'mvn spring-boot:run', 'desc': 'Khởi chạy máy chủ ứng dụng web Spring Boot trên cổng 8080 kết nối với CSDL MySQL kiểm thử.', 'flags': 'Profiles: dev / local', 'output': 'Tomcat started on port 8080 (http://localhost:8080)'}, {'id': 'CMD-06', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Kiểm tra Chuẩn Định dạng Code Java (Checkstyle)', 'tool': 'Maven Checkstyle', 'command': 'mvn checkstyle:check', 'desc': 'Quét toàn bộ mã nguồn Java theo bộ quy tắc Google Java Style Guide (đặt tên, thụt đầu dòng, import thừa).', 'flags': 'Rule config: checkstyle.xml', 'output': 'target/checkstyle-result.xml'}, {'id': 'CMD-07', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Quét Lỗi Tiềm ẩn & Bug tĩnh Java (SpotBugs)', 'tool': 'Maven SpotBugs', 'command': 'mvn spotbugs:check', 'desc': 'Phân tích bytecode Java tìm kiếm các nguy cơ tiềm ẩn như NullPointerException, rò rỉ kết nối, bất biến.', 'flags': 'Exclude filter: config/spotbugs/spotbugs-exclude.xml', 'output': 'target/spotbugsXml.xml'}, {'id': 'CMD-08', 'category': 'STATIC', 'category_name': '2. Kiểm thử Tĩnh & Linters', 'title': 'Kiểm tra Chuẩn Code Python AI Service (Flake8)', 'tool': 'Flake8 Linter', 'command': 'flake8 ai-service/', 'desc': 'Kiểm tra chuẩn PEP8, các biến không sử dụng và lỗi cú pháp trong module Python Computer Vision.', 'flags': 'Config file: .flake8', 'output': 'Terminal report (0 errors)'}, {'id': 'CMD-10', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Chạy Toàn bộ 1.068 Bài Kiểm thử Đơn vị (All Unit Tests)', 'tool': 'Maven Surefire', 'command': 'mvn test', 'desc': 'Thực thi toàn bộ kịch bản kiểm thử đơn vị của tầng DAO, Service, Form Validators và Controllers.', 'flags': 'Surefire default execution', 'output': '1.068 tests passed, 0 failures'}, {'id': 'CMD-11', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Kiểm thử Đơn vị riêng cho Tầng Truy xuất Dữ liệu (10 DAO Classes)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest=*DAOTest', 'desc': 'Kiểm thử các câu lệnh SQL, ánh xạ thực thể và ràng buộc nghiệp vụ trong 10 lớp DAO.', 'flags': '-Dtest=*DAOTest (pattern match)', 'output': 'All DAO tests executed'}, {'id': 'CMD-12', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Kiểm thử Đơn vị riêng cho Tầng Xác thực Biểu mẫu (Validators)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest=*ValidatorTest', 'desc': 'Kiểm thử các giá trị biên độ dài, định dạng email, mật khẩu và dữ liệu nhập form.', 'flags': '-Dtest=*ValidatorTest', 'output': 'RegisterForm, ProductForm, OrderForm tests'}, {'id': 'CMD-13', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 1: Kiểm thử Xác thực, Phân quyền & Đăng nhập (Auth)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="UserDetailsServiceImplTest,CustomOAuth2UserServiceTest,RegisterFormValidatorTest,AccountDAOTest"', 'desc': 'Kiểm thử đăng nhập hợp lệ/sai mật khẩu, tài khoản bị khóa, Google OAuth2 và giải thuật BCrypt.', 'flags': '-Dtest="Class1,Class2,..."', 'output': '62 test invocations, 99.7% statement coverage'}, {'id': 'CMD-14', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 2: Kiểm thử Tìm kiếm & Phân trang Sản phẩm (Search & Pagination)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="ProductDAOTest,ProductApiControllerTest,PaginationResultTest"', 'desc': 'Kiểm tra tìm kiếm từ khóa, kết hợp lọc giá/thương hiệu, thuật toán phân trang và SQL Injection.', 'flags': '-Dtest="Class1,Class2,..."', 'output': '79 test invocations, 100.0% statement coverage'}, {'id': 'CMD-15', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 3: Kiểm thử Giỏ hàng & Cập nhật Số lượng (Shopping Cart)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="CartDAOTest,ShoppingCartTest"', 'desc': 'Kiểm thử thêm sản phẩm vào giỏ, cập nhật số lượng biên, xóa sản phẩm và tính toán phụ phí.', 'flags': '-Dtest="CartDAOTest,ShoppingCartTest"', 'output': '91 test invocations, 100% pass'}, {'id': 'CMD-16', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 4: Kiểm thử Quản lý & Áp dụng Mã Giảm Giá (Vouchers)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="VoucherDAOTest,VoucherApiControllerTest"', 'desc': 'Kiểm thử bảng quyết định 12 rules, hạn mức đơn tối thiểu (499k/500k), voucher phần trăm và tiền mặt.', 'flags': '-Dtest="VoucherDAOTest,VoucherApiControllerTest"', 'output': '52 test invocations, 100% pass'}, {'id': 'CMD-17', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 5: Kiểm thử Quy trình Đặt hàng & Thanh toán (Checkout & Order)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="OrderDAOTest,OrderApiControllerTest,CheckoutTest"', 'desc': 'Kiểm thử lưu đơn hàng, kiểm tra tồn kho, trừ kho an toàn, thanh toán COD và cổng VNPAY.', 'flags': '-Dtest="OrderDAOTest,OrderApiControllerTest,CheckoutTest"', 'output': '60 test invocations, 100% pass'}, {'id': 'CMD-18', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 6: Kiểm thử Đánh giá & Bình luận Sản phẩm (Review & Rating)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="ReviewDAOTest,ReviewApiControllerTest"', 'desc': 'Kiểm thử đánh giá 1 đến 5 sao, chặn đánh giá ngoài biên (0, 6 sao) và quyền đánh giá sau mua.', 'flags': '-Dtest="ReviewDAOTest,ReviewApiControllerTest"', 'output': '48 test invocations, 100% pass'}, {'id': 'CMD-19', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 7: Kiểm thử Hủy đơn hàng & Yêu cầu Trả hàng (Cancel & Return)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="OrderCancelReturnDAOTest,OrderCancelReturnControllerTest"', 'desc': 'Kiểm thử máy trạng thái FSM: cho phép hủy đơn PENDING, chặn hủy đơn SHIPPING/COMPLETED.', 'flags': '-Dtest="OrderCancelReturnDAOTest,OrderCancelReturnControllerTest"', 'output': '91 test invocations, 100% pass'}, {'id': 'CMD-20', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 8: Kiểm thử Phân quyền Quản trị & Điều hành (Admin Management)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="AdminManagementDAOTest,AdminApiControllerTest"', 'desc': 'Kiểm thử phân quyền RBAC, kiểm soát phạm vi đơn hàng và chặn hạ cấp/khóa tài khoản Admin duy nhất.', 'flags': '-Dtest="AdminManagementDAOTest,AdminApiControllerTest"', 'output': '45 test invocations, 100% pass'}, {'id': 'CMD-21', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Module 9: Kiểm thử Tích hợp AI Thị giác Máy tính (AI Vision Inspection)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest="ComputerVisionInspectionTest"', 'desc': 'Kiểm thử tải ảnh giày lên cổng AI, phân tích độ mòn đế giày, lỗi da và cơ chế xử lý ngoại lệ.', 'flags': '-Dtest="ComputerVisionInspectionTest"', 'output': '12 test invocations, 100% pass'}, {'id': 'CMD-22', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Đo lường Độ phủ Mã nguồn & Xuất Báo cáo JaCoCo HTML', 'tool': 'JaCoCo Maven Plugin', 'command': 'mvn clean test jacoco:report', 'desc': 'Thu thập dữ liệu thực thi bytecode và sinh báo cáo HTML độ phủ câu lệnh và nhánh rẽ chi tiết.', 'flags': 'clean test jacoco:report', 'output': 'target/site/jacoco/index.html'}, {'id': 'CMD-23', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Gác cổng Chất lượng Độ phủ JaCoCo Quality Gate (Chặn nếu < 70%)', 'tool': 'JaCoCo Check', 'command': 'mvn jacoco:check', 'desc': 'Xác thực điều kiện Quality Gate: Tỷ lệ phủ dòng >= 70%, phủ nhánh >= 70%. Báo lỗi build nếu không đạt.', 'flags': 'Rule: Line >= 0.70, Branch >= 0.70', 'output': '[INFO] All coverage checks have been met.'}, {'id': 'CMD-24', 'category': 'UNIT', 'category_name': '3. Unit Tests & JaCoCo', 'title': 'Đo Độ phủ Cách ly bằng CSDL Tạm thời (PowerShell Safe Runner)', 'tool': 'PowerShell Script', 'command': 'powershell .\\scripts\\test-coverage.ps1 -OpenReport', 'desc': 'Tạo CSDL tạm thời shoeshop_cov_xxx trên MySQL container, đo độ phủ, tự động hủy DB và mở báo cáo.', 'flags': '-OpenReport, -TestSelector', 'output': 'Tự động mở target/site/jacoco/index.html'}, {'id': 'CMD-25', 'category': 'INTEG', 'category_name': '4. Tích hợp CSDL & Bug Retest', 'title': 'Chạy Bộ Kiểm thử Tích hợp CSDL MySQL Thật (Integration Tests)', 'tool': 'Maven Surefire', 'command': 'mvn test -Dtest=*IntegrationTest', 'desc': 'Kiểm thử tích hợp kết nối tới MySQL container thật, kiểm chứng giao dịch rollback và khóa ngoại.', 'flags': '-Dtest=*IntegrationTest', 'output': '6 Integration tests executed'}, {'id': 'CMD-26', 'category': 'INTEG', 'category_name': '4. Tích hợp CSDL & Bug Retest', 'title': 'Kiểm chứng Hồi quy Tất cả các Bug đã Fix (TEST-26 Retest Runner)', 'tool': 'Python Script', 'command': 'python .\\scripts\\verify_resolved_bugs.py', 'desc': 'Tự động retest toàn bộ các lỗi đã khắc phục (BUG-01 đến BUG-06) đảm bảo không phát sinh hồi quy.', 'flags': 'Zero external dependencies', 'output': 'All 6 bug tickets verified (PASS)'}, {'id': 'CMD-27', 'category': 'INTEG', 'category_name': '4. Tích hợp CSDL & Bug Retest', 'title': 'Kiểm chứng Tổ hợp Biên Cực đại Tìm kiếm (TEST-20 Worst-Case 5^n)', 'tool': 'Python Script', 'command': 'python .\\scripts\\test_search_pagination_api.py', 'desc': 'Gửi tự động 25 request HTTP tổ hợp giá trị biên (min-, min, nom, max, max+) của tham số page, size, likeName.', 'flags': 'Python standard library urllib', 'output': '25/25 scenarios passed (100% OK)'}, {'id': 'CMD-28', 'category': 'API', 'category_name': '5. API Automation & Newman', 'title': 'Chạy Toàn bộ 46 API Tests qua PowerShell Runner (Xuất HTML Report)', 'tool': 'PowerShell / Newman', 'command': 'powershell .\\scripts\\run-api-tests.ps1', 'desc': 'Thực thi toàn bộ Postman Collection 46 APIs qua Newman CLI và xuất báo cáo htmlextra đẹp mắt.', 'flags': 'Auto-downloads Newman via npx', 'output': 'target/newman-report.html'}, {'id': 'CMD-29', 'category': 'API', 'category_name': '5. API Automation & Newman', 'title': 'Chạy Trực tiếp Newman CLI với Báo cáo htmlextra', 'tool': 'Newman CLI', 'command': 'npx --yes newman run docs/Shoeshop_API_Collection.json -e docs/Shoeshop_Postman_Environment.json -r cli,htmlextra --reporter-htmlextra-export target/newman-report.html --insecure', 'desc': 'Chạy bộ kịch bản Postman từ dòng lệnh với file môi trường và xuất báo cáo htmlextra nâng cao.', 'flags': '-r cli,htmlextra, --reporter-htmlextra-export, --insecure', 'output': 'target/newman-report.html (46 Pass / 0 Fail)'}, {'id': 'CMD-30', 'category': 'API', 'category_name': '5. API Automation & Newman', 'title': 'Chạy Newman API Test độc lập trong Docker Container (Chế độ CI/CD)', 'tool': 'Docker / Newman', 'command': 'docker run --network="host" -v "%cd%/docs:/etc/newman" postman/newman run /etc/newman/Shoeshop_API_Collection.json -e /etc/newman/Shoeshop_Postman_Environment.json -r cli', 'desc': 'Chạy Newman trong image chính thức postman/newman không cần cài NodeJS trên máy host.', 'flags': '--network=host, -v volume mount', 'output': 'Console CLI summary table'}, {'id': 'CMD-31', 'category': 'UI', 'category_name': '6. UI Automation & Selenium', 'title': 'Kiểm thử Tự động Giao diện Selenium POM (Desktop Chrome)', 'tool': 'Selenium WebDriver POM', 'command': 'mvn test -Dtest="AuthenticationUiTest,CheckoutUiTest"', 'desc': 'Tự động hóa luồng tương tác người dùng: Đăng nhập, thêm vào giỏ, điền form và thanh toán theo mẫu Page Object Model.', 'flags': '-Dtest="AuthenticationUiTest,CheckoutUiTest"', 'output': '6 UI tests passed'}, {'id': 'CMD-32', 'category': 'UI', 'category_name': '6. UI Automation & Selenium', 'title': 'Kiểm thử Tương thích Đa Trình duyệt & Thiết bị Di động (TEST-25)', 'tool': 'Python Script', 'command': 'python .\\scripts\\test_cross_browser.py', 'desc': 'Kiểm tra độ tương thích trên 5 nền tảng: Chrome, Firefox, Edge, iPhone 14/15 Safari và Galaxy S23 Android.', 'flags': 'Multi-browser user-agent & viewport simulation', 'output': 'Cross-browser matrix: 100% Compatible'}, {'id': 'CMD-33', 'category': 'SEC', 'category_name': '7. Bảo mật & Quét Thư viện (SCA)', 'title': 'Quét Lỗ hổng Thư viện Phụ thuộc (OWASP Dependency-Check Maven)', 'tool': 'OWASP Dependency-Check', 'command': 'mvn org.owasp:dependency-check-maven:check', 'desc': 'Quét toàn bộ dependencies trong pom.xml, tải dữ liệu CVE từ NIST NVD và đánh giá rủi ro an toàn.', 'flags': 'Goal: check', 'output': 'target/dependency-check-report.html'}, {'id': 'CMD-34', 'category': 'SEC', 'category_name': '7. Bảo mật & Quét Thư viện (SCA)', 'title': 'Chạy OWASP Dependency-Check với Ngưỡng CVSS Gate (PowerShell Runner)', 'tool': 'PowerShell Script', 'command': 'powershell .\\scripts\\run-dependency-check.ps1 -FailOnCVSS 8', 'desc': 'Tự động nạp NVD_API_KEY từ .env, thiết lập ngưỡng chặn CVSS >= 8 (Quality Gate) và xuất báo cáo.', 'flags': '-FailOnCVSS 8', 'output': 'Quality gate status & target/dependency-check-report.html'}, {'id': 'CMD-35', 'category': 'SEC', 'category_name': '7. Bảo mật & Quét Thư viện (SCA)', 'title': 'Chạy OWASP Dependency-Check chế độ Audit (Không làm dừng Build)', 'tool': 'PowerShell Script', 'command': 'powershell .\\scripts\\run-dependency-check.ps1 -AuditOnly', 'desc': 'Tạo báo cáo kiểm toán bảo mật đầy đủ mà không làm gián đoạn quy trình đóng gói phần mềm.', 'flags': '-AuditOnly (-DfailBuildOnCVSS=11)', 'output': 'Audit report generated without failure'}, {'id': 'CMD-36', 'category': 'LOAD', 'category_name': '8. Hiệu năng & Tải JMeter', 'title': 'Chạy Kịch bản Tải JMeter ở chế độ Dòng lệnh (Non-GUI Mode)', 'tool': 'Apache JMeter CLI', 'command': 'jmeter -n -t docs\\jmeter\\Shoeshop_Load_Test.jmx -l target\\jmeter\\results.jtl -e -o target\\jmeter\\dashboard\\', 'desc': 'Thực thi test plan JMeter không qua giao diện GUI để đạt hiệu năng tối đa và xuất Dashboard HTML chuyên sâu.', 'flags': '-n (non-GUI), -t (test plan), -l (results log), -e -o (generate dashboard)', 'output': 'target/jmeter/dashboard/index.html'}, {'id': 'CMD-37', 'category': 'LOAD', 'category_name': '8. Hiệu năng & Tải JMeter', 'title': 'Kiểm thử Tải Tiêu chuẩn qua PowerShell (100 Virtual Users)', 'tool': 'PowerShell Runner', 'command': 'powershell .\\scripts\\run-load-test.ps1 -Threads 100 -RampUp 10 -Duration 60', 'desc': 'Kiểm thử tải đồng thời 100 người dùng, ramp-up 10 giây trong 60 giây, tự động mở báo cáo phân tích.', 'flags': '-Threads 100 -RampUp 10 -Duration 60', 'output': 'target/jmeter/html_report_100vu/index.html'}, {'id': 'CMD-38', 'category': 'LOAD', 'category_name': '8. Hiệu năng & Tải JMeter', 'title': 'Kiểm thử Áp lực & Xác định Điểm gãy Hệ thống (500 Virtual Users - Stress Test)', 'tool': 'PowerShell Runner', 'command': 'powershell .\\scripts\\run-load-test.ps1 -Threads 500 -RampUp 30 -Duration 120', 'desc': 'Kiểm thử áp lực cực đại 500 VUs đạt 1.273,3 RPS, độ trễ 186.4ms, xác định ngưỡng giới hạn ~650 VUs.', 'flags': '-Threads 500 -RampUp 30 -Duration 120', 'output': 'target/jmeter/html_report_500vu/index.html'}, {'id': 'CMD-39', 'category': 'PORTAL', 'category_name': '9. Cổng thông tin & Đối chiếu', 'title': 'Đối chiếu 9 Modules Đặc tả & Phân tích Độ phủ Mã nguồn (Spec Checker)', 'tool': 'Python Script', 'command': 'python .\\scripts\\check_module_testcases.py', 'desc': 'Quét 9 tài liệu đặc tả trong docs/test_cases/, đối chiếu mã Java src/test/java/ và mở báo cáo HTML.', 'flags': 'Interactive menu (chọn module 1 -> 9)', 'output': 'target/testcase_check_report.html'}, {'id': 'CMD-40', 'category': 'PORTAL', 'category_name': '9. Cổng thông tin & Đối chiếu', 'title': 'Khởi động Cổng thông tin Quản lý Kiểm thử & SCI (QA & SCI Portal)', 'tool': 'Python Script', 'command': 'python .\\scripts\\qa_management_portal.py', 'desc': 'Tạo ứng dụng Web Single-Page Application (SPA) chủ đề Sáng tổng hợp đầy đủ số liệu kiểm thử & SCM.', 'flags': 'Tự động mở trên trình duyệt mặc định', 'output': 'target/qa_management_portal.html'}, {'id': 'CMD-41', 'category': 'CICD', 'category_name': '10. CI/CD GitHub Actions', 'title': 'CI Job 1: Build Mã nguồn, Chạy Unit Test & Kiểm định JaCoCo Gate', 'tool': 'GitHub Actions / Maven', 'command': 'mvn -B clean test jacoco:report jacoco:check', 'desc': 'Bước kiểm tra tự động chạy trên GitHub runner với container dịch vụ MySQL 8.0, gác cổng độ phủ >= 70%.', 'flags': '-B (batch mode non-interactive)', 'output': 'GitHub Action Step: Succeeded'}, {'id': 'CMD-42', 'category': 'CICD', 'category_name': '10. CI/CD GitHub Actions', 'title': 'CI Job 2: Quét An toàn Bảo mật & Phân tích Thành phần (SCA Check)', 'tool': 'GitHub Actions / OWASP', 'command': 'mvn -B org.owasp:dependency-check-maven:check -DsuppressionFile=config/owasp-suppressions.xml', 'desc': 'Tự động quét lỗ hổng thư viện phụ thuộc của dự án trên hạ tầng GitHub Actions.', 'flags': '-DsuppressionFile=config/owasp-suppressions.xml', 'output': 'GitHub Action Step: Succeeded'}, {'id': 'CMD-43', 'category': 'CICD', 'category_name': '10. CI/CD GitHub Actions', 'title': 'CI Job 3: Dựng Docker Stack & Thực thi Kiểm thử API Newman E2E', 'tool': 'GitHub Actions / Docker / Newman', 'command': 'docker compose -f docker-compose.ci.yml up -d && newman run docs/Shoeshop_API_Collection.json -e docs/Shoeshop_Postman_Environment.json', 'desc': 'Khởi động toàn bộ dịch vụ trên Docker CI và chạy kiểm thử hồi quy 46 REST API qua Newman.', 'flags': '-f docker-compose.ci.yml up -d', 'output': 'GitHub Action Step: Succeeded (46/46 Passed)'}]
 
     
     # Tự động bóc tách đầy đủ 100% nội dung 6 tuần từ docs/reports/Week_*_Summary.md
@@ -7332,12 +7356,25 @@ def generate_portal_html():
             if (!modal || !content) return;
 
             // Generate rows for specification testcases table
-            const specRows = (mod.spec_tc_list || []).map(tc => `
+            const specRows = (mod.spec_tc_list || []).map(tc => {{
+                const tags = (tc.tags_covered || '').split(',').map(t => t.trim()).filter(Boolean);
+                const tagBadges = tags.length > 0 ? tags.map(t => {{
+                    let bClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                    if (t.startsWith('V')) bClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    else if (t.startsWith('X')) bClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                    else if (t.startsWith('B')) bClass = 'bg-purple-50 text-purple-700 border-purple-200';
+                    return `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${{bClass}}">${{t}}</span>`;
+                }}).join('') : '<span class="text-slate-400 text-[10px]">-</span>';
+
+                return `
                 <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                     <td class="py-2.5 px-3 font-mono font-bold text-indigo-600 text-xs whitespace-nowrap">${{tc.id}}</td>
                     <td class="py-2.5 px-3">
                         <div class="font-bold text-slate-800 text-xs">${{tc.name}}</div>
                         <div class="text-[11px] text-slate-500 mt-0.5"><span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">Kỹ thuật:</span> ${{tc.tech}}</div>
+                    </td>
+                    <td class="py-2.5 px-3">
+                        <div class="flex flex-wrap gap-1 max-w-[170px]">${{tagBadges}}</div>
                     </td>
                     <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600">${{tc.code_file}}</td>
                     <td class="py-2.5 px-3 font-mono text-[11px] text-emerald-700 bg-emerald-50/50 rounded">${{tc.code_method}}</td>
@@ -7347,7 +7384,8 @@ def generate_portal_html():
                         </span>
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }}).join('');
 
             // Generate rows for code details (classes and invocations)
             const codeRows = (mod.code_details || []).map(cd => `
@@ -7504,6 +7542,7 @@ def generate_portal_html():
                                 <tr>
                                     <th class="py-2.5 px-3">Mã Test Case</th>
                                     <th class="py-2.5 px-3">Tên Kịch bản & Kỹ thuật Thiết kế</th>
+                                    <th class="py-2.5 px-3 min-w-[150px]">Tag được bao phủ</th>
                                     <th class="py-2.5 px-3">File Code thực thi tương ứng</th>
                                     <th class="py-2.5 px-3">Phương thức test trong Code</th>
                                     <th class="py-2.5 px-3 text-center">Trạng thái</th>
@@ -8738,10 +8777,27 @@ def generate_portal_html():
         }}
 
         // =============================================================
-        // Hàm chuyển đổi Markdown sang HTML (bôi đậm **, code inline `, link [])
+        // Hàm chuyển đổi Markdown sang HTML (bôi đậm **, code inline `, link [], ký hiệu toán học)
         function formatMd(text) {{
             if (!text) return '';
             return text
+                // 1. Chuyển đổi ký hiệu toán học LaTeX / Math sang Unicode & HTML trực quan
+                .replace(/\\$\\s*\\\\ge\\s*\\$/g, '≥')
+                .replace(/\\$\\s*\\\\le\\s*\\$/g, '≤')
+                .replace(/\\\\ge\\b/g, '≥')
+                .replace(/\\\\le\\b/g, '≤')
+                .replace(/\\$5\\^2\\s*=\\s*25\\s*cases?\\$/gi, '5² = 25 cases')
+                .replace(/\\$5\\^2\\s*=\\s*25\\$/gi, '5² = 25')
+                .replace(/\\$5\\^2\\$/gi, '5²')
+                .replace(/\\$5\\^n\\$/gi, '5ⁿ')
+                .replace(/\\$4n\\+1\\$/gi, '4n+1')
+                .replace(/\\$6n\\+1\\$/gi, '6n+1')
+                .replace(/\\$C_([0-9]+)\\$/g, 'C$1')
+                .replace(/5\\^2/g, '5²')
+                .replace(/5\\^n/g, '5ⁿ')
+                .replace(/\\$([^$]+)\\$/g, '$1') // Bỏ dấu $ bao quanh nếu còn sót
+                .replace(/\\\\%/g, '%')
+                // 2. Định dạng Markdown tiêu chuẩn
                 .replace(/\\*\\*(.*?)\\*\\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
                 .replace(/`([^`]+)`/g, '<code class="bg-indigo-50 text-indigo-700 font-mono text-[11px] px-1.5 py-0.5 rounded border border-indigo-100">$1</code>')
                 .replace(/\\*(.*?)\\*/g, '<em class="italic text-slate-700">$1</em>')
@@ -8886,7 +8942,7 @@ def generate_portal_html():
                 blockerSection = `
                     <div class="space-y-3">
                         <h5 class="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> 3. Vấn đề Phát sinh & Giải pháp Xử lý (Blockers & Mitigations)
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> 5. Vấn đề Phát sinh & Giải pháp Xử lý (Blockers & Mitigations)
                         </h5>
                         <div class="overflow-x-auto border border-amber-200 rounded-xl bg-amber-50/20">
                             <table class="w-full text-left text-xs text-slate-600">
@@ -8901,6 +8957,72 @@ def generate_portal_html():
                                 </thead>
                                 <tbody class="divide-y divide-amber-200/60 bg-white">
                                     ${{bRows}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }}
+
+            // 5. Test Commands Section
+            let testCommandsSection = '';
+            if (w.test_commands && w.test_commands.length > 0) {{
+                let cmdRows = '';
+                w.test_commands.forEach(c => {{
+                    let catBadge = '';
+                    const catLower = (c.category || '').toLowerCase();
+                    if (catLower.includes('môi trường') || catLower.includes('dữ liệu')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('tĩnh')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('unit') || catLower.includes('biên')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('white-box')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('api') || catLower.includes('newman')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('ui') || catLower.includes('cross-browser')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('bảo mật') || catLower.includes('sec')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else if (catLower.includes('hiệu năng') || catLower.includes('tải') || catLower.includes('jmeter')) {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }} else {{
+                        catBadge = '<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-bold text-[10px]">' + c.category + '</span>';
+                    }}
+
+                    cmdRows += `
+                        <tr class="hover:bg-indigo-50/30 transition">
+                            <td class="py-2.5 px-3 text-center font-bold text-indigo-700">${{c.stt}}</td>
+                            <td class="py-2.5 px-3 whitespace-nowrap">${{catBadge}}</td>
+                            <td class="py-2.5 px-4 font-semibold text-slate-900">${{formatMd(c.purpose)}}</td>
+                            <td class="py-2.5 px-4 min-w-[240px]">
+                                <code class="px-2.5 py-1 bg-slate-900 text-emerald-400 font-mono text-[11px] rounded-lg border border-slate-800 break-all select-all inline-block shadow-xs">${{c.command}}</code>
+                            </td>
+                            <td class="py-2.5 px-4 text-slate-600 text-[11px]">${{formatMd(c.prereq)}}</td>
+                            <td class="py-2.5 px-4 font-medium text-slate-800 text-[11px]">${{formatMd(c.result)}}</td>
+                        </tr>
+                    `;
+                }});
+                testCommandsSection = `
+                    <div class="space-y-3">
+                        <h5 class="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-terminal text-indigo-600"></i> 3. Tổng hợp Lệnh Chạy Kiểm thử (Test Commands)
+                        </h5>
+                        <div class="overflow-x-auto border border-indigo-200 rounded-xl bg-indigo-50/20">
+                            <table class="w-full text-left text-xs text-slate-600">
+                                <thead class="text-[11px] uppercase bg-indigo-100/70 text-indigo-900 border-b border-indigo-200 font-bold">
+                                    <tr>
+                                        <th class="py-3 px-3 text-center w-12">STT</th>
+                                        <th class="py-3 px-3 w-28">Phân loại</th>
+                                        <th class="py-3 px-4 w-1/4">Mục đích kiểm thử</th>
+                                        <th class="py-3 px-4 min-w-[260px]">Lệnh thực thi (CLI / Script)</th>
+                                        <th class="py-3 px-4 w-1/5">Môi trường / Điều kiện</th>
+                                        <th class="py-3 px-4 w-1/5">Kết quả ghi nhận</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-indigo-100 bg-white">
+                                    ${{cmdRows}}
                                 </tbody>
                             </table>
                         </div>
@@ -8974,8 +9096,8 @@ def generate_portal_html():
                         </div>
                     </div>
 
-                    <!-- 3. Blockers & Mitigations Table -->
-                    ${{blockerSection}}
+                    <!-- 3. Test Commands Table -->
+                    ${{testCommandsSection}}
 
                     <!-- 4. Deliverables by Member -->
                     <div class="space-y-3">
@@ -8986,6 +9108,9 @@ def generate_portal_html():
                             ${{memberCards}}
                         </div>
                     </div>
+
+                    <!-- 5. Blockers & Mitigations Table -->
+                    ${{blockerSection}}
                 </div>
             `;
         }}
@@ -10304,7 +10429,8 @@ def generate_portal_html():
                                     <th class="py-3 px-3 w-28">Mã ID</th>
                                     <th class="py-3 px-3 w-36">Phân hệ</th>
                                     <th class="py-3 px-4 min-w-[220px]">Tiêu đề Kịch bản</th>
-                                    <th class="py-3 px-3 w-40">Kỹ thuật</th>
+                                    <th class="py-3 px-3 w-36">Kỹ thuật</th>
+                                    <th class="py-3 px-3 min-w-[130px]">Tag được bao phủ</th>
                                     <th class="py-3 px-4 min-w-[240px]">Các bước thực hiện</th>
                                     <th class="py-3 px-4 min-w-[180px]">Dữ liệu kiểm thử</th>
                                     <th class="py-3 px-4 min-w-[240px]">Kết quả dự kiến</th>
@@ -10483,6 +10609,21 @@ def generate_portal_html():
                                 ${{tc.tech || 'BVA / EP'}}
                             </span>
                         </td>
+                        <td class="py-3 px-3">
+                            <div class="flex flex-wrap gap-1 max-w-[140px]">
+                                ${{(() => {{
+                                    const tags = (tc.tags_covered || '').split(',').map(t => t.trim()).filter(Boolean);
+                                    if (tags.length === 0) return '<span class="text-slate-400 text-[10px]">-</span>';
+                                    return tags.map(t => {{
+                                        let bClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                                        if (t.startsWith('V')) bClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                        else if (t.startsWith('X')) bClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                                        else if (t.startsWith('B')) bClass = 'bg-purple-50 text-purple-700 border-purple-200';
+                                        return `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${{bClass}}">${{t}}</span>`;
+                                    }}).join('');
+                                }})()}}
+                            </div>
+                        </td>
                         <td class="py-3 px-4 text-slate-600 leading-relaxed text-[11px] max-w-[260px] truncate" title="${{(tc.steps || '').replace(/<br\\s*\\/?>/gi, ' - ')}}">
                             ${{(tc.steps || 'Thực hiện theo kịch bản chuẩn').replace(/<br\\s*\\/?>/gi, ' • ')}}
                         </td>
@@ -10576,6 +10717,23 @@ def generate_portal_html():
             const rawData = (tc.data || '"Dữ liệu mặc định trong CSDL kiểm thử (seed_data.sql)"');
             document.getElementById('modalTcData').innerHTML = highlightJson(rawData);
 
+            // Hiển thị Tags Covered (EP & BVA)
+            const tagsBox = document.getElementById('modalTcTags');
+            if (tagsBox) {{
+                const tags = (tc.tags_covered || '').split(',').map(t => t.trim()).filter(Boolean);
+                if (tags.length > 0) {{
+                    tagsBox.innerHTML = tags.map(t => {{
+                        let bClass = 'bg-blue-100 text-blue-800 border-blue-300';
+                        if (t.startsWith('V')) bClass = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                        else if (t.startsWith('X')) bClass = 'bg-rose-100 text-rose-800 border-rose-300';
+                        else if (t.startsWith('B')) bClass = 'bg-purple-100 text-purple-800 border-purple-300';
+                        return `<span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${{bClass}}">${{t}}</span>`;
+                    }}).join('');
+                }} else {{
+                    tagsBox.innerHTML = '<span class="text-slate-400 italic">Chưa xác định tag</span>';
+                }}
+            }}
+
             document.getElementById('modalTcExpected').innerHTML = (tc.expected || 'Thành công theo đúng quy chuẩn nghiệp vụ.').replace(/<br\\s*\\/?>/gi, '<br>');
             document.getElementById('modalTcActual').innerHTML = (tc.actual || tc.expected || 'Khớp 100% kết quả dự kiến (Pass).').replace(/<br\\s*\\/?>/gi, '<br>');
 
@@ -10588,7 +10746,7 @@ def generate_portal_html():
 
         // Xuất file CSV toàn bộ kịch bản
         function exportTcToCsv() {{
-            const headers = ['Mã ID', 'Phân Hệ', 'Tác Giả', 'Kỹ Thuật', 'Tiêu Đề', 'Các Bước', 'Dữ Liệu', 'Kết Quả Dự Kiến', 'Trạng Thái'];
+            const headers = ['Mã ID', 'Phân Hệ', 'Tác Giả', 'Kỹ Thuật', 'Tags Covered', 'Tiêu Đề', 'Các Bước', 'Dữ Liệu', 'Kết Quả Dự Kiến', 'Trạng Thái'];
             const rows = [headers];
             ALL_TEST_CASES.forEach(t => {{
                 rows.push([
@@ -10596,6 +10754,7 @@ def generate_portal_html():
                     t.mod_name || '',
                     t.author || '',
                     t.tech || '',
+                    t.tags_covered || '',
                     t.title || '',
                     (t.steps || '').split('\\n').join(' '),
                     (t.data || '').split('\\n').join(' '),

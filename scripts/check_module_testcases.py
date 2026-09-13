@@ -37,6 +37,7 @@ MODULES = {
                 "id": "TC_AUTH_001",
                 "name": "Đăng nhập tài khoản Customer hợp lệ",
                 "tech": "Bảng quyết định (Rule 4) / EP",
+                "tags_covered": "V1, V2, V3, V4, B3",
                 "code_file": "AuthenticationUiTest.java & UserDetailsServiceImplTest.java",
                 "code_method": "TC01_customerLoginWithValidCredentials() / loadUserByUsername_addsRolePrefixForLegacyRoleValue()"
             },
@@ -44,6 +45,7 @@ MODULES = {
                 "id": "TC_AUTH_002",
                 "name": "Đăng nhập tài khoản Admin hợp lệ",
                 "tech": "Bảng quyết định (Rule 5) / EP",
+                "tags_covered": "V1, V2, V3, V4, B3",
                 "code_file": "AuthenticationUiTest.java & UserDetailsServiceImplTest.java",
                 "code_method": "TC02_adminLoginWithValidCredentials() / loadUserByUsername_preservesAlreadyPrefixedRoleValue()"
             },
@@ -51,6 +53,7 @@ MODULES = {
                 "id": "TC_AUTH_003",
                 "name": "Đăng nhập thất bại do sai mật khẩu",
                 "tech": "Bảng quyết định (Rule 2) / EP",
+                "tags_covered": "V1, X3, V3",
                 "code_file": "AuthenticationUiTest.java",
                 "code_method": "TC03_invalidLoginShouldDisplayError()"
             },
@@ -58,6 +61,7 @@ MODULES = {
                 "id": "TC_AUTH_004",
                 "name": "Chặn đăng nhập tài khoản chưa đăng ký",
                 "tech": "Bảng quyết định (Rule 1) / EP",
+                "tags_covered": "X1",
                 "code_file": "UserDetailsServiceImplTest.java",
                 "code_method": "loadUserByUsername_throwsForUnknownAccount()"
             },
@@ -65,6 +69,7 @@ MODULES = {
                 "id": "TC_AUTH_005",
                 "name": "Chặn đăng nhập tài khoản bị khóa",
                 "tech": "Bảng quyết định (Rule 3) / EP",
+                "tags_covered": "V1, V2, X4",
                 "code_file": "AccountDAOTest.java & UserDetailsServiceImplTest.java",
                 "code_method": "findAccount_preservesUsernameWithoutNormalization_characterization()"
             },
@@ -72,6 +77,7 @@ MODULES = {
                 "id": "TC_AUTH_006",
                 "name": "Mật khẩu 5 ký tự (Dưới biên dưới)",
                 "tech": "BVA",
+                "tags_covered": "X6, B0",
                 "code_file": "RegisterFormValidatorTest.java",
                 "code_method": "validate_passwordOutsideBoundary_rejectsLengthAndSkipsDao()"
             }
@@ -147,6 +153,7 @@ MODULES = {
                 "id": "TC_SRCH_01",
                 "name": "Tìm kiếm với từ khóa hợp lệ",
                 "tech": "Bảng quyết định (Rule 5) / Phân vùng tương đương",
+                "tags_covered": "V1, V4, V5, V6, B1, B10",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
                 "code_method": "test_TC_SRCH_01_valid_keyword() / queryProducts_likeNameOnlyOverloadDelegatesWithActiveScope()"
             },
@@ -154,6 +161,7 @@ MODULES = {
                 "id": "TC_SRCH_02",
                 "name": "Tìm kiếm từ khóa không tồn tại",
                 "tech": "Bảng quyết định (Rule 3) / Phân vùng tương đương",
+                "tags_covered": "X1, V4, V5",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
                 "code_method": "test_TC_SRCH_02_non_existing_keyword() / queryProducts_withoutOwnerRestrictsToActiveAndUsesDefaultSort()"
             },
@@ -161,6 +169,7 @@ MODULES = {
                 "id": "TC_SRCH_03",
                 "name": "Tìm kiếm từ khóa chứa ký tự đặc biệt / SQL Injection",
                 "tech": "BVA / Kiểm thử bảo mật (SQLi)",
+                "tags_covered": "X2, V4",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
                 "code_method": "test_TC_SRCH_03_special_characters_sqli() / queryProducts_bindsNameCategoryPriceAndBooleanFilters()"
             },
@@ -168,6 +177,7 @@ MODULES = {
                 "id": "TC_SRCH_04",
                 "name": "Tìm kiếm với tham số rỗng",
                 "tech": "Phân vùng tương đương",
+                "tags_covered": "V2, V4, V5, B1",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
                 "code_method": "test_TC_SRCH_04_empty_keyword() / queryProducts_treatsEmptyOrBlankOptionalTextAsAbsent()"
             },
@@ -175,6 +185,7 @@ MODULES = {
                 "id": "TC_SRCH_05",
                 "name": "Tìm kiếm không phân biệt hoa thường",
                 "tech": "Phân vùng tương đương",
+                "tags_covered": "V1, V4, V5",
                 "code_file": "test_search_pagination_api.py & ProductDAOTest.java",
                 "code_method": "test_TC_SRCH_05_case_insensitive_search() / queryProducts_bindsNameCategoryPriceAndBooleanFilters()"
             },
@@ -182,6 +193,7 @@ MODULES = {
                 "id": "TC_SRCH_06",
                 "name": "Kết hợp Tìm kiếm & Bộ lọc giá",
                 "tech": "Phân vùng tương đương / Kết hợp nhiều lọc",
+                "tags_covered": "V1, V3, V4, B13",
                 "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
                 "code_method": "queryProducts_bindsNameCategoryPriceAndBooleanFilters() / getProducts_normalizesPageAndPassesEveryFilter()"
             },
@@ -189,6 +201,7 @@ MODULES = {
                 "id": "TC_SRCH_07",
                 "name": "Lọc sản phẩm theo Thương hiệu & Danh mục",
                 "tech": "Phân vùng tương đương / Kết hợp nhiều lọc",
+                "tags_covered": "X4, V4",
                 "code_file": "ProductDAOTest.java",
                 "code_method": "queryProducts_bindsSingleBrandAsScalar() / queryProducts_bindsMultipleBrandsAsList()"
             },
@@ -196,6 +209,7 @@ MODULES = {
                 "id": "TC_PAG_01",
                 "name": "Phân trang trang 1 mặc định",
                 "tech": "Bảng quyết định (Rule 5) / Phân vùng tương đương",
+                "tags_covered": "V4, V5, B1, B10",
                 "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
                 "code_method": "test_TC_PAG_01_default_page_navigation() / populatedResult_collectsRecordsAndCalculatesNonDivisiblePages()"
             },
@@ -203,6 +217,7 @@ MODULES = {
                 "id": "TC_PAG_02",
                 "name": "Phân trang chuyển sang trang 2",
                 "tech": "Phân vùng tương đương",
+                "tags_covered": "V4, V5, B2",
                 "code_file": "test_search_pagination_api.py & ProductApiControllerTest.java",
                 "code_method": "test_TC_PAG_02_page_2_navigation() / getProducts_passesEmptyOptionalFiltersOnRequestedPage()"
             },
@@ -210,6 +225,7 @@ MODULES = {
                 "id": "TC_PAG_03",
                 "name": "Truy vấn với số trang âm / bằng 0",
                 "tech": "Bảng quyết định (Rule 4) / BVA",
+                "tags_covered": "X5, B0",
                 "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
                 "code_method": "test_TC_PAG_03_negative_page_normalization() / emptyResult_normalizesPageAndReturnsImmutableCollections()"
             },
@@ -217,6 +233,7 @@ MODULES = {
                 "id": "TC_PAG_04",
                 "name": "Số trang vượt quá giới hạn tổng số trang",
                 "tech": "BVA",
+                "tags_covered": "X5, B0-1",
                 "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
                 "code_method": "test_TC_PAG_04_exceeding_max_pages() / pageBeyondLast_isClampedOnlyForNavigationAndMissingPageHasNoRows()"
             },
@@ -224,6 +241,7 @@ MODULES = {
                 "id": "TC_PAG_05",
                 "name": "Phân trang kết hợp Sắp xếp theo giá (priceAsc/priceDesc)",
                 "tech": "Phân vùng tương đương / Sắp xếp",
+                "tags_covered": "X6, B5+1",
                 "code_file": "ProductDAOTest.java",
                 "code_method": "queryProducts_selectsRequestedSort()"
             },
@@ -231,6 +249,7 @@ MODULES = {
                 "id": "TC_PAG_06",
                 "name": "Kiểm thử giá trị biên cực đại (Worst-Case BVA) với `page` và `size` cực lớn",
                 "tech": "Worst-Case Boundary Value Analysis (BVA $5^n$)",
+                "tags_covered": "X8, B10+1",
                 "code_file": "test_search_pagination_api.py & PaginationResultTest.java",
                 "code_method": "test_worst_case_boundaries() / largeResult_capsNavigationAndAddsLeadingEllipsis()"
             },
@@ -238,6 +257,7 @@ MODULES = {
                 "id": "TC_PROD_01",
                 "name": "Truy vấn thông tin chi tiết sản phẩm hợp lệ",
                 "tech": "Bảng quyết định (Rule 5)",
+                "tags_covered": "V1, V6",
                 "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
                 "code_method": "findProductInfo_mapsActiveProduct() / getProductByCode_returnsExistingProduct()"
             },
@@ -245,6 +265,7 @@ MODULES = {
                 "id": "TC_PROD_02",
                 "name": "Truy vấn mã sản phẩm không tồn tại",
                 "tech": "Bảng quyết định (Rule 1)",
+                "tags_covered": "X1",
                 "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
                 "code_method": "findActiveProduct_returnsNullForMissingOrNonActiveProduct() / getProductByCode_returnsNotFoundWhenProductDoesNotExist()"
             },
@@ -252,6 +273,7 @@ MODULES = {
                 "id": "TC_PROD_03",
                 "name": "Truy vấn sản phẩm bị ngừng kinh doanh (INACTIVE) / SQLi",
                 "tech": "Bảng quyết định (Rule 2) / Kiểm thử bảo mật",
+                "tags_covered": "X9",
                 "code_file": "ProductDAOTest.java & ProductApiControllerTest.java",
                 "code_method": "findProductInfo_returnsNullForUnavailableProduct() / getProductByCode_returnsNotFoundWhenProductDoesNotExist()"
             }
@@ -310,6 +332,7 @@ MODULES = {
                 "id": "TC_CART_001",
                 "name": "Thêm mới sản phẩm hợp lệ vào giỏ",
                 "tech": "Bảng quyết định (Rule 4) / EP",
+                "tags_covered": "V1, V2, V3, V5, B1",
                 "code_file": "CartApiControllerTest.java & CartControllerCoverageTest.java",
                 "code_method": "addCartItem_acceptsSupportedQuantityRepresentation() / addToCart_addsAvailableProductAndSuccessMessage()"
             },
@@ -317,6 +340,7 @@ MODULES = {
                 "id": "TC_CART_002",
                 "name": "Cập nhật tăng số lượng đã có trong giỏ",
                 "tech": "Bảng quyết định (Rule 5) / EP",
+                "tags_covered": "V1, V2, V3, V4, B2",
                 "code_file": "CartApiControllerTest.java",
                 "code_method": "updateCartItem_reportsRequestedQuantityWhenStockIsSufficient()"
             },
@@ -324,6 +348,7 @@ MODULES = {
                 "id": "TC_CART_003",
                 "name": "Chặn nhập số lượng mua bằng 0",
                 "tech": "Bảng quyết định (Rule 2) / EP / BVA",
+                "tags_covered": "X1, B0",
                 "code_file": "CartApiControllerTest.java",
                 "code_method": "addCartItem_rejectsInvalidPayload()"
             },
@@ -331,6 +356,7 @@ MODULES = {
                 "id": "TC_CART_004",
                 "name": "Chặn thêm số lượng vượt tồn kho",
                 "tech": "Bảng quyết định (Rule 3) / EP / BVA",
+                "tags_covered": "X3, B6",
                 "code_file": "CartApiControllerTest.java & CartControllerCoverageTest.java",
                 "code_method": "updateCartItem_capsRequestedQuantityAtAvailableStock() / addToCart_rejectsSoldOutProduct()"
             },
@@ -338,6 +364,7 @@ MODULES = {
                 "id": "TC_CART_005",
                 "name": "Chặn thêm sản phẩm đã hết hàng",
                 "tech": "Bảng quyết định (Rule 1) / EP",
+                "tags_covered": "X4",
                 "code_file": "CartApiControllerTest.java & CartControllerCoverageTest.java",
                 "code_method": "addCartItem_rejectsSoldOutProduct() / buyProduct_redirectsSoldOutProductToProductList()"
             }
@@ -391,6 +418,7 @@ MODULES = {
                 "id": "TC_VOU_001",
                 "name": "Kiểm tra áp dụng thành công mã hợp lệ (Giảm %)",
                 "tech": "Bảng QĐ (R8) / EP / BVA",
+                "tags_covered": "V1, V2, V3, V4, V5, V6, V8, B1, B6, B18",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_calculatesPercentDiscount()"
             },
@@ -398,6 +426,7 @@ MODULES = {
                 "id": "TC_VOU_002",
                 "name": "Kiểm tra chặn áp mã khi hóa đơn chưa đạt Min Order Value",
                 "tech": "Bảng QĐ (R4) / BVA",
+                "tags_covered": "X4, B0",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_rejectsAmountOneUnitBelowMinimum() / validateAndApplyVoucher_acceptsAmountAtMinimumBoundary()"
             },
@@ -405,6 +434,7 @@ MODULES = {
                 "id": "TC_VOU_003",
                 "name": "Kiểm tra chặn áp mã khi Voucher đã quá hạn (Expired)",
                 "tech": "Bảng QĐ (R3) / EP",
+                "tags_covered": "X3",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_rejectsExpiredVoucher()"
             },
@@ -412,6 +442,7 @@ MODULES = {
                 "id": "TC_VOU_004",
                 "name": "Kiểm tra chặn áp mã khi Voucher cạn lượt chung (Usage Limit)",
                 "tech": "Bảng QĐ (R5) / BVA",
+                "tags_covered": "X5, B10+1",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_enforcesGlobalUsageBoundary()"
             },
@@ -419,6 +450,7 @@ MODULES = {
                 "id": "TC_VOU_005",
                 "name": "Kiểm tra hệ thống chặn mã rác / mã không tồn tại",
                 "tech": "Bảng QĐ (R1) / EP",
+                "tags_covered": "X1",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_rejectsUnknownVoucher()"
             },
@@ -426,6 +458,7 @@ MODULES = {
                 "id": "TC_VOU_006",
                 "name": "Kiểm tra áp dụng thành công mã hợp lệ (Trừ tiền cứng)",
                 "tech": "Bảng QĐ (R8) / EP",
+                "tags_covered": "V1, V2, V3, V4, V5, V9, B1",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_capsFixedDiscountAtOrderAmount()"
             },
@@ -433,6 +466,7 @@ MODULES = {
                 "id": "TC_VOU_007",
                 "name": "Kiểm tra chặn áp mã do giới hạn Cá nhân (Per User Limit)",
                 "tech": "Bảng QĐ (R6) / BVA",
+                "tags_covered": "X6, B15+1",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_enforcesPerUserUsageBoundary()"
             },
@@ -440,6 +474,7 @@ MODULES = {
                 "id": "TC_VOU_008",
                 "name": "Khách vãng lai (Guest) không bị ràng buộc giới hạn cá nhân",
                 "tech": "Bảng QĐ (R7) / EP",
+                "tags_covered": "V1, V2, V3, V4, V5, V7, V8",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_skipsPerUserLimitForGuest()"
             },
@@ -447,6 +482,7 @@ MODULES = {
                 "id": "TC_VOU_009",
                 "name": "Kiểm tra chặn áp mã đã bị khóa (Inactive)",
                 "tech": "Bảng QĐ (R2) / EP",
+                "tags_covered": "X2",
                 "code_file": "VoucherDAOTest.java",
                 "code_method": "validateAndApplyVoucher_rejectsInactiveVoucher()"
             },
@@ -454,6 +490,7 @@ MODULES = {
                 "id": "TC_VOU_010",
                 "name": "Admin tạo mã giảm giá mới qua API (Create)",
                 "tech": "EP / CRUD",
+                "tags_covered": "V10",
                 "code_file": "VoucherApiControllerTest.java",
                 "code_method": "createVoucher_savesAndReturnsCreatedEntity()"
             },
@@ -461,6 +498,7 @@ MODULES = {
                 "id": "TC_VOU_011",
                 "name": "Admin vô hiệu hóa mã giảm giá qua API (Deactivate)",
                 "tech": "EP / CRUD",
+                "tags_covered": "V10",
                 "code_file": "VoucherApiControllerTest.java",
                 "code_method": "deleteVoucher_returnsSuccessWhenDaoDeletes()"
             },
@@ -468,6 +506,7 @@ MODULES = {
                 "id": "TC_VOU_012",
                 "name": "Khách hàng lấy danh sách Voucher còn hiệu lực (List Active)",
                 "tech": "EP / CRUD",
+                "tags_covered": "V1, V2, V3, V5",
                 "code_file": "VoucherApiControllerTest.java",
                 "code_method": "getActiveVouchers_returnsDaoResult()"
             }
@@ -526,6 +565,7 @@ MODULES = {
                 "id": "TC_CHK_001",
                 "name": "Kiểm tra Checkout khi giỏ hàng rỗng",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Giỏ hàng)",
+                "tags_covered": "X1",
                 "code_file": "CartControllerCoverageTest.java",
                 "code_method": "confirmationReview_redirectsEmptyCart()"
             },
@@ -533,6 +573,7 @@ MODULES = {
                 "id": "TC_CHK_002",
                 "name": "Kiểm tra Checkout khi thiếu thông tin giao hàng hợp lệ",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Thông tin giao hàng)",
+                "tags_covered": "X2",
                 "code_file": "CustomerFormValidatorTest.java & CartControllerCoverageTest.java",
                 "code_method": "validate_blankRequiredField_rejectsOnlyRequiredCode() / confirmationReview_redirectsCartWithInvalidCustomer()"
             },
@@ -540,6 +581,7 @@ MODULES = {
                 "id": "TC_CHK_003",
                 "name": "Kiểm tra giữ giỏ hàng khi quá trình tạo đơn gặp lỗi",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Xác nhận đơn có lỗi)",
+                "tags_covered": "X5",
                 "code_file": "CartControllerCoverageTest.java",
                 "code_method": "confirmationSave_preservesCartWhenOrderSaveFails()"
             },
@@ -547,6 +589,7 @@ MODULES = {
                 "id": "TC_CHK_004",
                 "name": "Kiểm tra hoàn tất Checkout thành công",
                 "tech": "Chuyển đổi trạng thái (Xác nhận đơn → Hoàn tất đặt hàng)",
+                "tags_covered": "V1, V2, V3, V4, V5, V6, B3, B8, B13, B18",
                 "code_file": "CartControllerCoverageTest.java & OrderDAOTest.java",
                 "code_method": "confirmationSave_movesSuccessfulCartToLastOrder() / saveOrder_createsPendingGuestOrderWithNextNumber()"
             },
@@ -554,6 +597,7 @@ MODULES = {
                 "id": "TC_CHK_005",
                 "name": "Kiểm tra yêu cầu Checkout trực tuyến với giỏ hàng rỗng",
                 "tech": "Bảng quyết định (Luật 1 Lỗi giỏ hàng rỗng)",
+                "tags_covered": "X1",
                 "code_file": "CartControllerCoverageTest.java",
                 "code_method": "confirmationSave_redirectsEmptyCart()"
             },
@@ -561,6 +605,7 @@ MODULES = {
                 "id": "TC_CHK_006",
                 "name": "Kiểm tra yêu cầu Checkout khi thông tin giao hàng chưa hợp lệ",
                 "tech": "Bảng quyết định (Luật 2 Lỗi customer)",
+                "tags_covered": "X2",
                 "code_file": "CustomerFormValidatorTest.java & CartControllerCoverageTest.java",
                 "code_method": "validate_invalidEmail_rejectsPatternCode() / confirmationSave_redirectsCartWithInvalidCustomer()"
             },
@@ -568,6 +613,7 @@ MODULES = {
                 "id": "TC_CHK_007",
                 "name": "Kiểm tra giữ giỏ hàng khi Checkout trực tuyến thất bại",
                 "tech": "Bảng quyết định (Luật 5 – Lỗi tồn kho khi Checkout trực tuyến)",
+                "tags_covered": "X5",
                 "code_file": "CartControllerCoverageTest.java & OrderDAOTest.java",
                 "code_method": "confirmationSave_preservesCartWhenOrderSaveFails() / saveOrder_enforcesStockBoundary()"
             },
@@ -575,6 +621,7 @@ MODULES = {
                 "id": "TC_CHK_008",
                 "name": "Kiểm tra Checkout trực tuyến thành công",
                 "tech": "Bảng quyết định (Luật 7 Đường đi hoàn hảo)",
+                "tags_covered": "V1, V2, V3, V4, V5, V6, B3, B8, B13, B18",
                 "code_file": "CartControllerCoverageTest.java",
                 "code_method": "confirmationSave_movesSuccessfulCartToLastOrder()"
             },
@@ -582,6 +629,7 @@ MODULES = {
                 "id": "TC_CHK_009",
                 "name": "Kiểm tra toàn bộ luồng Checkout hợp lệ",
                 "tech": "Bảng quyết định (Luật 7 Đường đi hoàn hảo)",
+                "tags_covered": "V1, V2, V3, V4, V5, V7, B3, B8, B13, B18",
                 "code_file": "CartControllerCoverageTest.java & OrderDAOTest.java",
                 "code_method": "confirmationSave_movesSuccessfulCartToLastOrder() / saveOrder_createsPendingGuestOrderWithNextNumber()"
             },
@@ -589,6 +637,7 @@ MODULES = {
                 "id": "TC_CHK_010",
                 "name": "Kiểm tra Checkout khi tồn kho giảm trước lúc đặt hàng",
                 "tech": "Bảng quyết định (Luật 5 Lỗi tồn kho)",
+                "tags_covered": "X5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             },
@@ -596,6 +645,7 @@ MODULES = {
                 "id": "TC_CHK_011",
                 "name": "Từ chối tên người nhận vượt quá độ dài tối đa",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: name vượt 255 ký tự)",
+                "tags_covered": "X2, B5+1",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_nameOutsideBoundary_rejectsExpectedCode()"
             },
@@ -603,6 +653,7 @@ MODULES = {
                 "id": "TC_CHK_012",
                 "name": "Kiểm tra dữ liệu Checkout được hoàn tác trong môi trường kiểm thử",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Checkout transaction)",
+                "tags_covered": "V1, V2, V3, V4, V5, V7",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             },
@@ -610,6 +661,7 @@ MODULES = {
                 "id": "TC_CHK_013",
                 "name": "Kiểm tra thông tin giao hàng tại giá trị danh định",
                 "tech": "Standard BVA 4n+1 – Giá trị danh định",
+                "tags_covered": "V2, B3, B8, B13, B18",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_validCustomer_normalizesInputAndHasNoErrors()"
             },
@@ -617,6 +669,7 @@ MODULES = {
                 "id": "TC_CHK_014",
                 "name": "Kiểm tra tên người nhận tại biên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – name tại min",
+                "tags_covered": "V2, B1",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
@@ -624,6 +677,7 @@ MODULES = {
                 "id": "TC_CHK_015",
                 "name": "Kiểm tra tên người nhận tại biên ngay trên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – name tại min+1",
+                "tags_covered": "V2, B2",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
@@ -631,6 +685,7 @@ MODULES = {
                 "id": "TC_CHK_016",
                 "name": "Kiểm tra tên người nhận tại biên ngay dưới lớn nhất",
                 "tech": "Standard BVA 4n+1 – name tại max−1",
+                "tags_covered": "V2, B4",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
@@ -638,6 +693,7 @@ MODULES = {
                 "id": "TC_CHK_017",
                 "name": "Kiểm tra tên người nhận tại biên lớn nhất",
                 "tech": "Standard BVA 4n+1 – name tại max",
+                "tags_covered": "V2, B5",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_nameAtStandardBoundary_hasNoNameError()"
             },
@@ -645,6 +701,7 @@ MODULES = {
                 "id": "TC_CHK_018",
                 "name": "Kiểm tra địa chỉ giao hàng tại biên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – address tại min",
+                "tags_covered": "V2, B6",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_blankRequiredField_rejectsOnlyRequiredCode()"
             },
@@ -652,6 +709,7 @@ MODULES = {
                 "id": "TC_CHK_019",
                 "name": "Kiểm tra địa chỉ giao hàng tại biên ngay trên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – address tại min+1",
+                "tags_covered": "V2, B7",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_validCustomer_normalizesInputAndHasNoErrors()"
             },
@@ -659,6 +717,7 @@ MODULES = {
                 "id": "TC_CHK_020",
                 "name": "Kiểm tra địa chỉ giao hàng tại biên ngay dưới lớn nhất",
                 "tech": "Standard BVA 4n+1 – address tại max−1",
+                "tags_covered": "V2, B9",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_addressAtMaximumLength_hasNoAddressError()"
             },
@@ -666,6 +725,7 @@ MODULES = {
                 "id": "TC_CHK_021",
                 "name": "Kiểm tra địa chỉ giao hàng tại biên lớn nhất",
                 "tech": "Standard BVA 4n+1 – address tại max",
+                "tags_covered": "V2, B10",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_addressAtMaximumLength_hasNoAddressError()"
             },
@@ -673,6 +733,7 @@ MODULES = {
                 "id": "TC_CHK_022",
                 "name": "Kiểm tra email tại biên ngắn nhất hợp lệ",
                 "tech": "Standard BVA 4n+1 – email tại min",
+                "tags_covered": "V2, B11",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_validCustomer_normalizesInputAndHasNoErrors()"
             },
@@ -680,6 +741,7 @@ MODULES = {
                 "id": "TC_CHK_023",
                 "name": "Kiểm tra email tại biên ngay trên ngắn nhất",
                 "tech": "Standard BVA 4n+1 – email tại min+1",
+                "tags_covered": "V2, B12",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_validCustomer_normalizesInputAndHasNoErrors()"
             },
@@ -687,6 +749,7 @@ MODULES = {
                 "id": "TC_CHK_024",
                 "name": "Kiểm tra email tại biên ngay dưới lớn nhất",
                 "tech": "Standard BVA 4n+1 – email tại max−1",
+                "tags_covered": "V2, B14",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_emailAtMaximumLength_hasNoEmailError()"
             },
@@ -694,6 +757,7 @@ MODULES = {
                 "id": "TC_CHK_025",
                 "name": "Kiểm tra email tại biên lớn nhất",
                 "tech": "Standard BVA 4n+1 – email tại max",
+                "tags_covered": "V2, B15",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_emailAtMaximumLength_hasNoEmailError()"
             },
@@ -701,6 +765,7 @@ MODULES = {
                 "id": "TC_CHK_026",
                 "name": "Kiểm tra số điện thoại tại biên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – phone tại min",
+                "tags_covered": "V2, B16",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_blankRequiredField_rejectsOnlyRequiredCode()"
             },
@@ -708,6 +773,7 @@ MODULES = {
                 "id": "TC_CHK_027",
                 "name": "Kiểm tra số điện thoại tại biên ngay trên nhỏ nhất",
                 "tech": "Standard BVA 4n+1 – phone tại min+1",
+                "tags_covered": "V2, B17",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_validCustomer_normalizesInputAndHasNoErrors()"
             },
@@ -715,6 +781,7 @@ MODULES = {
                 "id": "TC_CHK_028",
                 "name": "Kiểm tra số điện thoại tại biên ngay dưới lớn nhất",
                 "tech": "Standard BVA 4n+1 – phone tại max−1",
+                "tags_covered": "V2, B19",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_phoneAtMaximumLength_hasNoPhoneError()"
             },
@@ -722,6 +789,7 @@ MODULES = {
                 "id": "TC_CHK_029",
                 "name": "Kiểm tra số điện thoại tại biên lớn nhất",
                 "tech": "Standard BVA 4n+1 – phone tại max",
+                "tags_covered": "V2, B20",
                 "code_file": "CustomerFormValidatorTest.java",
                 "code_method": "validate_phoneAtMaximumLength_hasNoPhoneError()"
             },
@@ -729,6 +797,7 @@ MODULES = {
                 "id": "TC_ORD_001",
                 "name": "Kiểm tra đặt hàng khi thiếu toàn bộ dữ liệu giỏ hàng",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: CartInfo null)",
+                "tags_covered": "X1",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsNullCart()"
             },
@@ -736,6 +805,7 @@ MODULES = {
                 "id": "TC_ORD_002",
                 "name": "Từ chối lưu đơn với giỏ hàng không có dòng hàng",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Cart rỗng)",
+                "tags_covered": "X1",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsEmptyCart()"
             },
@@ -743,6 +813,7 @@ MODULES = {
                 "id": "TC_ORD_003",
                 "name": "Từ chối lưu đơn khi customer không hợp lệ",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Customer)",
+                "tags_covered": "X2",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsInvalidCustomer()"
             },
@@ -750,6 +821,7 @@ MODULES = {
                 "id": "TC_ORD_004",
                 "name": "Kiểm tra giỏ hàng có một dòng hàng không chứa dữ liệu",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: CartLine null)",
+                "tags_covered": "X3",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsMissingLineStructure()"
             },
@@ -757,6 +829,7 @@ MODULES = {
                 "id": "TC_ORD_005",
                 "name": "Từ chối dòng hàng thiếu thông tin sản phẩm",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: ProductInfo null)",
+                "tags_covered": "X3",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsMissingLineStructure()"
             },
@@ -764,6 +837,7 @@ MODULES = {
                 "id": "TC_ORD_006",
                 "name": "Từ chối dòng hàng thiếu sản phẩm code",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Product code null)",
+                "tags_covered": "X3",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsMissingLineStructure()"
             },
@@ -771,6 +845,7 @@ MODULES = {
                 "id": "TC_ORD_007",
                 "name": "Từ chối số lượng đặt hàng bằng 0",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: quantity < 1)",
+                "tags_covered": "X5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsQuantityBelowOne()"
             },
@@ -778,6 +853,7 @@ MODULES = {
                 "id": "TC_ORD_008",
                 "name": "Từ chối sản phẩm không tồn tại",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Product không tồn tại)",
+                "tags_covered": "X4",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsMissingOrInactiveProduct()"
             },
@@ -785,6 +861,7 @@ MODULES = {
                 "id": "TC_ORD_009",
                 "name": "Từ chối sản phẩm INACTIVE",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Product INACTIVE)",
+                "tags_covered": "X4",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsMissingOrInactiveProduct()"
             },
@@ -792,6 +869,7 @@ MODULES = {
                 "id": "TC_ORD_010",
                 "name": "Từ chối sản phẩm Bản nháp",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Product DRAFT)",
+                "tags_covered": "X4",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsMissingOrInactiveProduct()"
             },
@@ -799,6 +877,7 @@ MODULES = {
                 "id": "TC_ORD_011",
                 "name": "Từ chối đặt hàng khi tồn kho nhỏ hơn số lượng",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: stock < quantity)",
+                "tags_covered": "X5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             },
@@ -806,6 +885,7 @@ MODULES = {
                 "id": "TC_ORD_012",
                 "name": "Chấp nhận đặt hàng khi tồn kho bằng số lượng",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: stock = quantity)",
+                "tags_covered": "V5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             },
@@ -813,6 +893,7 @@ MODULES = {
                 "id": "TC_ORD_013",
                 "name": "Chấp nhận đặt hàng khi tồn kho lớn hơn số lượng",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: stock > quantity)",
+                "tags_covered": "V5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             },
@@ -820,6 +901,7 @@ MODULES = {
                 "id": "TC_ORD_014",
                 "name": "Làm mới thông tin dòng hàng từ sản phẩm phía hệ thống",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Cart data khác server)",
+                "tags_covered": "V1, V3, V4",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_refreshesCartLineFromServerProduct()"
             },
@@ -827,6 +909,7 @@ MODULES = {
                 "id": "TC_ORD_015",
                 "name": "Trừ tồn kho và tăng lượt bán count khi đặt hàng",
                 "tech": "Chuyển đổi trạng thái (Tồn kho sẵn sàng → Tồn kho đã cập nhật)",
+                "tags_covered": "V1, V5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_deductsInventoryAndIncreasesSalesCount()"
             },
@@ -834,6 +917,7 @@ MODULES = {
                 "id": "TC_ORD_016",
                 "name": "Tạo đơn khách vãng lai ở trạng thái Chờ xử lý với số kế tiếp",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Guest checkout)",
+                "tags_covered": "V8",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_createsPendingGuestOrderWithNextNumber()"
             },
@@ -841,6 +925,7 @@ MODULES = {
                 "id": "TC_ORD_017",
                 "name": "Ghi username vào đơn của khách đã đăng nhập",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Authenticated checkout)",
+                "tags_covered": "V7",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_recordsAuthenticatedCustomer()"
             },
@@ -848,6 +933,7 @@ MODULES = {
                 "id": "TC_ORD_018",
                 "name": "Xử lý phiên đăng nhập đã hết hiệu lực như khách vãng lai",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Guest checkout)",
+                "tags_covered": "V8",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_treatsUnauthenticatedAuthenticationAsGuest()"
             },
@@ -855,6 +941,7 @@ MODULES = {
                 "id": "TC_ORD_019",
                 "name": "Xử lý khách vãng lai user như khách vãng lai",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Guest checkout)",
+                "tags_covered": "V8",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_treatsAnonymousAuthenticationAsGuest()"
             },
@@ -862,6 +949,7 @@ MODULES = {
                 "id": "TC_ORD_020",
                 "name": "Chuẩn hóa mã giảm giá và ghi nhận lượt sử dụng khi đặt đơn",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Voucher hợp lệ)",
+                "tags_covered": "V6",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_appliesNormalizedVoucherAndRecordsUsage()"
             },
@@ -869,6 +957,7 @@ MODULES = {
                 "id": "TC_ORD_021",
                 "name": "Coi mã giảm giá toàn khoảng trắng là không có mã giảm giá",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Không dùng voucher)",
+                "tags_covered": "V6",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_treatsBlankVoucherAsAbsent()"
             },
@@ -876,6 +965,7 @@ MODULES = {
                 "id": "TC_ORD_022",
                 "name": "Từ chối mã giảm giá sai trước khi tạo đơn hàng",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp không hợp lệ: Voucher)",
+                "tags_covered": "X6",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_rejectsInvalidVoucherBeforeCreatingOrder()"
             },
@@ -883,6 +973,7 @@ MODULES = {
                 "id": "TC_ORD_023",
                 "name": "Khóa sản phẩm theo thứ tự code ổn định để giảm deadlock",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Order nhiều line)",
+                "tags_covered": "V1",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_locksLinesInStableProductCodeOrder()"
             },
@@ -890,6 +981,7 @@ MODULES = {
                 "id": "TC_ORD_024",
                 "name": "Khởi tạo order number khi database chưa có đơn",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: Chưa có Order trước đó)",
+                "tags_covered": "V1",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_treatsNullMaxOrderNumberAsZero()"
             },
@@ -897,6 +989,7 @@ MODULES = {
                 "id": "TC_ORD_025",
                 "name": "Kiểm tra đặt hàng với số lượng hợp lệ bằng 1",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: quantity = 1)",
+                "tags_covered": "V1, V5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             },
@@ -904,6 +997,7 @@ MODULES = {
                 "id": "TC_ORD_026",
                 "name": "Kiểm tra đặt hàng với số lượng hợp lệ lớn hơn 1",
                 "tech": "Phân hoạch lớp tương đương (EP – Lớp hợp lệ: quantity > 1)",
+                "tags_covered": "V1, V5",
                 "code_file": "OrderDAOTest.java",
                 "code_method": "saveOrder_enforcesStockBoundary()"
             }
@@ -979,6 +1073,7 @@ MODULES = {
                 "id": "TC_REV_001",
                 "name": "Đánh giá hợp lệ 5 sao và tính điểm tự động",
                 "tech": "BVA (Max / R7)",
+                "tags_covered": "V1, V2, V4, V5, B5, B8",
                 "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
                 "code_method": "saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache() / saveReview_trimsAndReturnsCreatedReview()"
             },
@@ -986,6 +1081,7 @@ MODULES = {
                 "id": "TC_REV_002",
                 "name": "Đánh giá hợp lệ 1 sao và tính điểm tự động",
                 "tech": "BVA (Min / R7)",
+                "tags_covered": "V1, V2, V4, V5, B1, B8",
                 "code_file": "ProductReviewDAOTest.java",
                 "code_method": "saveReview_acceptsCaseInsensitiveActiveStatusAndRecalculatesRoundedCache()"
             },
@@ -993,6 +1089,7 @@ MODULES = {
                 "id": "TC_REV_003",
                 "name": "Chặn lưu đánh giá khi Comment rỗng hoặc quá 2000 ký tự",
                 "tech": "Đoán lỗi (R3)",
+                "tags_covered": "X7, X8, B6-1, B10+1",
                 "code_file": "ProductReviewDAOTest.java",
                 "code_method": "saveReview_rejectsEachInvalidField()"
             },
@@ -1000,6 +1097,7 @@ MODULES = {
                 "id": "TC_REV_004",
                 "name": "Chặn đánh giá 0 sao",
                 "tech": "BVA (Min-1 / R3)",
+                "tags_covered": "X5, B1-1",
                 "code_file": "ProductReviewDAOTest.java",
                 "code_method": "saveReview_rejectsEachInvalidField()"
             },
@@ -1007,6 +1105,7 @@ MODULES = {
                 "id": "TC_REV_005",
                 "name": "Chặn đánh giá 6 sao",
                 "tech": "BVA (Max+1 / R3)",
+                "tags_covered": "X6, B5+1",
                 "code_file": "ProductReviewDAOTest.java",
                 "code_method": "saveReview_rejectsEachInvalidField()"
             },
@@ -1014,6 +1113,7 @@ MODULES = {
                 "id": "TC_REV_006",
                 "name": "Báo lỗi 401: Khách vãng lai không được Đánh giá",
                 "tech": "EP (Guest / R1)",
+                "tags_covered": "X1",
                 "code_file": "ReviewApiControllerTest.java",
                 "code_method": "saveReview_rejectsLoginRequiredAuthentication()"
             },
@@ -1021,6 +1121,7 @@ MODULES = {
                 "id": "TC_REV_007",
                 "name": "Báo lỗi 403: Cấm Admin dùng quyền tạo đánh giá ảo",
                 "tech": "EP (Admin / R1)",
+                "tags_covered": "X2",
                 "code_file": "ReviewApiControllerTest.java",
                 "code_method": "saveReview_rejectsAdminRole()"
             },
@@ -1028,6 +1129,7 @@ MODULES = {
                 "id": "TC_REV_008",
                 "name": "Chặn đánh giá vào Sản phẩm đang bị Tắt (INACTIVE)",
                 "tech": "EP (Product / R2)",
+                "tags_covered": "X3",
                 "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
                 "code_method": "saveReview_rejectsMissingOrNonActiveProduct() / saveReview_mapsDomainExceptionToBadRequest()"
             },
@@ -1035,6 +1137,7 @@ MODULES = {
                 "id": "TC_REV_009",
                 "name": "Chặn hành vi sửa/xóa Review của người khác",
                 "tech": "EP (Owner / R4)",
+                "tags_covered": "X4",
                 "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
                 "code_method": "updateReview_returnsFalseForDifferentOwner() / updateReview_returnsBadRequestWhenDaoRejectsUpdate()"
             },
@@ -1042,6 +1145,7 @@ MODULES = {
                 "id": "TC_REV_010",
                 "name": "Chặn quyền chỉnh sửa Review khi đã quá 5 phút",
                 "tech": "BVA (Time / R5)",
+                "tags_covered": "X9, B15+1",
                 "code_file": "ProductReviewDAOTest.java",
                 "code_method": "updateReview_returnsFalseOutsideFiveMinuteWindow()"
             },
@@ -1049,6 +1153,7 @@ MODULES = {
                 "id": "TC_REV_011",
                 "name": "Xóa thành công Review và Khôi phục điểm Rating gốc",
                 "tech": "EP (CRUD / R7)",
+                "tags_covered": "V1, V3",
                 "code_file": "ProductReviewDAOTest.java & ReviewApiControllerTest.java",
                 "code_method": "deleteReview_deletesAndRefreshesProductCache() / deleteReview_returnsSuccessWhenDaoDeletesReview()"
             }
@@ -1102,6 +1207,7 @@ MODULES = {
                 "id": "TC_CAN_001",
                 "name": "Khách Hủy đơn hàng PENDING thành công",
                 "tech": "State (Hợp lệ)",
+                "tags_covered": "V1, V3",
                 "code_file": "OrderReturnDAOTest.java",
                 "code_method": "cancelOrder_acceptsNormalizedPendingAndCancelsOrderWithoutDetails()"
             },
@@ -1109,6 +1215,7 @@ MODULES = {
                 "id": "TC_CAN_002",
                 "name": "Thuật toán Hủy đơn phục hồi Tồn kho nhưng không làm Âm lượt Sales",
                 "tech": "BVA (Toán học)",
+                "tags_covered": "V1, V3, B1",
                 "code_file": "OrderReturnDAOTest.java",
                 "code_method": "cancelOrder_restoresStockAndNeverMakesSalesNegative()"
             },
@@ -1116,6 +1223,7 @@ MODULES = {
                 "id": "TC_CAN_003",
                 "name": "Chặn Hủy/Trả đơn hàng sai trạng thái logic",
                 "tech": "State (Báo lỗi)",
+                "tags_covered": "X4, X5",
                 "code_file": "OrderReturnDAOTest.java",
                 "code_method": "cancelOrder_rejectsEveryNonPendingStatus()"
             },
@@ -1123,6 +1231,7 @@ MODULES = {
                 "id": "TC_CAN_004",
                 "name": "Chặn Hacker thao tác đơn hàng của người khác",
                 "tech": "EP (Ownership)",
+                "tags_covered": "X3",
                 "code_file": "OrderReturnDAOTest.java & OrderCancelReturnApiControllerTest.java",
                 "code_method": "cancelOrder_rejectsMissingOrDifferentCustomer() / getReturn_forbidsRequestOwnedByAnotherUser()"
             },
@@ -1130,6 +1239,7 @@ MODULES = {
                 "id": "TC_CAN_005",
                 "name": "Khách tạo Yêu cầu Trả hàng (Return) thành công",
                 "tech": "State (Hợp lệ)",
+                "tags_covered": "V1, V4, V5, V6, B8",
                 "code_file": "OrderReturnDAOTest.java",
                 "code_method": "createReturnRequest_trimsFieldsPersistsAndTagsOrder()"
             },
@@ -1137,6 +1247,7 @@ MODULES = {
                 "id": "TC_CAN_006",
                 "name": "Chặn tạo nhiều yêu cầu Trả hàng trùng lặp trên cùng 1 đơn",
                 "tech": "EP (Duplicate)",
+                "tags_covered": "X6",
                 "code_file": "OrderReturnDAOTest.java",
                 "code_method": "createReturnRequest_rejectsDuplicateRequest()"
             },
@@ -1144,6 +1255,7 @@ MODULES = {
                 "id": "TC_CAN_007",
                 "name": "Báo lỗi Form Xin trả hàng bỏ trống lý do hoặc ảnh quá dài",
                 "tech": "BVA (Validation)",
+                "tags_covered": "X7, X9, B6-1, B15+1",
                 "code_file": "OrderCancelReturnApiControllerTest.java & OrderReturnDAOTest.java",
                 "code_method": "createReturn_rejectsInvalidForm() / createReturnRequest_rejectsEachInvalidFormBoundary()"
             },
@@ -1151,6 +1263,7 @@ MODULES = {
                 "id": "TC_CAN_008",
                 "name": "Admin Duyệt (Approve) đơn trả hàng thành công",
                 "tech": "EP (Admin Role)",
+                "tags_covered": "V2",
                 "code_file": "OrderCancelReturnApiControllerTest.java",
                 "code_method": "updateStatus_returnsUpdatedRequest()"
             },
@@ -1158,6 +1271,7 @@ MODULES = {
                 "id": "TC_CAN_009",
                 "name": "Admin Từ chối (Reject) đơn trả hàng do thiếu bằng chứng",
                 "tech": "EP (Admin Role)",
+                "tags_covered": "V2",
                 "code_file": "OrderCancelReturnApiControllerTest.java",
                 "code_method": "updateStatus_returnsUpdatedRequest()"
             },
@@ -1165,6 +1279,7 @@ MODULES = {
                 "id": "TC_CAN_010",
                 "name": "Chặn Khách hàng (User) can thiệp vào quyền Duyệt đơn của Admin",
                 "tech": "EP (Phân quyền)",
+                "tags_covered": "X2",
                 "code_file": "OrderCancelReturnApiControllerTest.java",
                 "code_method": "updateStatus_rejectsNonAdminAuthentication()"
             }
@@ -1218,6 +1333,7 @@ MODULES = {
                 "id": "TC_ADM_001",
                 "name": "Chặn hạ cấp (Downgrade) quyền của Admin duy nhất còn hoạt động",
                 "tech": "BVA / EP",
+                "tags_covered": "X1, B0",
                 "code_file": "UserControllerCoverageTest.java",
                 "code_method": "userEditSave_blocksLastActiveAdminFromLosingAdminRole()"
             },
@@ -1225,6 +1341,7 @@ MODULES = {
                 "id": "TC_ADM_002",
                 "name": "Chặn Khóa/Vô hiệu hóa Admin duy nhất còn hoạt động",
                 "tech": "BVA / EP",
+                "tags_covered": "X1, B0",
                 "code_file": "UserControllerCoverageTest.java",
                 "code_method": "userEditSave_blocksLastActiveAdminFromLosingAdminRole() / userEditSave_deactivatesAdminWhenAnotherActiveAdminExists()"
             },
@@ -1232,6 +1349,7 @@ MODULES = {
                 "id": "TC_ADM_003",
                 "name": "Cho phép hạ cấp Admin nếu vẫn còn Admin khác",
                 "tech": "EP",
+                "tags_covered": "V1, B1",
                 "code_file": "UserControllerCoverageTest.java",
                 "code_method": "userEditSave_allowsAdminDowngradeWhenAnotherActiveAdminExists()"
             },
@@ -1239,6 +1357,7 @@ MODULES = {
                 "id": "TC_ADM_004",
                 "name": "Chặn User thường cố tình vào xem Danh sách User của Admin",
                 "tech": "Quyền",
+                "tags_covered": "X2",
                 "code_file": "UserControllerCoverageTest.java",
                 "code_method": "userList_redirectsNonAdmin()"
             },
@@ -1246,6 +1365,7 @@ MODULES = {
                 "id": "TC_ADM_005",
                 "name": "Chặn Admin sửa sản phẩm của Admin khác",
                 "tech": "Ownership",
+                "tags_covered": "X4",
                 "code_file": "ProductApiControllerTest.java",
                 "code_method": "saveProduct_forbidsUpdatingForeignProduct()"
             },
@@ -1253,6 +1373,7 @@ MODULES = {
                 "id": "TC_ADM_006",
                 "name": "Chặn Admin xóa (deactivate) sản phẩm của Admin khác",
                 "tech": "Ownership",
+                "tags_covered": "X4",
                 "code_file": "ProductApiControllerTest.java",
                 "code_method": "deleteProduct_forbidsProductOwnedByAnotherPrincipal()"
             },
@@ -1260,6 +1381,7 @@ MODULES = {
                 "id": "TC_ADM_007",
                 "name": "Báo lỗi khi tạo sản phẩm thiếu Mã Code hoặc Tên",
                 "tech": "Validation",
+                "tags_covered": "X6, X7, B6-1, B11-1",
                 "code_file": "ProductFormValidatorTest.java",
                 "code_method": "validate_blankRequiredField_rejectsThatFieldAndSkipsDao()"
             },
@@ -1267,6 +1389,7 @@ MODULES = {
                 "id": "TC_ADM_008",
                 "name": "Chặn Admin thao tác đơn hàng nằm ngoài phạm vi quản lý",
                 "tech": "Scope EP",
+                "tags_covered": "X5",
                 "code_file": "OrderApiControllerTest.java",
                 "code_method": "updateStatus_rejectsPrincipalOutsideManagementScope()"
             },
@@ -1274,6 +1397,7 @@ MODULES = {
                 "id": "TC_ADM_009",
                 "name": "Tự động tính lại giá trị (Recalculate) khi xem đơn của Khách",
                 "tech": "Algorithm",
+                "tags_covered": "V2, V4",
                 "code_file": "OrderApiControllerTest.java",
                 "code_method": "getOrder_recalculatesAmountWhenAdminIsNotOrderCustomer()"
             },
@@ -1281,6 +1405,7 @@ MODULES = {
                 "id": "TC_ADM_010",
                 "name": "Chặn Admin ép trạng thái đơn hàng sai luồng",
                 "tech": "State",
+                "tags_covered": "X8",
                 "code_file": "OrderApiControllerTest.java",
                 "code_method": "updateStatus_mapsDaoException()"
             }
@@ -1339,6 +1464,7 @@ MODULES = {
                 "id": "TC_AI_001",
                 "name": "Kiểm định ảnh giày rõ nét hợp lệ",
                 "tech": "Bảng quyết định (Rule 5) / EP / BVA",
+                "tags_covered": "V1, V2, V3, V4, V5, B3, B10",
                 "code_file": "AiServiceIntegrationTest.java & ProductControllerCoverageTest.java",
                 "code_method": "shouldSendMultipartImageAndPersistProductWhenAiApproves() / productSave_acceptsApprovedImageAndUsesFallbackFilename()"
             },
@@ -1346,6 +1472,7 @@ MODULES = {
                 "id": "TC_AI_002",
                 "name": "Từ chối ảnh giày bị mờ nét",
                 "tech": "Bảng quyết định (Rule 4) / Error Guessing / BVA",
+                "tags_covered": "V1, V2, X4, V4, B12",
                 "code_file": "AiServiceIntegrationTest.java & ProductControllerCoverageTest.java",
                 "code_method": "shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage() / productSave_rejectsImageWhenAiDoesNotApprove()"
             },
@@ -1353,6 +1480,7 @@ MODULES = {
                 "id": "TC_AI_003",
                 "name": "Từ chối ảnh không phải giày hoặc kích thước quá nhỏ",
                 "tech": "Bảng quyết định (Rule 3) / Error Guessing",
+                "tags_covered": "V1, X2, X3",
                 "code_file": "ActualFastApiIntegrationTest.java & AiServiceIntegrationTest.java",
                 "code_method": "shouldRenderRejectionAndAvoidPersistenceWhenActualFastApiRejectsSmallImage() / shouldRejectProductAndPreserveDatabaseWhenAiRejectsImage()"
             },
@@ -1360,6 +1488,7 @@ MODULES = {
                 "id": "TC_AI_004",
                 "name": "Chặn ảnh lỗi hoặc phục hồi khi AI Service gặp sự cố (500 Server Error)",
                 "tech": "Bảng quyết định (Rule 2) / BVA / Resilience",
+                "tags_covered": "V1, V2, X7",
                 "code_file": "AiServiceIntegrationTest.java & ProductControllerCoverageTest.java",
                 "code_method": "shouldWarnAndPersistProductWhenAiReturnsServerError() / productSave_warnsAndContinuesWhenAiRequestFails()"
             },
@@ -1367,6 +1496,7 @@ MODULES = {
                 "id": "TC_AI_005",
                 "name": "Xử lý phản hồi AI khuyết thiếu hoặc không xác định",
                 "tech": "Bảng quyết định (Rule 1) / EP",
+                "tags_covered": "X1, X8",
                 "code_file": "ProductControllerCoverageTest.java",
                 "code_method": "productSave_allowsUndecidedAiResponse() / productSave_allowsMissingAiResponseBody()"
             }
@@ -1655,10 +1785,29 @@ def generate_html_report(mod: dict) -> str:
     # 1. Bảng đối chiếu Spec vs Code
     spec_rows = ""
     for idx, tc in enumerate(mod["spec_tc_list"], 1):
+        tags_raw = tc.get("tags_covered", "")
+        tags_list = [t.strip() for t in tags_raw.split(",") if t.strip()]
+        if tags_list:
+            tag_badges = []
+            for t in tags_list:
+                if t.startswith("V"):
+                    b_style = "background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35);"
+                elif t.startswith("X"):
+                    b_style = "background: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.35);"
+                elif t.startswith("B"):
+                    b_style = "background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.35);"
+                else:
+                    b_style = "background: rgba(99, 102, 241, 0.15); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.35);"
+                tag_badges.append(f'<span class="badge" style="{b_style} font-family: \'JetBrains Mono\', monospace; font-size: 10px; padding: 2px 6px; margin: 2px 4px 2px 0; display: inline-block;">{t}</span>')
+            tags_html = "".join(tag_badges)
+        else:
+            tags_html = '<span style="color: #64748b; font-size: 11px;">-</span>'
+
         spec_rows += f"""
         <tr>
             <td class="badge-cell"><span class="badge badge-id">{tc['id']}</span></td>
             <td><strong>{tc['name']}</strong><br><small class="text-muted"><i class="fas fa-tag"></i> {tc['tech']}</small></td>
+            <td class="tag-cell" style="vertical-align: middle; min-width: 140px;">{tags_html}</td>
             <td class="code-file"><i class="fas fa-file-code"></i> {tc['code_file']}</td>
             <td class="code-method"><code>{tc['code_method']}</code></td>
             <td class="text-center"><span class="badge badge-success"><i class="fas fa-check-circle"></i> PASS</span></td>
@@ -2206,8 +2355,9 @@ def generate_html_report(mod: dict) -> str:
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 140px;">Mã Test Case</th>
+                            <th style="width: 130px;">Mã Test Case</th>
                             <th>Tên Kịch bản & Kỹ thuật Thiết kế</th>
+                            <th style="width: 170px;">Tag được bao phủ</th>
                             <th>File Code thực thi tương ứng</th>
                             <th>Phương thức test trong Code</th>
                             <th style="width: 100px; text-align: center;">Trạng thái</th>

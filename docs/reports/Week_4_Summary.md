@@ -89,6 +89,6 @@
 
 ## 🚀 6. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 5)
 Trong Tuần 5 (Sprint 5), đội ngũ sẽ tập trung toàn lực vào **Chuẩn hóa học thuật theo lý thuyết kiểm thử phần mềm (Theory Alignment)**:
-- **Chuẩn hóa Kiểm thử Hộp đen:** Bổ sung và ánh xạ toàn bộ các kỹ thuật Phân hoạch tương đương (EP), Phân tích giá trị biên (BVA $4n+1$, $6n+1$, $5^n$), Bảng quyết định (Decision Table) và Bảng chuyển đổi trạng thái vào hệ thống tài liệu và code.
-- **Chuẩn hóa Kiểm thử Hộp trắng:** Xây dựng Đồ thị luồng điều khiển (CFG), tính toán độ phức tạp Cyclomatic $V(G)$ và đối chiếu chéo với chỉ số đo lường thực tế của JaCoCo.
+- **Chuẩn hóa Kiểm thử Hộp đen:** Bổ sung và ánh xạ toàn bộ các kỹ thuật Phân hoạch tương đương (EP), Phân tích giá trị biên (BVA 4n+1, 6n+1, 5ⁿ), Bảng quyết định (Decision Table) và Bảng chuyển đổi trạng thái vào hệ thống tài liệu và code.
+- **Chuẩn hóa Kiểm thử Hộp trắng:** Xây dựng Đồ thị luồng điều khiển (CFG), tính toán độ phức tạp Cyclomatic V(G) và đối chiếu chéo với chỉ số đo lường thực tế của JaCoCo.
 - **Áp dụng Kiểm thử theo Kinh nghiệm:** Phân tích kỹ thuật Error Guessing và Exploratory Testing áp dụng trên phân hệ AI Computer Vision.
