@@ -75,7 +75,22 @@
 
 ---
 
-## ⚠️ 5. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
+## 💻 5. TỔNG HỢP LỆNH CHẠY KIỂM THỬ (TEST COMMANDS)
+
+Bảng tổng hợp toàn bộ các câu lệnh thực thi kiểm thử, phân tích tĩnh và khởi tạo môi trường phục vụ Sprint 1:
+
+| STT | Phân loại | Mục đích kiểm thử | Lệnh thực thi (CLI / Maven / PowerShell) | Môi trường / Điều kiện tiên quyết | Kết quả ghi nhận |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | **Môi trường** | Khởi động toàn bộ cụm 6 Docker containers kiểm thử | `docker compose up -d --build` | Đã cài đặt Docker Desktop, RAM ≥ 8GB | 6 containers (`mysql`, `api`, `ai`, `nginx`, `pma`, `swagger`) chạy thành công |
+| 2 | **Môi trường** | Khởi động tự động môi trường test qua PowerShell script | `powershell .\scripts\start-test-env.ps1` | Quyền thực thi PowerShell Scripts | Tự động kiểm tra Docker, khởi động và nạp dữ liệu |
+| 3 | **Kiểm thử tĩnh** | Quét tuân thủ quy tắc lập trình Java (Checkstyle) | `mvn checkstyle:check` | Cấu hình `checkstyle.xml` | Báo cáo chi tiết tại `target/checkstyle-result.xml` |
+| 4 | **Kiểm thử tĩnh** | Phân tích bytecode tìm lỗi tiềm ẩn Java (SpotBugs) | `mvn spotbugs:check` | Cấu hình `config/spotbugs/spotbugs-exclude.xml` | Phát hiện và phân loại nguy cơ tại `target/spotbugsXml.xml` |
+| 5 | **Kiểm thử tĩnh** | Kiểm tra chuẩn mã nguồn Python AI Service (Flake8) | `flake8 ai-service/` | Môi trường Python 3.10+ | Kiểm tra PEP8 và cú pháp sạch (0 errors) |
+| 6 | **Unit Test** | Chạy toàn bộ các ca kiểm thử đơn vị khởi đầu (Controllers) | `mvn test` | CSDL MySQL test container đã bật | 8 file test ban đầu vượt qua 100% |
+
+---
+
+## ⚠️ 6. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
 
 | STT | Vấn đề phát sinh (Blocker) | Nguyên nhân gốc rễ | Giải pháp kỹ thuật đã xử lý | Kết quả |
 | :---: | :--- | :--- | :--- | :---: |
@@ -85,7 +100,7 @@
 
 ---
 
-## 🚀 6. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 2)
+## 🚀 7. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 2)
 Sprint 2 sẽ chuyển dịch trọng tâm sang **Thiết kế kịch bản kiểm thử chức năng (Black-box)** và **Phát triển bộ Unit Test tự động (White-box)**:
 - **Được (Leader):** Xây dựng AI Mock Server phản hồi nhanh (`TEST-13`).
 - **Phương:** Phát triển Unit Test cho Validator (`TEST-10`) và toàn bộ tầng DAO (`TEST-11`).

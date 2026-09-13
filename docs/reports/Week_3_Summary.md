@@ -14,7 +14,7 @@
 - [x] **Mục tiêu 3:** Mở rộng toàn diện bộ test Java lên **1.074 bài kiểm thử** (34 file test), đo lường độ phủ White-box Coverage bằng JaCoCo đạt ngưỡng kỷ lục: **Line 99.85%**, **Branch 99.33%** (`TEST-17`).
 - [x] **Mục tiêu 4:** Thực hiện kiểm thử thủ công Cổng AI Computer Vision Upload (`POST /api/v1/analyze`) trên nền FastAPI và YOLOv8 (`TEST-18`).
 - [x] **Mục tiêu 5:** Xây dựng Khung quản lý vòng đời Bug (Bug Lifecycle Framework 6 trạng thái) và công cụ tự động bắt lỗi runtime `BugLogger` bằng Python (`TEST-19`).
-- [x] **Mục tiêu 6:** Tự động hóa kiểm thử API Tìm kiếm & Phân trang sản phẩm bằng script Python, áp dụng kỹ thuật kiểm thử tổ hợp Worst-Case ($5^2 = 25$ cases) (`TEST-20`).
+- [x] **Mục tiêu 6:** Tự động hóa kiểm thử API Tìm kiếm & Phân trang sản phẩm bằng script Python, áp dụng kỹ thuật kiểm thử tổ hợp Worst-Case (5² = 25 cases) (`TEST-20`).
 - [x] **Mục tiêu 7:** Đóng gói bản phát hành DevOps: Khắc phục lỗi CSRF logout, gắn tag phiên bản `v3.0.0` và tích hợp vào nhánh `develop` (`TEST-21`).
 
 ---
@@ -28,7 +28,7 @@
 | `TEST-17` | Measure white-box coverage (JaCoCo Quality Gate) | Hoàng Phương | 8 | ✅ Done | [PR test/w3-TEST-17-measure-white-box-coverage](https://github.com/truongduoc1512/Testing/tree/test/w3-TEST-17-measure-white-box-coverage) | `test` |
 | `TEST-18` | Manual AI upload testing (YOLOv8 Vision Gate) | Lĩnh | 3 | ✅ Done | [PR test/w3-TEST-18-manual-ai-upload-testing](https://github.com/truongduoc1512/Testing/tree/test/w3-TEST-18-manual-ai-upload-testing) | `test` |
 | `TEST-19` | Manage bug lifecycle & automated bug logger | Ngọc Thịnh | 5 | ✅ Done | [PR feat/w3-TEST-19-manage-bug-lifecycle](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-19-manage-bug-lifecycle) | `feat` |
-| `TEST-20` | Test search & pagination APIs (Worst-Case $5^n$) | Ngọc Thịnh | 3 | ✅ Done | [PR feat/w3-TEST-20-test-search-pagination-apis](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-20-test-search-pagination-apis) | `feat` |
+| `TEST-20` | Test search & pagination APIs (Worst-Case 5ⁿ) | Ngọc Thịnh | 3 | ✅ Done | [PR feat/w3-TEST-20-test-search-pagination-apis](https://github.com/truongduoc1512/Testing/tree/feat/w3-TEST-20-test-search-pagination-apis) | `feat` |
 | `TEST-21` | Submit Week 3 summary report & DevOps release `v3.0.0` | Tất cả | 2 | ✅ Done | [PR week/week-3-api-automation](https://github.com/truongduoc1512/Testing/tree/week/week-3-api-automation) | `docs` |
 
 ---
@@ -75,11 +75,27 @@
 - **Sản phẩm bàn giao:**
   * **Framework Quản lý Vòng đời Bug:** Xây dựng quy trình 6 bước (Open ➔ In Progress ➔ Resolved ➔ Under Review ➔ Verified / Retest ➔ Closed) kèm tài liệu [`docs/TEST-19.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-19.md).
   * Module ghi nhận lỗi tự động [`ai-service/app/bug_logger.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/ai-service/app/bug_logger.py) đóng gói Exception kèm Stacktrace, System Context thành file JSON và template [`bugs_report_template.json`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/bugs_report_template.json).
-  * Script Python kiểm thử API Tìm kiếm & Phân trang [`scripts/test_search_pagination_api.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/test_search_pagination_api.py) áp dụng kỹ thuật tổ hợp Worst-Case BVA ($5^2$) + Postman Collection `TEST_SEARCH_PAGINATION_COLLECTION.json` + Báo cáo [`docs/TEST-20.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-20.md).
+  * Script Python kiểm thử API Tìm kiếm & Phân trang [`scripts/test_search_pagination_api.py`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/scripts/test_search_pagination_api.py) áp dụng kỹ thuật tổ hợp Worst-Case BVA (5² = 25 cases) + Postman Collection `TEST_SEARCH_PAGINATION_COLLECTION.json` + Báo cáo [`docs/TEST-20.md`](file:///i:/Subjects/CloudComputing/project/shoeshop-testing/docs/TEST-20.md).
 
 ---
 
-## ⚠️ 5. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
+## 💻 5. TỔNG HỢP LỆNH CHẠY KIỂM THỬ (TEST COMMANDS)
+
+Bảng tổng hợp toàn bộ các câu lệnh thực thi đo lường độ phủ JaCoCo, kiểm thử API tự động, Worst-Case và AI Gateway của Sprint 3:
+
+| STT | Phân loại | Mục đích kiểm thử | Lệnh thực thi (CLI / Maven / PowerShell) | Môi trường / Điều kiện tiên quyết | Kết quả ghi nhận |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | **White-box** | Đo lường độ bao phủ JaCoCo & sinh báo cáo HTML chi tiết | `mvn clean test jacoco:report` | JDK 17, Maven, MySQL test container | Line: 99.85%, Branch: 99.33% tại `target/site/jacoco/index.html` |
+| 2 | **White-box** | Đo độ phủ cách ly bằng CSDL tạm (PowerShell Safe Runner) | `powershell .\scripts\test-coverage.ps1 -OpenReport` | Quyền chạy PowerShell Script | Tự động tạo DB tạm, đo độ phủ và mở báo cáo trên trình duyệt |
+| 3 | **Quality Gate** | Kiểm định ngưỡng gác cổng chất lượng độ phủ JaCoCo | `mvn jacoco:check` | Cấu hình rule Line ≥ 70%, Branch ≥ 65% | Build Success: Vượt xa ngưỡng cam kết |
+| 4 | **API Testing** | Chạy kiểm thử tự động 46 kịch bản REST API qua Newman CLI | `npx --yes newman run docs/Shoeshop_API_Collection.json -e docs/Shoeshop_Postman_Environment.json -r cli` | Backend Spring Boot (cổng 8080) đang chạy | 46/46 API requests đạt 100% Pass |
+| 5 | **Worst-Case BVA** | Kiểm thử API Tìm kiếm & Phân trang tổ hợp biên (5² = 25 cases) | `python .\scripts\test_search_pagination_api.py` | Python 3.x, Backend đang chạy | 25/25 requests thành công, không phát sinh HTTP 500 |
+| 6 | **Manual AI** | Kiểm thử Cổng AI Vision Upload giả lập phân tích ảnh giày | `curl -X POST "http://localhost:8000/api/v1/analyze" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "file=@docs/test-assets/shoe_sample.jpg"` | Microservice AI FastAPI (cổng 8000) | Nhận diện đúng `product_item`, confidence ≥ 0.65 |
+| 7 | **DevOps** | Đóng gói và gắn nhãn Release Milestone `v3.0.0` | `git tag -a v3.0.0 -m "Release v3.0.0" && git push origin v3.0.0` | Nhánh sạch sau khi fix lỗi CSRF logout | Gắn tag `v3.0.0` thành công trên GitHub |
+
+---
+
+## ⚠️ 6. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
 
 | STT | Vấn đề phát sinh (Blocker) | Nguyên nhân gốc rễ | Giải pháp kỹ thuật đã xử lý | Kết quả |
 | :---: | :--- | :--- | :--- | :--- :---: |
@@ -89,7 +105,7 @@
 
 ---
 
-## 🚀 6. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 4)
+## 🚀 7. KẾ HOẠCH BÀN GIAO SPRINT TIẾP THEO (SPRINT 4)
 Sprint 4 sẽ tập trung vào **Kiểm thử tự động giao diện (UI Automation)** và **Kiểm thử tích hợp chuyên sâu (Integration Testing)**:
 - **Lĩnh:** Áp dụng mô hình **Page Object Model (POM)** với Selenium WebDriver cho luồng Authentication (`TEST-22`) và Checkout (`TEST-23`).
 - **Phương:** Xây dựng khung kiểm thử Integration Test với Docker Testcontainers và kiểm chứng Transaction Rollback (`TEST-24`).

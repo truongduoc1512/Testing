@@ -4,10 +4,10 @@
 
 | Field / Trạng thái | Lớp tương đương | Loại | Dữ liệu đại diện | Ý nghĩa |
 |---|---|---|---|---|
-| Trạng thái giỏ hàng | Giỏ hàng có sản phẩm | Valid | Giỏ hàng $\ge 1$ item | Đủ điều kiện checkout |
+| Trạng thái giỏ hàng | Giỏ hàng có sản phẩm | Valid | Giỏ hàng ≥ 1 item | Đủ điều kiện checkout |
 | Trạng thái giỏ hàng | Giỏ hàng rỗng | Invalid | Giỏ hàng 0 item | Không được phép checkout |
-| Số lượng mua | Số lượng hợp lệ | Valid | $1 \le Qty \le Stock$ | Đặt hàng thành công |
-| Số lượng mua | Số lượng vượt tồn kho | Invalid | $Qty > Stock$ | Báo lỗi không đủ hàng |
+| Số lượng mua | Số lượng hợp lệ | Valid | 1 ≤ Qty ≤ Stock | Đặt hàng thành công |
+| Số lượng mua | Số lượng vượt tồn kho | Invalid | Qty > Stock | Báo lỗi không đủ hàng |
 | Thông tin nhận hàng | Điền đầy đủ | Valid | Tên, SĐT, Địa chỉ | Tạo đơn hàng thành công |
 | Thông tin nhận hàng | Bỏ trống thông tin | Invalid | Địa chỉ `""` | Báo lỗi thiếu trường bắt buộc |
 

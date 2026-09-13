@@ -25,9 +25,9 @@ The test suites are designed using two core black-box test design techniques:
   * `INVALID`: Missing required fields, invalid email format, or exceeded field lengths.
 * **C4: Coupon / Voucher Status**
   * `NONE`: No voucher applied.
-  * `VALID`: Voucher is active, within validity period, `usedCount < usageLimit`, customer usage $< perUserLimit$, and Order Total $\ge minOrderValue$.
+  * `VALID`: Voucher is active, within validity period, `usedCount < usageLimit`, customer usage < perUserLimit, and Order Total ≥ minOrderValue.
   * `EXPIRED`: Voucher is inactive, past expiration date, or usage limits exhausted.
-  * `MIN_NOT_MET`: Voucher code is active, but Order Total $< minOrderValue$.
+  * `MIN_NOT_MET`: Voucher code is active, but Order Total < minOrderValue.
 * **C5: Payment Method Selection**
   * `VALID`: Valid payment method selected (e.g., COD / Credit Card / Gateway).
   * `NONE`: No payment method selected / Gateway authorization failure.

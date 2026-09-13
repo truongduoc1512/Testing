@@ -100,7 +100,25 @@
 
 ---
 
-## ⚠️ 5. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
+## 💻 5. TỔNG HỢP LỆNH CHẠY KIỂM THỬ (TEST COMMANDS)
+
+Bảng tổng hợp toàn bộ các câu lệnh thực thi kiểm thử an toàn bảo mật (OWASP), kiểm thử tải (JMeter 100 - 500 VUs), CI/CD và cổng điều hành của Sprint 6:
+
+| STT | Phân loại | Mục đích kiểm thử | Lệnh thực thi (CLI / Maven / PowerShell) | Môi trường / Điều kiện tiên quyết | Kết quả ghi nhận |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| 1 | **Bảo mật SCA** | Quét lỗ hổng thư viện phụ thuộc (OWASP Dependency-Check) | `powershell .\scripts\run-dependency-check.ps1 -FailOnCVSS 8` | NVD API Key (tùy chọn), Maven | Quét 100% dependencies, Zero Critical Vulnerabilities |
+| 2 | **Bảo mật SCA** | Quét trực tiếp qua Maven Plugin chế độ Audit | `mvn org.owasp:dependency-check-maven:check` | Maven 3.8+, JDK 17 | Báo cáo chi tiết tại `target/dependency-check-report.html` |
+| 3 | **Hiệu năng & Tải** | Chạy kiểm thử tải tiêu chuẩn 100 Virtual Users qua script | `powershell .\scripts\run-load-test.ps1 -Threads 100 -RampUp 10 -Duration 60` | Đã bật hệ thống Docker hoặc Spring Boot | 474,1 req/s, Latency TB 84,2 ms, Lỗi 0,00% |
+| 4 | **Hiệu năng & Tải** | Chạy kiểm thử tải đỉnh 500 Virtual Users & Stress Test | `powershell .\scripts\run-load-test.ps1 -Threads 500 -RampUp 30 -Duration 120` | Máy chủ tối thiểu 4 Cores, 16GB RAM | 1.273,3 req/s, Latency 186,4 ms (< 200ms SLA), Lỗi 0,21% |
+| 5 | **JMeter CLI** | Thực thi kịch bản JMeter Non-GUI & xuất HTML Dashboard | `jmeter -n -t docs\jmeter\Shoeshop_Load_Test.jmx -l target\jmeter\results.jtl -e -o target\jmeter\dashboard\` | Đã cài đặt Apache JMeter 5.6+ | Báo cáo trực quan tại `target/jmeter/dashboard/index.html` |
+| 6 | **CI/CD Pipeline** | Mô phỏng quy trình CI/CD cục bộ (Build, Test, Gate) | `mvn -B clean test jacoco:report jacoco:check` | MySQL test container đang chạy | 1.074 bài test Pass, Line 99.85%, Branch 99.33% |
+| 7 | **CI/CD API Test** | Dựng Docker và chạy 46 kịch bản Newman E2E (Job 3) | `docker compose up -d --build && powershell .\scripts\run-api-tests.ps1` | Docker daemon, Node.js / Newman | 46/46 API Passed trên môi trường containerized |
+| 8 | **Portal Quản lý** | Khởi chạy Cổng Thông tin Điều hành Kiểm thử & SCI | `python .\scripts\qa_management_portal.py` | Python 3.10+ | Mở Single-Page Application tại `target/qa_management_portal.html` |
+| 9 | **DevOps** | Đóng gói và phát hành Release Milestone cuối kỳ `v5.0.0` | `git tag -a v5.0.0 -m "Release Milestone v5.0.0" && git push origin v5.0.0` | Hoàn tất nghiệm thu Sprint 6 | Phát hành Tag `v5.0.0` chính thức trên GitHub |
+
+---
+
+## ⚠️ 6. VẤN ĐỀ PHÁT SINH & GIẢI PHÁP XỬ LÝ (BLOCKERS & RESOLUTIONS)
 
 | STT | Vấn đề phát sinh (Blocker) | Nguyên nhân gốc rễ | Giải pháp kỹ thuật đã xử lý | Kết quả |
 | :---: | :--- | :--- | :--- | :--- :---: |
@@ -111,7 +129,7 @@
 
 ---
 
-## 🏆 6. TỔNG KẾT BÀN GIAO DỰ ÁN & RELEASE MILESTONE
+## 🏆 7. TỔNG KẾT BÀN GIAO DỰ ÁN & RELEASE MILESTONE
 - **Hệ thống kiểm thử ShoeShop hoàn thiện 100%:** Đầy đủ các cấp độ từ Unit Testing, Integration Testing, System Testing, API Automation, UI Automation, Cross-browser Testing, Security Testing đến Performance/Stress Testing.
 - **Quy trình CI/CD chuẩn quốc tế:** Tự động hóa gác cổng mã nguồn, tự động đo lường độ bao phủ JaCoCo và sinh báo cáo kiểm thử sau mỗi commit.
 - **Đóng gói phiên bản:** Đã phát hành chính thức phiên bản Release **`v5.0.0`** trên GitHub repository. Dự án đã sẵn sàng 100% cho buổi báo cáo nghiệm thu cuối kỳ.
