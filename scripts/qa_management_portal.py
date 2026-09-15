@@ -6483,9 +6483,26 @@ def extract_git_branch_graph(project_root):
             for p in parents:
                 children_map.setdefault(p, []).append(sha)
 
-        # 4. Lane Allocation (Dynamic SourceTree Style with Lane Reuse)
+        # Identify first-parent chains for main and develop to ensure Git Flow lane fidelity
+        try:
+            res_m = subprocess.run(['git', 'log', 'main', '--first-parent', '--format=%H'], cwd=project_root, capture_output=True, text=True, encoding='utf-8')
+            main_first_parents = set(res_m.stdout.strip().split('\n')) if res_m.returncode == 0 else set()
+        except Exception:
+            main_first_parents = set()
+
+        try:
+            res_d1 = subprocess.run(['git', 'log', 'origin/develop', '--first-parent', '--format=%H'], cwd=project_root, capture_output=True, text=True, encoding='utf-8')
+            dev_first_parents = set(res_d1.stdout.strip().split('\n')) if res_d1.returncode == 0 else set()
+            res_d2 = subprocess.run(['git', 'log', 'develop', '--first-parent', '--format=%H'], cwd=project_root, capture_output=True, text=True, encoding='utf-8')
+            if res_d2.returncode == 0:
+                dev_first_parents.update(res_d2.stdout.strip().split('\n'))
+            dev_first_parents = dev_first_parents - main_first_parents
+        except Exception:
+            dev_first_parents = set()
+
+        # 4. Lane Allocation (Git Flow Model: Lane 0 = main, Lane 1 = develop, Lane 2+ = feature/fix lanes)
         remaining_children = {p: len(chs) for p, chs in children_map.items()}
-        lanes = []
+        lanes = [None, None]  # Lane 0 (main) and Lane 1 (develop) are strictly reserved
         commit_lane = {}
 
         colors = [
@@ -6504,21 +6521,29 @@ def extract_git_branch_graph(project_root):
             parents = c['parents']
 
             assigned_lane = None
-            if parents and parents[0] in commit_lane:
-                p0_l = commit_lane[parents[0]]
-                if p0_l < len(lanes) and lanes[p0_l] == parents[0]:
-                    assigned_lane = p0_l
-                    lanes[p0_l] = sha
+            if sha in main_first_parents or ('main' in c['branches'] and not (sha in dev_first_parents)):
+                assigned_lane = 0
+            elif sha in dev_first_parents or any('develop' in b for b in c['branches']):
+                assigned_lane = 1
+            else:
+                # Supporting feature or fix branches: follow parent or pick first free lane >= 2
+                if parents and parents[0] in commit_lane:
+                    p0_l = commit_lane[parents[0]]
+                    if p0_l >= 2 and p0_l < len(lanes) and lanes[p0_l] == parents[0]:
+                        assigned_lane = p0_l
+                        lanes[p0_l] = sha
 
-            if assigned_lane is None:
-                for idx, occ in enumerate(lanes):
-                    if occ is None:
-                        assigned_lane = idx
-                        lanes[idx] = sha
-                        break
                 if assigned_lane is None:
-                    assigned_lane = len(lanes)
-                    lanes.append(sha)
+                    for idx in range(2, len(lanes)):
+                        if lanes[idx] is None:
+                            assigned_lane = idx
+                            lanes[idx] = sha
+                            break
+                    if assigned_lane is None:
+                        assigned_lane = max(2, len(lanes))
+                        while len(lanes) <= assigned_lane:
+                            lanes.append(None)
+                        lanes[assigned_lane] = sha
 
             commit_lane[sha] = assigned_lane
 
@@ -6526,7 +6551,7 @@ def extract_git_branch_graph(project_root):
                 remaining_children[p] -= 1
                 if remaining_children[p] == 0:
                     p_l = commit_lane.get(p)
-                    if p_l is not None and p_l < len(lanes) and lanes[p_l] == p:
+                    if p_l is not None and p_l >= 2 and p_l < len(lanes) and lanes[p_l] == p:
                         lanes[p_l] = None
 
         COMMIT_STEP = 56
