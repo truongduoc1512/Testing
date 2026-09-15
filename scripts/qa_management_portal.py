@@ -6836,9 +6836,9 @@ def generate_portal_html():
                 <!-- 3. The Horizontal SVG Graph Canvas with STICKY Left Lane Labels -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
                     <div class="p-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between text-xs text-slate-500">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-thumbtack text-indigo-500"></i>
-                            <span>Cột đề mục bên trái được <strong>gắn cố định (Sticky)</strong> khi bạn lăn chuột ngang</span>
+                        <div class="flex items-center gap-2 font-medium text-slate-700">
+                            <i class="fa-solid fa-code-fork text-indigo-500"></i>
+                            <span>Lịch sử luồng phân nhánh Git Flow (Trunk, Develop & Feature Branches)</span>
                         </div>
                         <div class="flex items-center gap-4 text-[11px]">
                             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Điểm HEAD</span>
