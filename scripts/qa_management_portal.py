@@ -6483,9 +6483,26 @@ def extract_git_branch_graph(project_root):
             for p in parents:
                 children_map.setdefault(p, []).append(sha)
 
-        # 4. Lane Allocation (Dynamic SourceTree Style with Lane Reuse)
+        # Identify first-parent chains for main and develop to ensure Git Flow lane fidelity
+        try:
+            res_m = subprocess.run(['git', 'log', 'main', '--first-parent', '--format=%H'], cwd=project_root, capture_output=True, text=True, encoding='utf-8')
+            main_first_parents = set(res_m.stdout.strip().split('\n')) if res_m.returncode == 0 else set()
+        except Exception:
+            main_first_parents = set()
+
+        try:
+            res_d1 = subprocess.run(['git', 'log', 'origin/develop', '--first-parent', '--format=%H'], cwd=project_root, capture_output=True, text=True, encoding='utf-8')
+            dev_first_parents = set(res_d1.stdout.strip().split('\n')) if res_d1.returncode == 0 else set()
+            res_d2 = subprocess.run(['git', 'log', 'develop', '--first-parent', '--format=%H'], cwd=project_root, capture_output=True, text=True, encoding='utf-8')
+            if res_d2.returncode == 0:
+                dev_first_parents.update(res_d2.stdout.strip().split('\n'))
+            dev_first_parents = dev_first_parents - main_first_parents
+        except Exception:
+            dev_first_parents = set()
+
+        # 4. Lane Allocation (Git Flow Model: Lane 0 = main, Lane 1 = develop, Lane 2+ = feature/fix lanes)
         remaining_children = {p: len(chs) for p, chs in children_map.items()}
-        lanes = []
+        lanes = [None, None]  # Lane 0 (main) and Lane 1 (develop) are strictly reserved
         commit_lane = {}
 
         colors = [
@@ -6504,21 +6521,29 @@ def extract_git_branch_graph(project_root):
             parents = c['parents']
 
             assigned_lane = None
-            if parents and parents[0] in commit_lane:
-                p0_l = commit_lane[parents[0]]
-                if p0_l < len(lanes) and lanes[p0_l] == parents[0]:
-                    assigned_lane = p0_l
-                    lanes[p0_l] = sha
+            if sha in main_first_parents or ('main' in c['branches'] and not (sha in dev_first_parents)):
+                assigned_lane = 0
+            elif sha in dev_first_parents or any('develop' in b for b in c['branches']):
+                assigned_lane = 1
+            else:
+                # Supporting feature or fix branches: follow parent or pick first free lane >= 2
+                if parents and parents[0] in commit_lane:
+                    p0_l = commit_lane[parents[0]]
+                    if p0_l >= 2 and p0_l < len(lanes) and lanes[p0_l] == parents[0]:
+                        assigned_lane = p0_l
+                        lanes[p0_l] = sha
 
-            if assigned_lane is None:
-                for idx, occ in enumerate(lanes):
-                    if occ is None:
-                        assigned_lane = idx
-                        lanes[idx] = sha
-                        break
                 if assigned_lane is None:
-                    assigned_lane = len(lanes)
-                    lanes.append(sha)
+                    for idx in range(2, len(lanes)):
+                        if lanes[idx] is None:
+                            assigned_lane = idx
+                            lanes[idx] = sha
+                            break
+                    if assigned_lane is None:
+                        assigned_lane = max(2, len(lanes))
+                        while len(lanes) <= assigned_lane:
+                            lanes.append(None)
+                        lanes[assigned_lane] = sha
 
             commit_lane[sha] = assigned_lane
 
@@ -6526,7 +6551,7 @@ def extract_git_branch_graph(project_root):
                 remaining_children[p] -= 1
                 if remaining_children[p] == 0:
                     p_l = commit_lane.get(p)
-                    if p_l is not None and p_l < len(lanes) and lanes[p_l] == p:
+                    if p_l is not None and p_l >= 2 and p_l < len(lanes) and lanes[p_l] == p:
                         lanes[p_l] = None
 
         COMMIT_STEP = 56
@@ -6811,9 +6836,9 @@ def generate_portal_html():
                 <!-- 3. The Horizontal SVG Graph Canvas with STICKY Left Lane Labels -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
                     <div class="p-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between text-xs text-slate-500">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-thumbtack text-indigo-500"></i>
-                            <span>Cột đề mục bên trái được <strong>gắn cố định (Sticky)</strong> khi bạn lăn chuột ngang</span>
+                        <div class="flex items-center gap-2 font-medium text-slate-700">
+                            <i class="fa-solid fa-code-fork text-indigo-500"></i>
+                            <span>Lịch sử luồng phân nhánh Git Flow (Trunk, Develop & Feature Branches)</span>
                         </div>
                         <div class="flex items-center gap-4 text-[11px]">
                             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Điểm HEAD</span>
@@ -11965,11 +11990,11 @@ def generate_portal_html():
                                     <tr class="hover:bg-slate-50/80 transition-colors">
                                         <td class="py-3 px-4 font-mono font-bold text-indigo-600">PR #06</td>
                                         <td class="py-3 px-4">
-                                            <div class="font-semibold text-slate-800">Sprint 6 Final Release v5.0.0: JMeter 500 VUs, OWASP SCA & STR IEEE 829</div>
-                                            <div class="text-[11px] text-slate-400 mt-0.5">Kiểm thử tải 500 VUs (1.273 RPS), quét CVE 0 lỗi critical, báo cáo STR tổng kết & Kiểm toán FCA/PCA</div>
+                                            <div class="font-semibold text-slate-800">Sprint 6 Final Release v5.0.0: Standardize 9 Modules & QA Management Portal</div>
+                                            <div class="text-[11px] text-slate-400 mt-0.5">Hợp nhất toàn diện develop vào main: 9 modules ISTQB, 130 TCs, Newman 46 APIs, JMeter 500 VUs, OWASP SCA & Cổng Portal</div>
                                         </td>
                                         <td class="py-3 px-4 font-mono text-[11px]">
-                                            <span class="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">release/v5.0.0</span> ➔ <span class="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded">main</span>
+                                            <span class="bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">develop</span> ➔ <span class="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded">main</span>
                                         </td>
                                         <td class="py-3 px-4">
                                             <div class="font-medium text-slate-700">Trương Hoài Được</div>
