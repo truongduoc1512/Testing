@@ -11965,11 +11965,11 @@ def generate_portal_html():
                                     <tr class="hover:bg-slate-50/80 transition-colors">
                                         <td class="py-3 px-4 font-mono font-bold text-indigo-600">PR #06</td>
                                         <td class="py-3 px-4">
-                                            <div class="font-semibold text-slate-800">Sprint 6 Final Release v5.0.0: JMeter 500 VUs, OWASP SCA & STR IEEE 829</div>
-                                            <div class="text-[11px] text-slate-400 mt-0.5">Kiểm thử tải 500 VUs (1.273 RPS), quét CVE 0 lỗi critical, báo cáo STR tổng kết & Kiểm toán FCA/PCA</div>
+                                            <div class="font-semibold text-slate-800">Sprint 6 Final Release v5.0.0: Standardize 9 Modules & QA Management Portal</div>
+                                            <div class="text-[11px] text-slate-400 mt-0.5">Hợp nhất toàn diện develop vào main: 9 modules ISTQB, 130 TCs, Newman 46 APIs, JMeter 500 VUs, OWASP SCA & Cổng Portal</div>
                                         </td>
                                         <td class="py-3 px-4 font-mono text-[11px]">
-                                            <span class="bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">release/v5.0.0</span> ➔ <span class="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded">main</span>
+                                            <span class="bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded">develop</span> ➔ <span class="bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded">main</span>
                                         </td>
                                         <td class="py-3 px-4">
                                             <div class="font-medium text-slate-700">Trương Hoài Được</div>
