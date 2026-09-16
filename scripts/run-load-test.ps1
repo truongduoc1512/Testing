@@ -1,6 +1,6 @@
 param (
     [string]$HostName = "localhost",
-    [int]$Port = 8080,
+    [int]$Port = 0,
     [int]$Threads = 100,
     [int]$RampUp = 10,
     [int]$Duration = 60,
@@ -23,31 +23,54 @@ Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host " ShoeShop Performance & Load Testing (TEST-32)" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
-# 1. Check if ShoeShop server is running
-if (-not $SkipServerCheck) {
-    Write-Host "[1/3] Checking ShoeShop server availability at http://${HostName}:${Port} ..." -ForegroundColor Cyan
+# 1. Tự động kiểm tra Port (ưu tiên Port 80 của Docker Nginx hoặc Port 8080 của Local Spring Boot)
+function Test-PortAvailability([string]$hostToTest, [int]$portToTest) {
     try {
         $tcpClient = New-Object System.Net.Sockets.TcpClient
-        $connect = $tcpClient.BeginConnect($HostName, $Port, $null, $null)
-        $wait = $connect.AsyncWaitHandle.WaitOne(2000, $false)
+        $connect = $tcpClient.BeginConnect($hostToTest, $portToTest, $null, $null)
+        $wait = $connect.AsyncWaitHandle.WaitOne(1500, $false)
         if (-not $wait) {
             $tcpClient.Close()
-            throw "Connection timed out."
+            return $false
         }
         $tcpClient.EndConnect($connect)
         $tcpClient.Close()
-        Write-Host " [OK] Server is UP and listening on port ${Port}." -ForegroundColor Green
+        return $true
     } catch {
-        Write-Host " [WARNING] ShoeShop server is NOT running on port ${Port}!" -ForegroundColor Yellow
-        Write-Host " Load testing requires the server to be running so JMeter can send HTTP requests." -ForegroundColor Yellow
-        Write-Host " Tip: Open another terminal and run 'mvn spring-boot:run', then re-run this script." -ForegroundColor Yellow
-        Write-Host " (If you still want to proceed, pass -SkipServerCheck)" -ForegroundColor DarkGray
-        Write-Host ""
-        $choice = Read-Host "Do you want to continue anyway? (y/N)"
-        if ($choice -notmatch '^[yY]') {
-            exit 1
+        return $false
+    }
+}
+
+if (-not $SkipServerCheck) {
+    if ($Port -eq 0) {
+        Write-Host "[1/3] Đang dò tìm cổng hoạt động của ShoeShop Server..." -ForegroundColor Cyan
+        if (Test-PortAvailability $HostName 80) {
+            $Port = 80
+            Write-Host " [OK] Phát hiện ShoeShop đang chạy trên Docker Nginx (Port 80)." -ForegroundColor Green
+        } elseif (Test-PortAvailability $HostName 8080) {
+            $Port = 8080
+            Write-Host " [OK] Phát hiện ShoeShop đang chạy trên Spring Boot cục bộ (Port 8080)." -ForegroundColor Green
+        } else {
+            $Port = 80
+            Write-Host " [WARNING] Không tìm thấy server nào đang lắng nghe trên Port 80 hoặc 8080!" -ForegroundColor Yellow
+            Write-Host " Kiểm thử tải đòi hỏi máy chủ phải đang chạy để JMeter gửi HTTP requests." -ForegroundColor Yellow
+            Write-Host " Gợi ý: Hãy chạy .\scripts\start-test-env.ps1 (Docker) hoặc 'mvn spring-boot:run'." -ForegroundColor Yellow
+            Write-Host ""
+            $choice = Read-Host "Bạn có muốn tiếp tục chạy thử nghiệm không? (y/N)"
+            if ($choice -notmatch '^[yY]') { exit 1 }
+        }
+    } else {
+        Write-Host "[1/3] Kiểm tra ShoeShop server tại http://${HostName}:${Port} ..." -ForegroundColor Cyan
+        if (Test-PortAvailability $HostName $Port) {
+            Write-Host " [OK] Server đang hoạt động trên port ${Port}." -ForegroundColor Green
+        } else {
+            Write-Host " [WARNING] Server KHÔNG phản hồi trên port ${Port}!" -ForegroundColor Yellow
+            $choice = Read-Host "Bạn có muốn tiếp tục chạy thử nghiệm không? (y/N)"
+            if ($choice -notmatch '^[yY]') { exit 1 }
         }
     }
+} else {
+    if ($Port -eq 0) { $Port = 80 }
 }
 
 # 2. Locate or auto-download JMeter
