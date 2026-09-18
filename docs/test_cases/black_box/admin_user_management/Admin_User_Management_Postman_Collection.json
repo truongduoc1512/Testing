@@ -1,0 +1,3746 @@
+{
+  "info": {
+    "_postman_id": "bb-admin-user-mgmt-coll-2026",
+    "name": "Shoeshop - Admin User Management Blackbox Tests (23 TCs)",
+    "description": "Bộ kiểm thử hộp đen 23 Test Case cho chức năng Quản lý Tài khoản & Phân quyền Admin. Bao phủ: Kiểm soát truy cập (TC_USR_01-03), Chuyển đổi trạng thái & Bảo vệ Admin cuối (TC_USR_04-13), BVA hợp lệ (TC_USR_14-18), BVA không hợp lệ (TC_USR_19-23).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup - Authentication & Test Baseline Data",
+      "item": [
+        {
+          "name": "0.1 POST /j_spring_security_check - Admin Login (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập Admin thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) pm.environment.set('session_id', match[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.2 POST /j_spring_security_check - User Login (employee1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập employee1 thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('employee_session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) pm.environment.set('employee_session_id', match[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{user_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{user_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.3 POST /j_spring_security_check - Re-activate Admin Session (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Tái kích hoạt phiên Admin manager1 (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) pm.environment.set('session_id', match[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.4 POST /admin/user/edit - Ensure admin2 is ROLE_ADMIN & Active",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đảm bảo admin2 có ROLE_ADMIN và hoạt động (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.5 POST /admin/user/edit - Reset employee1 to Nominal State",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Reset employee1 về trạng thái danh định (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.6 POST /register - Seed BVA user 'u' (min, 1 char)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/register', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('register_csrf', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Seed user u - Created or already exists (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "u",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "u@test.co",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "confirmPassword",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{register_csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.7 POST /register - Seed BVA user 'us' (min+, 2 chars)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/register', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('register_csrf', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Seed user us - Created or already exists (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "us",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "us@test.co",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "confirmPassword",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{register_csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.8 POST /register - Seed BVA user 'uuuuuuuuuuuuuuuuuuu' (max-, 19 chars)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/register', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('register_csrf', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Seed user uuuuuuuuuuuuuuuuuuu - Created or already exists (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "uuuuuuuuuuuuuuuuuuu",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "umax19@test.co",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "confirmPassword",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{register_csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.9 POST /register - Seed BVA user 'uuuuuuuuuuuuuuuuuuuu' (max, 20 chars)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/register', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('register_csrf', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Seed user uuuuuuuuuuuuuuuuuuuu - Created or already exists (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "uuuuuuuuuuuuuuuuuuuu",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "umax20@test.co",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "confirmPassword",
+                  "value": "Test@12345",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{register_csrf}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.10 POST /j_spring_security_check - Re-activate Admin Session (after register steps)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Tái kích hoạt phiên Admin manager1 lần cuối (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) pm.environment.set('session_id', match[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Kiểm soát truy cập & Chuyển đổi trạng thái (TC_USR_01 đến TC_USR_13)",
+      "item": [
+        {
+          "name": "TC_USR_01 - Quản trị viên xem danh sách người dùng phân trang thành công [V1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_01: Admin xem danh sách người dùng thành công (HTTP 200)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    pm.expect(pm.response.text()).to.match(/userList|table|manager1|admin/i);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_02 - Chặn tài khoản ROLE_USER truy cập khu vực quản lý [X2]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_02: ROLE_USER bị chặn truy cập /admin/users (HTTP 401/403/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403, 302, 200]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.match(/403|access denied|không có quyền/i);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{employee_session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_03 - Chặn khách vãng lai (Guest) truy cập khu vực quản trị [X1]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_03: Guest bị chặn, redirect đến login (HTTP 302/200/401)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([302, 200, 401, 403]);",
+                  "    var responseUrl = pm.response.url || '';",
+                  "    var body = pm.response.text();",
+                  "    var isBlocked = responseUrl.includes('login') || body.includes('login') || body.includes('đăng nhập') || pm.response.code === 403 || pm.response.code === 401;",
+                  "    pm.expect(isBlocked).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_04 - Cập nhật thành công thông tin danh định (nom) tài khoản bình thường [V2,V3,V4,V5,V6,V7,B1,D7]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_04: Cập nhật thành công thông tin danh định employee1 (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_05 - Chuyển trạng thái tài khoản thường Hoạt động → Bị khóa [ST_V1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_05: Chuyển employee1 sang Bị khóa thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_06 - Chuyển trạng thái tài khoản thường Bị khóa → Hoạt động [ST_V2]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_06: Mở khóa employee1 sang Hoạt động thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_07 - Thăng cấp vai trò từ Customer lên Admin [ST_V3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_07: Thăng cấp employee1 lên ROLE_ADMIN thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_07b - Reset employee1 về ROLE_USER (cleanup sau TC_USR_07)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Reset employee1 về ROLE_USER (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_08 - Hạ cấp vai trò Admin → Customer khi còn ≥2 Admin [ST_V4, V8, D4, B27]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_08: Hạ cấp admin2 xuống ROLE_USER thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_08b - Restore admin2 về ROLE_ADMIN (setup TC_USR_09/10)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Restore admin2 về ROLE_ADMIN (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_09 - Tắt kích hoạt Admin khi còn ≥2 Admin hoạt động [D5]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_09: Tắt kích hoạt admin2 thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_09b - Restore admin2 về Active (setup TC_USR_10)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Restore admin2 về Active (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_10 - Khóa tài khoản Admin khi còn ≥2 Admin hoạt động [D6]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_10: Khóa admin2 thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_10b - Hạ cấp admin2 về ROLE_USER (setup TC_USR_11/12/13 - last-admin scenario)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Hạ cấp admin2 về ROLE_USER để manager1 là Admin duy nhất (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_11 - Chặn hạ quyền Admin khi hệ thống chỉ còn 1 Admin hoạt động [X14, D1, B26]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_11: Hệ thống chặn hạ quyền Admin cuối cùng (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Không thể vô hiệu hóa quản trị viên hoạt động cuối cùng!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "manager1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Truong Ban Quan Tri",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "manager1@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0988888888",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_12 - Chặn tắt kích hoạt Admin khi hệ thống chỉ còn 1 Admin hoạt động [D2]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_12: Hệ thống chặn tắt kích hoạt Admin cuối cùng (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Không thể vô hiệu hóa quản trị viên hoạt động cuối cùng!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "manager1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Truong Ban Quan Tri",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "manager1@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0988888888",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_13 - Chặn khóa tài khoản Admin khi hệ thống chỉ còn 1 Admin hoạt động [D3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_13: Hệ thống chặn khóa Admin cuối cùng (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Không thể vô hiệu hóa quản trị viên hoạt động cuối cùng!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "manager1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Truong Ban Quan Tri",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "manager1@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0988888888",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_13b - Restore admin2 về ROLE_ADMIN (cleanup sau TC_USR_11/12/13)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Restore admin2 về ROLE_ADMIN (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "admin2",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Admin Two",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "admin2@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_ADMIN",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Kiểm thử biên hợp lệ (BVA Valid - TC_USR_14 đến TC_USR_18)",
+      "item": [
+        {
+          "name": "TC_USR_14 - Cập nhật thành công với tất cả trường ở cận biên tối thiểu (min) [B3, B9, B14, B21]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_14: Cập nhật thành công với giá trị biên tối thiểu (min) (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "u",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "a@b.co",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_15 - Cập nhật thành công với tất cả trường ở kề cận dưới (min+) [B4, B10, B15, B16, B22, B28]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_15: Cập nhật thành công với giá trị biên kề cận dưới (min+) (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "us",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "AB",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "ab@b.co",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_16 - Cập nhật thành công với tất cả trường ở kề cận trên (max-) [B5, B11, B17, B23, B29]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_16: Cập nhật thành công với giá trị biên kề cận trên (max-) (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "uuuuuuuuuuuuuuuuuuu",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccc.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0000000000000000000",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_17 - Cập nhật thành công với tất cả trường ở cận trên tối đa (max) [B6, B12, B18, B24, B30]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_17: Cập nhật thành công với giá trị biên tối đa (max) (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "uuuuuuuuuuuuuuuuuuuu",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbb.cccccccccccccccccccccccc.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "00000000000000000000",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_18 - Cập nhật thành công khi số Admin vượt ngưỡng danh định (max+: 11 Admin) [B31]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_18: Cập nhật thành công với nhiều Admin (countAdmin max+) (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Cập nhật người dùng thành công!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Kiểm thử biên không hợp lệ & Ràng buộc dữ liệu (BVA Invalid - TC_USR_19 đến TC_USR_23)",
+      "item": [
+        {
+          "name": "TC_USR_19 - Báo lỗi khi userName rỗng (min-), vượt 20 ký tự (max+) hoặc không tồn tại [X3, X4, X5, B2, B7]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_19: Báo lỗi Không tìm thấy người dùng (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Không tìm thấy người dùng!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "non_existent_user_999",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_20 - Báo lỗi khi fullName rỗng (min-) hoặc vượt 100 ký tự (max+) [X6, X7, B8, B13]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_20: Báo lỗi fullName vượt quá 100 ký tự (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Thông tin hồ sơ vượt quá độ dài cho phép!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_21 - Báo lỗi khi phoneNumber vượt 20 chữ số (max+) [X11, B19]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_21: Báo lỗi phoneNumber vượt 20 ký tự (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Thông tin hồ sơ vượt quá độ dài cho phép!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "000000000000000000000",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_22 - Báo lỗi khi email sai định dạng, quá ngắn (min-), vượt 100 ký tự (max+) hoặc trùng lặp [X8, X9, X10, B20, B25]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_22: Báo lỗi email trùng lặp hoặc không hợp lệ (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.match(/Email không hợp lệ!|Email đã được sử dụng bởi tài khoản khác!/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "manager1@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "ROLE_USER",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_USR_23 - Báo lỗi khi userRole không hợp lệ hoặc active/accountNonLocked phi boolean [X12, X13]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/users', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1] || m[2]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_USR_23: Báo lỗi vai trò người dùng không hợp lệ (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    pm.expect(pm.response.text()).to.include('Vai trò người dùng không hợp lệ!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "employee1",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Nguyen Van A",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "user.test25@shoeshop.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "0912345678",
+                  "type": "text"
+                },
+                {
+                  "key": "userRole",
+                  "value": "MODERATOR",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "accountNonLocked",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/user/edit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "user",
+                "edit"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

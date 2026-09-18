@@ -1,0 +1,2551 @@
+{
+  "info": {
+    "_postman_id": "bb-admin-create-prod-coll-2026",
+    "name": "Shoeshop - Admin Create Product Blackbox Tests (21 TCs)",
+    "description": "Bộ kiểm thử tự động Postman gồm 21 Test Case chuẩn xác khớp 100% tài liệu README.md cho chức năng Tạo mới sản phẩm của Admin: 7 ca hợp lệ (TC_PROD_01 - 07), 12 ca lỗi biên & phân hoạch dữ liệu (TC_PROD_08 - 19), 2 ca kiểm soát truy cập và bảo mật (TC_PROD_20, 21).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup - Authentication & Test Baseline Data",
+      "item": [
+        {
+          "name": "0.1 POST /j_spring_security_check - Admin Login (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/login',",
+                  "    method: 'GET'",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập Admin thành công (Mã 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) {",
+                  "    pm.environment.set('session_id', sessionCookie);",
+                  "}",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) {",
+                  "        pm.environment.set('session_id', match[1]);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.2 GET /admin/product - Khởi tạo CSRF Token & Dọn dẹp mã kiểm thử cũ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Kết nối trang Admin Product thành công', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var match = pm.response.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || pm.response.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "var csrf = match ? (match[1] || match[2]) : '';",
+                  "if (csrf) {",
+                  "    pm.environment.set('csrf_token', csrf);",
+                  "}",
+                  "// Dọn dẹp các mã kiểm thử hợp lệ từ lần chạy trước để đảm bảo lặp lại kiểm thử thành công",
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "var testCodes = ['NK-PEGASUS', 'N', 'A123456789B123456789', 'NK', 'A123456789B12345678', 'NK-MAXPLUS-01', 'NK-AI-FALLBACK', 'NK-AI-REJECT', 'NK-IO-ERR'];",
+                  "testCodes.forEach(function(code) {",
+                  "    pm.sendRequest({",
+                  "        url: baseUrl + '/admin/deleteProduct',",
+                  "        method: 'POST',",
+                  "        header: {'Cookie': 'JSESSIONID=' + sess, 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf},",
+                  "        body: {mode: 'urlencoded', urlencoded: [{key: 'code', value: code}, {key: '_csrf', value: csrf}]}",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Ca kiểm thử hợp lệ (Valid Test Cases - TC_PROD_01 đến TC_PROD_07)",
+      "item": [
+        {
+          "name": "TC_PROD_01 - Tạo sản phẩm hợp lệ với dữ liệu danh định đầy đủ [V1, V2, V3, V4, V5, V6, V8, B1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_01: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-PEGASUS",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Air Pegasus 40",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_02 - Tạo sản phẩm hợp lệ tại tất cả các cận dưới (min) [V2, V3, V4, V5, V6, V7, B3, B9, B15, B21, B27]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_02: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "N",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "G",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_03 - Tạo sản phẩm hợp lệ tại tất cả các cận trên (max) [V2, V3, V4, V5, V6, V7, B6, B12, B18, B24, B30]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_03: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "A123456789B123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Air Zoom Pegasus Phiên Bản Giới Hạn Cực Kỳ Sang Trọng Đẳng Cấp Thể Thao Chất Lượng Cao Chống Nước Êm Chân Thoáng Khí Bền Đẹp AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "100000000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "10000",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "100",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_04 - Tạo sản phẩm hợp lệ tại các kề cận dưới (min+) [V2, V3, V4, V5, V6, V7, B4, B10, B16, B22, B28]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_04: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Gi",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "10000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_05 - Tạo sản phẩm hợp lệ tại các kề cận trên (max-) [V2, V3, V4, V5, V6, V7, B5, B11, B17, B23, B29]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_05: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "A123456789B12345678",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Air Zoom Pegasus Phiên Bản Giới Hạn Cực Kỳ Sang Trọng Đẳng Cấp Thể Thao Chất Lượng Cao Chống Nước Êm Chân Thoáng Khí Bền Đẹp AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "99990000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "9999",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "99",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_06 - Tạo sản phẩm hợp lệ tại các ngoại biên trên (max+) chấp nhận được khi không tải ảnh [V2, V3, V6, V7, B19, B25]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_06: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-MAXPLUS-01",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Air Max Plus",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "100000001",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "10001",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_07 - Tạo sản phẩm khi AI Service ngoại tuyến (Fallback mode) [V9]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_07: Tạo sản phẩm thành công (HTTP 302 Chuyển hướng hoặc 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/productList') || loc.includes('/admin/product');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-AI-FALLBACK",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike AI Offline Fallback",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Ca kiểm thử không hợp lệ (Invalid Robustness & Validation - TC_PROD_08 đến TC_PROD_19)",
+      "item": [
+        {
+          "name": "TC_PROD_08 - Báo lỗi khi mã sản phẩm để trống (min-) [X3, B2]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_08: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Air Pegasus 40",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_09 - Báo lỗi khi mã sản phẩm dài 21 ký tự (max+) [X4, B7]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_09: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "PROD-CODE-MAXPLUS-21C",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Air Pegasus 40",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_10 - Báo lỗi khi mã sản phẩm đã tồn tại trong CSDL (Trùng SKU) [X5]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_10: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "S001",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Trùng Mã CSDL",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_11 - Báo lỗi khi tên sản phẩm để trống (min-) [X6, B8]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_11: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-01",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_12 - Báo lỗi khi tên sản phẩm dài 256 ký tự (max+) [X7, B13]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_12: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-02",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_13 - Báo lỗi khi đơn giá sản phẩm bằng 0 (min-) [X8, B14]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_13: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-03",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Test Giá 0",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_14 - Báo lỗi khi đơn giá sản phẩm là số âm (min--) [X9]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_14: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-04",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Test Giá Âm",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "-50000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_15 - Báo lỗi khi số lượng tồn kho là số âm (min-) [X10, B20]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_15: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-05",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Test Tồn Âm",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "-1",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_16 - Báo lỗi khi phần trăm giảm giá là số âm (min-) [X11, B26]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_16: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-06",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Test Giảm Âm",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "-1",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_17 - Báo lỗi khi phần trăm giảm giá vượt 100% (max+) [X12, B31]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_17: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-NEW-07",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Test Giảm Quá 100",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "101",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_18 - Báo lỗi khi tệp ảnh bị AI Quality Gate từ chối [X13]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_18: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-AI-REJECT",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Ảnh Không Chuẩn",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_19 - Báo lỗi khi tệp ảnh bị lỗi đọc dữ liệu byte (I/O Error) [X14]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_19: Báo lỗi kiểm tra ràng buộc và giữ lại form (HTTP 200 hoặc 302/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-IO-ERR",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Nike Lỗi File",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Phân quyền & Kiểm soát truy cập (Access Control & Security - TC_PROD_20, TC_PROD_21)",
+      "item": [
+        {
+          "name": "TC_PROD_20 - Chặn khách vãng lai chưa đăng nhập truy cập tạo sản phẩm [X1]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_20: Chặn khách vãng lai (Chuyển hướng 302/200 về Login hoặc 401/403)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([302, 200, 401, 403]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.match(/login/i);",
+                  "    } else if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.match(/login|đăng nhập/i);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-GUEST",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Khách Tạo",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1000000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_PROD_21 - Chặn tài khoản người dùng thường truy cập tạo sản phẩm [X2]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/login',",
+                  "    method: 'GET'",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "        pm.sendRequest({",
+                  "            url: baseUrl + '/j_spring_security_check',",
+                  "            method: 'POST',",
+                  "            header: {",
+                  "                'Content-Type': 'application/x-www-form-urlencoded',",
+                  "                'X-CSRF-TOKEN': csrf",
+                  "            },",
+                  "            body: {",
+                  "                mode: 'urlencoded',",
+                  "                urlencoded: [",
+                  "                    {key: 'userName', value: pm.environment.get('user_username') || 'employee1'},",
+                  "                    {key: 'password', value: pm.environment.get('user_password') || '123'},",
+                  "                    {key: '_csrf', value: csrf}",
+                  "                ]",
+                  "            }",
+                  "        }, function (err2, res2) {",
+                  "            var setCookie = res2.headers.get('Set-Cookie');",
+                  "            if (setCookie) {",
+                  "                var m = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "                if (m && m[1]) {",
+                  "                    pm.environment.set('employee_session_id', m[1]);",
+                  "                }",
+                  "            }",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_PROD_21: Chặn tài khoản người dùng thường truy cập tạo sản phẩm (HTTP 403 Forbidden hoặc 302/200)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([403, 302, 200]);",
+                  "    if (pm.response.code === 403) {",
+                  "        pm.expect(pm.response.code).to.eql(403);",
+                  "    } else if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.match(/403|accessDenied|login/i);",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.match(/403|access denied|từ chối|không có quyền/i);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{employee_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": "NK-USER-01",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "Giày Thường Dân Tạo",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1000000",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "discountPercent",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "newProduct",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/product",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "product"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

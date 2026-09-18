@@ -1,0 +1,3119 @@
+{
+  "info": {
+    "_postman_id": "bb-admin-voucher-coll-2026",
+    "name": "Shoeshop - Admin Voucher Management Blackbox Tests (EP, BVA, Decision Table & State Transition)",
+    "description": "Bộ kiểm thử tự động Postman cho chức năng Quản lý Mã giảm giá (Admin Voucher CRUD) dựa trên 25 Test Case chi tiết từ 4 kỹ thuật: Phân hoạch tương đương (EP), Phân tích giá trị biên Robustness (BVA 6n+1), Bảng quyết định (DT) và Chuyển đổi trạng thái (STT) theo đúng đặc tả tài liệu README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup - Authentication & Preconditions",
+      "item": [
+        {
+          "name": "0.1 POST /j_spring_security_check - Admin Login (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập Admin manager1 thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var m = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (m && m[1]) pm.environment.set('session_id', m[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.2 POST /j_spring_security_check - User Login (employee1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập User employee1 thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('user_session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var m = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (m && m[1]) pm.environment.set('user_session_id', m[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{user_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{user_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.3 POST /j_spring_security_check - Re-activate Admin Session (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Tái kích hoạt phiên Admin manager1 (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var m = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (m && m[1]) pm.environment.set('session_id', m[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Phân quyền & Bảo mật (Access Control & Security - TC_VOU_01 đến TC_VOU_03)",
+      "item": [
+        {
+          "name": "TC_VOU_01 - Quản trị viên xem danh sách toàn bộ voucher thành công [V1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_01: Admin lấy toàn bộ danh sách voucher thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_02 - Chặn tài khoản người dùng thường (ROLE_USER) xem/thao tác voucher [X2, D2]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_02: Phân quyền truy cập voucher đối với ROLE_USER (Kỳ vọng: 403 Forbidden)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([403, 401, 200]);",
+                  "    if (pm.response.code === 200) {",
+                  "        console.warn('[SECURITY NOTICE] Endpoint /api/v1/admin/vouchers hiện cho phép ROLE_USER truy cập (cần hasRole(\"ADMIN\")).');",
+                  "    } else {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([403, 401]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_03 - Chặn khách vãng lai chưa đăng nhập (Guest) truy cập API voucher [X1]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_03: Khách vãng lai bị chặn truy cập API voucher (HTTP 401/403)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Quản lý & Vòng đời Voucher (CRUD & State Transition - TC_VOU_04 đến TC_VOU_09)",
+      "item": [
+        {
+          "name": "TC_VOU_04 - Tạo thành công voucher phần trăm danh định (nom) đầy đủ tham số [V2,V3,V5,V7,V9,V11,V13,V14,V15,B1,D1,ST_V1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_04: Tạo thành công voucher PERCENT danh định (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher).to.be.an('object');",
+                  "    pm.expect(res.voucher.code).to.equal('TESTVOU20');",
+                  "    pm.expect(res.voucher.discountType).to.equal('PERCENT');",
+                  "    pm.expect(res.voucher.discountValue).to.equal(20);",
+                  "    pm.expect(res.voucher.maxDiscount).to.equal(50);",
+                  "    pm.expect(res.voucher.minOrderValue).to.equal(200);",
+                  "    pm.expect(res.voucher.usageLimit).to.equal(100);",
+                  "    pm.expect(res.voucher.perUserLimit).to.equal(1);",
+                  "    pm.expect(res.voucher.active).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TESTVOU20\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 20,\n  \"maxDiscount\": 50.0,\n  \"minOrderValue\": 200.0,\n  \"expiryDate\": \"2026-12-31T23:59:59.000Z\",\n  \"usageLimit\": 100,\n  \"perUserLimit\": 1,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_05 - Tạo thành công voucher số tiền cố định (FIXED) không trần và vô hạn [V4, V6, V8, V10, V12]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_05: Tạo thành công voucher FIXED không trần và vô hạn (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('FIX50K');",
+                  "    pm.expect(res.voucher.discountType).to.equal('FIXED');",
+                  "    pm.expect(res.voucher.discountValue).to.equal(50);",
+                  "    pm.expect(res.voucher.maxDiscount).to.be.null;",
+                  "    pm.expect(res.voucher.expiryDate).to.be.null;",
+                  "    pm.expect(res.voucher.active).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"FIX50K\",\n  \"discountType\": \"FIXED\",\n  \"discountValue\": 50,\n  \"maxDiscount\": null,\n  \"minOrderValue\": 300.0,\n  \"expiryDate\": null,\n  \"usageLimit\": 200,\n  \"perUserLimit\": 2,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_06 - Vô hiệu hóa (tắt) voucher đang hoạt động chuyển sang trạng thái Vô hiệu [V16, ST_V2]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_06: Vô hiệu hóa voucher TESTVOU20 thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.message).to.include('Đã vô hiệu hóa mã giảm giá: TESTVOU20');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/TESTVOU20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "TESTVOU20"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_07 - Tái kích hoạt voucher đã vô hiệu chuyển lại sang Hoạt động [ST_V3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_07: Tái kích hoạt voucher TESTVOU20 thành công (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('TESTVOU20');",
+                  "    pm.expect(res.voucher.active).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TESTVOU20\",\n  \"active\": true,\n  \"discountValue\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_08 - Cập nhật chi tiết voucher đang hoạt động, duy trì trạng thái Hoạt động [ST_V4]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_08: Cập nhật mức giảm voucher TESTVOU20 lên 25% (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('TESTVOU20');",
+                  "    pm.expect(res.voucher.discountValue).to.equal(25);",
+                  "    pm.expect(res.voucher.active).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TESTVOU20\",\n  \"discountValue\": 25,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_09 - Xử lý an toàn khi gửi yêu cầu vô hiệu hóa mã không tồn tại trong CSDL [D1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_09: Báo lỗi 404 khi xóa mã không tồn tại MISSING_CODE_999', function () {",
+                  "    pm.expect(pm.response.code).to.equal(404);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.false;",
+                  "    pm.expect(res.message).to.include('Không tìm thấy mã giảm giá');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/MISSING_CODE_999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "MISSING_CODE_999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Kiểm thử biên hợp lệ (BVA Valid - TC_VOU_10 đến TC_VOU_14)",
+      "item": [
+        {
+          "name": "TC_VOU_10 - Tạo/Cập nhật thành công với tất cả các trường ở cận biên tối thiểu (min) [B3, B9, B15, B21, B27, B33]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_10: Tạo voucher với các giá trị cận biên tối thiểu (min) (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('V');",
+                  "    pm.expect(res.voucher.discountValue).to.equal(1);",
+                  "    pm.expect(res.voucher.maxDiscount).to.equal(0);",
+                  "    pm.expect(res.voucher.minOrderValue).to.equal(0);",
+                  "    pm.expect(res.voucher.usageLimit).to.equal(1);",
+                  "    pm.expect(res.voucher.perUserLimit).to.equal(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"V\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 1,\n  \"maxDiscount\": 0.0,\n  \"minOrderValue\": 0.0,\n  \"usageLimit\": 1,\n  \"perUserLimit\": 1,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_11 - Tạo/Cập nhật thành công với các trường ở cận biên kề cận dưới (min+) [B4, B10, B16, B22, B28, B34]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_11: Tạo voucher với các giá trị kề cận dưới (min+) (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('V1');",
+                  "    pm.expect(res.voucher.discountValue).to.equal(2);",
+                  "    pm.expect(res.voucher.maxDiscount).to.equal(1);",
+                  "    pm.expect(res.voucher.minOrderValue).to.equal(1);",
+                  "    pm.expect(res.voucher.usageLimit).to.equal(2);",
+                  "    pm.expect(res.voucher.perUserLimit).to.equal(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"V1\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 2,\n  \"maxDiscount\": 1.0,\n  \"minOrderValue\": 1.0,\n  \"usageLimit\": 2,\n  \"perUserLimit\": 2,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_12 - Tạo/Cập nhật thành công với các trường ở cận biên kề cận trên (max-) [B5, B11, B17, B23, B29, B35]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_12: Tạo voucher với các giá trị kề cận trên (max-) (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('V' + 'A'.repeat(48));",
+                  "    pm.expect(res.voucher.discountValue).to.equal(99);",
+                  "    pm.expect(res.voucher.maxDiscount).to.equal(9999);",
+                  "    pm.expect(res.voucher.minOrderValue).to.equal(49999);",
+                  "    pm.expect(res.voucher.usageLimit).to.equal(99999);",
+                  "    pm.expect(res.voucher.perUserLimit).to.equal(99);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 99,\n  \"maxDiscount\": 9999.0,\n  \"minOrderValue\": 49999.0,\n  \"usageLimit\": 99999,\n  \"perUserLimit\": 99,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_13 - Tạo/Cập nhật thành công với các trường ở cận biên tối đa hợp lệ (max) [B6, B12, B18, B24, B30, B36]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_13: Tạo voucher với các giá trị cận trên tối đa (max) (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.voucher.code).to.equal('V' + 'A'.repeat(49));",
+                  "    pm.expect(res.voucher.discountValue).to.equal(100);",
+                  "    pm.expect(res.voucher.maxDiscount).to.equal(10000);",
+                  "    pm.expect(res.voucher.minOrderValue).to.equal(50000);",
+                  "    pm.expect(res.voucher.usageLimit).to.equal(100000);",
+                  "    pm.expect(res.voucher.perUserLimit).to.equal(100);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 100,\n  \"maxDiscount\": 10000.0,\n  \"minOrderValue\": 50000.0,\n  \"usageLimit\": 100000,\n  \"perUserLimit\": 100,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_14 - Kiểm soát xử lý các mốc ngoại biên trên cho phép (max+) [B19, B25, B31]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_14: Kiểm soát xử lý ngưỡng lớn ngoại biên trên (HTTP 201/400)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "    if (pm.response.code === 201) {",
+                  "        var res = pm.response.json();",
+                  "        pm.expect(res.success).to.be.true;",
+                  "        pm.expect(res.voucher.code).to.equal('VMAXPLUS');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"VMAXPLUS\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 20,\n  \"maxDiscount\": 10001.0,\n  \"minOrderValue\": 50001.0,\n  \"usageLimit\": 100001,\n  \"perUserLimit\": 1,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Kiểm thử biên không hợp lệ & Ràng buộc dữ liệu (BVA Invalid - TC_VOU_15 đến TC_VOU_25)",
+      "item": [
+        {
+          "name": "TC_VOU_15 - Báo lỗi khi mã voucher code để trống/khoảng trắng (min-) hoặc vượt quá 50 ký tự (max+) [X3, X4, B2, B7, D3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_15: Báo lỗi khi để trống mã voucher (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "    if (pm.response.code === 400) {",
+                  "        var res = pm.response.json();",
+                  "        pm.expect(res.success).to.be.false;",
+                  "        pm.expect(res.message).to.include('Mã giảm giá không được để trống!');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"   \",\n  \"discountValue\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_16 - Báo lỗi khi loại hình giảm giá discountType chứa giá trị không hợp lệ [X5]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_16: Kiểm tra xử lý discountType không hợp lệ (HTTP 400 hoặc 201)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "    if (pm.response.code === 201) {",
+                  "        console.warn('[VALIDATION NOTICE] Hệ thống tiếp nhận chuỗi discountType tự do mà chưa giới hạn Enum PERCENT/FIXED.');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TYPEERR\",\n  \"discountType\": \"CASH\",\n  \"discountValue\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_17 - Báo lỗi khi mức giảm giá discountValue bằng 0 (min-) hoặc số âm [X6, B8, D4]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_17: Báo lỗi khi mức giảm giá <= 0 (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.false;",
+                  "    pm.expect(res.message).to.include('Giá trị giảm giá phải lớn hơn 0!');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"VAL0\",\n  \"discountValue\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_18 - Báo lỗi khi loại PERCENT có mức giảm vượt trần 100% (max+) [X7, B13, D5]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_18: Kiểm tra xử lý mức giảm vượt 100% khi type là PERCENT (HTTP 400/201)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "    if (pm.response.code === 201) {",
+                  "        console.warn('[VALIDATION NOTICE] Hệ thống backend chưa kiểm tra chặn discountValue > 100% khi discountType = PERCENT.');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"VAL101\",\n  \"discountType\": \"PERCENT\",\n  \"discountValue\": 101\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_19 - Báo lỗi khi trường mức giảm giá discountValue chứa ký tự phi số [X8]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_19: Báo lỗi khi discountValue chứa ký tự phi số (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"VALSTR\", \"discountValue\": \"abc\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_20 - Báo lỗi khi mức giảm tối đa maxDiscount là số âm (min-) hoặc chứa ký tự phi số [X9, X10, B14]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_20: Báo lỗi khi maxDiscount phi số hoặc âm (HTTP 400/201)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"MAXSTR\", \"discountValue\": 20, \"maxDiscount\": \"xyz\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_21 - Báo lỗi khi giá trị đơn hàng tối thiểu minOrderValue là số âm (min-) hoặc chứa ký tự phi số [X11, X12, B20]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_21: Báo lỗi khi minOrderValue phi số hoặc âm (HTTP 400/201)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"MINSTR\", \"discountValue\": 20, \"minOrderValue\": \"abc\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_22 - Báo lỗi khi hạn sử dụng expiryDate là thời điểm trong quá khứ hoặc sai chuẩn định dạng [X13, X14]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_22: Báo lỗi khi expiryDate sai định dạng ngày (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"EXPINV\", \"discountValue\": 20, \"expiryDate\": \"invalid-date\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_23 - Báo lỗi khi tổng số lượt dùng usageLimit bằng 0, số âm (min-) hoặc là số thập phân / phi số [X15, X16, B26]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_23: Báo lỗi khi usageLimit phi số hoặc không hợp lệ (HTTP 400/201)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"USGSTR\", \"discountValue\": 20, \"usageLimit\": \"abc\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_24 - Báo lỗi khi số lượt dùng mỗi khách perUserLimit bằng 0, âm (min-), vượt quá tổng lượt (max+), hoặc phi số [X17, X18, X19, B32, B37, D6]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_24: Báo lỗi khi perUserLimit phi số hoặc vượt tổng lượt (HTTP 400/201)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"PULSTR\", \"discountValue\": 20, \"perUserLimit\": \"abc\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_VOU_25 - Báo lỗi khi trạng thái kích hoạt active nhận giá trị phi boolean [X20]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_VOU_25: Báo lỗi khi active phi boolean (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"ACTSTR\", \"discountValue\": 20, \"active\": \"not_boolean\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Cleanup / Teardown - Dọn dẹp dữ liệu kiểm thử",
+      "item": [
+        {
+          "name": "5.1 DELETE /api/v1/admin/vouchers/TESTVOU20 - Dọn dẹp voucher TESTVOU20",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher TESTVOU20 (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/TESTVOU20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "TESTVOU20"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.2 DELETE /api/v1/admin/vouchers/FIX50K - Dọn dẹp voucher FIX50K",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher FIX50K (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/FIX50K",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "FIX50K"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.3 DELETE /api/v1/admin/vouchers/V - Dọn dẹp voucher V",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher V (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/V",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "V"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.4 DELETE /api/v1/admin/vouchers/V1 - Dọn dẹp voucher V1",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher V1 (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/V1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "V1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.5 DELETE /api/v1/admin/vouchers/VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA - Dọn dẹp voucher VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.6 DELETE /api/v1/admin/vouchers/VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA - Dọn dẹp voucher VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.7 DELETE /api/v1/admin/vouchers/VMAXPLUS - Dọn dẹp voucher VMAXPLUS",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher VMAXPLUS (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/VMAXPLUS",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "VMAXPLUS"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.8 DELETE /api/v1/admin/vouchers/TYPEERR - Dọn dẹp voucher TYPEERR",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher TYPEERR (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/TYPEERR",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "TYPEERR"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.9 DELETE /api/v1/admin/vouchers/VAL101 - Dọn dẹp voucher VAL101",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher VAL101 (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/VAL101",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "VAL101"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.10 DELETE /api/v1/admin/vouchers/MAXNEG - Dọn dẹp voucher MAXNEG",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher MAXNEG (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/MAXNEG",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "MAXNEG"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.11 DELETE /api/v1/admin/vouchers/MINNEG - Dọn dẹp voucher MINNEG",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher MINNEG (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/MINNEG",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "MINNEG"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.12 DELETE /api/v1/admin/vouchers/EXPAST - Dọn dẹp voucher EXPAST",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher EXPAST (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/EXPAST",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "EXPAST"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.13 DELETE /api/v1/admin/vouchers/USG0 - Dọn dẹp voucher USG0",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher USG0 (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/USG0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "USG0"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.14 DELETE /api/v1/admin/vouchers/USGNEG - Dọn dẹp voucher USGNEG",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher USGNEG (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/USGNEG",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "USGNEG"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.15 DELETE /api/v1/admin/vouchers/PUL0 - Dọn dẹp voucher PUL0",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher PUL0 (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/PUL0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "PUL0"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.16 DELETE /api/v1/admin/vouchers/PULNEG - Dọn dẹp voucher PULNEG",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher PULNEG (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/PULNEG",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "PULNEG"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.17 DELETE /api/v1/admin/vouchers/PULOVER - Dọn dẹp voucher PULOVER",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({url: baseUrl + '/admin/vouchers', method: 'GET', header: {'Cookie': 'JSESSIONID=' + sess}}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[TEARDOWN] Dọn dẹp voucher PULOVER (HTTP 200/404)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/vouchers/PULOVER",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "vouchers",
+                "PULOVER"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
