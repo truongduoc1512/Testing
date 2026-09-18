@@ -1,222 +1,111 @@
-# BÀI LÀM: KIỂM THỬ CHỨC NĂNG 6 - ĐÁNH GIÁ & BÌNH LUẬN SẢN PHẨM (REVIEW & RATING)
+# Bảng Test Case: Chức năng 6 - Đánh giá sản phẩm (Review & Rating)
+**Người thực hiện:** Được 
 
-- **Họ và tên sinh viên:** Nguyễn Hoàng Phương
-- **Mã số sinh viên (MSSV):** 080205010954
-- **Môn học:** Kiểm Chứng Phần Mềm
-- **Chủ đề:** Phân hoạch lớp tương đương, phân tích giá trị biên, bảng quyết định, chuyển đổi trạng thái, thiết kế test case và kiểm thử tự động
-
----
-
-## Bảng phân tích điều kiện kiểm thử (Test Conditions)
-
-| Conditions | Valid Partition | Tag | Invalid Partitions | Tag | Valid Boundaries | Tag |
-|---|---|---|---|---|---|---|
-| **Số sao đánh giá** (`ratingStar`) | 1 ≤ ratingStar ≤ 5 | V1 | • ratingStar < 1<br>• ratingStar > 5 | X1<br>X2 | • 1 (min)<br>• 2 (min+)<br>• 5 (nominal)<br>• 4 (max-)<br>• 5 (max) | B1<br>B2<br>B3<br>B4<br>B5 |
-| **Độ dài nhận xét** (`commentLength`) | 5 ≤ commentLength ≤ 500 | V2 | • commentLength < 5<br>• commentLength > 500 | X3<br>X4 | • 5 (min)<br>• 6 (min+)<br>• 50 (nominal)<br>• 499 (max-)<br>• 500 (max) | B6<br>B7<br>B8<br>B9<br>B10 |
-| **Hạn sửa đánh giá** (`editWindowDays`) | 0 ≤ editWindowDays ≤ 7 | V3 | • editWindowDays < 0<br>• editWindowDays > 7 | X5<br>X6 | • 0 (min)<br>• 1 (min+)<br>• 3 (nominal)<br>• 6 (max-)<br>• 7 (max) | B11<br>B12<br>B13<br>B14<br>B15 |
-| **Trạng thái đã mua hàng** (`userPurchased`) | userPurchased = 1 | V4 | • userPurchased = 0<br>• userPurchased > 1 | X7<br>X8 | • 1 (min)<br>• 1 (min+)<br>• 1 (nominal)<br>• 1 (max-)<br>• 1 (max) | B16<br>B17<br>B18<br>B19<br>B20 |
+## 1. Thông tin Kỹ thuật & Thực thi
+- **Kỹ thuật Thiết kế (Test Design):** 
+  - **Phân hoạch lớp tương đương (EP):** Quản lý quyền truy cập (Guest vs User vs Admin), Kiểm tra vòng đời Sản phẩm (Active vs Inactive).
+  - **Phân tích giá trị biên (BVA):** Rất quan trọng để chặn số sao ngoài khoảng [1, 5] (VD: 0 sao, 6 sao) và **Giới hạn thời gian sửa bài trong vòng 5 phút**.
+  - **Bảng quyết định (Decision Table):** Kết hợp các ràng buộc thành 7 quy tắc cốt lõi bảo vệ hệ thống.
+- **Kỹ thuật Thực thi (Test Execution):** 
+  - Kiểm thử Tích hợp (Integration Test) & Đơn vị (Unit Test) qua JUnit / Mockito.
+  - Kiểm thử API End-to-End (Black-box E2E API Testing) qua Postman.
+- **File Code Thực thi (Automation Script):** 
+  - Backend Logic: `src/test/java/com/example/demo/dao/ProductReviewDAOTest.java` và `controller/api/ReviewApiControllerTest.java`.
+  - Postman API: `docs/Shoeshop_API_Collection.json`.
 
 ---
 
-## Câu 1. Xác định lớp tương đương
+## 2. Phân tích Kỹ thuật Thiết kế (Test Design Analysis)
 
-| Biến đầu vào | Lớp hợp lệ | Tag | Lớp không hợp lệ | Tag |
-|---|---|---|---|---|
-| **Số sao đánh giá** (`ratingStar`) | 1 ≤ ratingStar ≤ 5 | V1 | • ratingStar < 1 (Số sao nhỏ hơn 1)<br>• ratingStar > 5 (Số sao lớn hơn 5) | X1<br>X2 |
-| **Độ dài nhận xét** (`commentLength`) | 5 ≤ commentLength ≤ 500 | V2 | • commentLength < 5 (Nội dung quá ngắn)<br>• commentLength > 500 (Nội dung quá dài) | X3<br>X4 |
-| **Hạn sửa đánh giá** (`editWindowDays`) | 0 ≤ editWindowDays ≤ 7 | V3 | • editWindowDays < 0 (Số âm)<br>• editWindowDays > 7 (Quá hạn 7 ngày cho phép) | X5<br>X6 |
-| **Trạng thái đã mua hàng** (`userPurchased`) | userPurchased = 1 (Đã mua và nhận) | V4 | • userPurchased = 0 (Chưa từng mua sản phẩm)<br>• userPurchased ≠ 1 (Trạng thái bất thường) | X7<br>X8 |
 
----
+### 2.1 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
 
-## Câu 2. Phân tích giá trị biên
+| Biến đầu vào / Điều kiện | Lớp tương đương Hợp lệ | Tag | Lớp tương đương Không hợp lệ | Tag |
+| :--- | :--- | :---: | :--- | :---: |
+| **Vai trò người dùng (`userRole`)** | Khách hàng đã đăng nhập (`ROLE_USER`) | **V1** | Khách vãng lai chưa đăng nhập<br>Quản trị viên `ROLE_ADMIN` (Cấm seeding) | **X1**<br>**X2** |
+| **Trạng thái sản phẩm (`product`)** | Đang mở bán (`ACTIVE`) | **V2** | Không tồn tại, `INACTIVE`, hoặc `DRAFT` | **X3** |
+| **Quyền sở hữu (`ownership`)** | Tự sửa/xóa bài đánh giá của chính mình | **V3** | Can thiệp bài đánh giá của người khác | **X4** |
+| **Số sao đánh giá (`ratingValue`)** | Số nguyên trong khoảng [1, 5] sao | **V4** | ≤ 0 sao (Dưới biên)<br>≥ 6 sao (Vượt biên) | **X5**<br>**X6** |
+| **Độ dài bình luận (`comment`)** | Chuỗi văn bản từ 1 đến 2000 ký tự | **V5** | Bỏ trống / null / toàn khoảng trắng<br>Vượt quá 2000 ký tự | **X7**<br>**X8** |
+| **Thời hạn sửa bài (`timeWindow`)** | Trong vòng 5 phút (≤ 300,000 ms) | **V6** | Đã quá 5 phút kể từ lúc tạo (> 300,000 ms) | **X9** |
 
-### 1. Bảng 5 giá trị biên cho từng biến đầu vào
 
-| Biến đầu vào | min | min+ | nominal | max- | max | Tag biên |
-|---|---:|---:|---:|---:|---:|---|
-| **Số sao đánh giá** (`ratingStar`) | 1 | 2 | 5 | 4 | 5 | B1, B2, B3, B4, B5 |
-| **Độ dài nhận xét** (`commentLength`) | 5 | 6 | 50 | 499 | 500 | B6, B7, B8, B9, B10 |
-| **Hạn sửa đánh giá** (`editWindowDays`) | 0 | 1 | 3 | 6 | 7 | B11, B12, B13, B14, B15 |
-| **Trạng thái đã mua hàng** (`userPurchased`) | 1 | 1 | 1 | 1 | 1 | B16, B17, B18, B19, B20 |
+### 2.2 Bảng Phân tích giá trị biên (Standard Boundary Value Analysis - BVA)
 
-### 2. Bảng 17 test case Standard BVA (Single Fault Assumption: $4n + 1 = 17$)
+| Biến đầu vào | Miền hợp lệ | min | min+ | nominal | max- | max | Tag biên |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Số sao đánh giá (`ratingValue`)** | $[1, 5]$ sao | 1 | 2 | 3 | 4 | 5 | **B1, B2, B3, B4, B5** |
+| **Độ dài bình luận (`comment`)** | $[1, 2000]$ ký tự | 1 | 2 | 50 | 1999 | 2000 | **B6, B7, B8, B9, B10** |
+| **Thời hạn sửa bài (`timeWindow`)** | $[0, 300000]$ ms | 0 | 1000 | 150000 | 299000 | 300000 | **B11, B12, B13, B14, B15** |
 
-Theo kỹ thuật Standard Boundary Value Analysis, với $n = 4$ biến đầu vào, số test case là:
-$$4n + 1 = 4 \times 4 + 1 = \mathbf{17\text{ test case}}$$
+*Ghi chú mở rộng (Robustness BVA):*
+- Giá trị ngoài biên dưới số sao: `0 sao` (Tag **B1-1** / min-1) -> Báo lỗi 400 Bad Request.
+- Giá trị ngoài biên trên số sao: `6 sao` (Tag **B5+1** / max+1) -> Báo lỗi 400 Bad Request.
+- Giá trị ngoài biên bình luận: `0 ký tự` (Tag **B6-1**), `2001 ký tự` (Tag **B10+1**).
+- Giá trị ngoài biên thời gian sửa bài: `301,000 ms` (Tag **B15+1** / quá 5 phút 1 giây) -> Khóa quyền chỉnh sửa.
 
-Giữ $n - 1$ biến tại giá trị danh định (`nominal`), lần lượt thay đổi 1 biến qua 4 giá trị biên (`min`, `min+`, `max-`, `max`):
 
-| STT | Mã TC | Biến kiểm thử biên | Điểm biên kiểm tra | Số sao | Nhận xét (len) | Hạn sửa (ngày) | Đã mua hàng | Kết quả mong đợi | Tag bao phủ |
-|:---:|:---:|:---|:---|:---:|:---:|:---:|:---:|:---|:---|
-| 1 | BVA01 | Baseline (Tất cả) | Nominal | 5 | 50 | 3 | 1 | Hợp lệ (True) | B3, B8, B13, B18 |
-| 2 | BVA02 | Số sao đánh giá | min (1) | **1** | 50 | 3 | 1 | Hợp lệ (True) | B1 |
-| 3 | BVA03 | Số sao đánh giá | max (5) | **5** | 50 | 3 | 1 | Hợp lệ (True) | B5 |
-| 4 | BVA04 | Số sao đánh giá | min-1 (0) | **0** | 50 | 3 | 1 | Không hợp lệ (False) | X1 |
-| 5 | BVA05 | Số sao đánh giá | max+1 (6) | **6** | 50 | 3 | 1 | Không hợp lệ (False) | X2 |
-| 6 | BVA06 | Độ dài nhận xét | min (5) | 5 | **5** | 3 | 1 | Hợp lệ (True) | B6 |
-| 7 | BVA07 | Độ dài nhận xét | max (500) | 5 | **500** | 3 | 1 | Hợp lệ (True) | B10 |
-| 8 | BVA08 | Độ dài nhận xét | min-1 (4) | 5 | **4** | 3 | 1 | Không hợp lệ (False) | X3 |
-| 9 | BVA09 | Độ dài nhận xét | max+1 (501) | 5 | **501** | 3 | 1 | Không hợp lệ (False) | X4 |
-| 10 | BVA10 | Hạn sửa đánh giá | min (0) | 5 | 50 | **0** | 1 | Hợp lệ (True) | B11 |
-| 11 | BVA11 | Hạn sửa đánh giá | max (7) | 5 | 50 | **7** | 1 | Hợp lệ (True) | B15 |
-| 12 | BVA12 | Hạn sửa đánh giá | min-1 (-1) | 5 | 50 | **-1** | 1 | Không hợp lệ (False) | X5 |
-| 13 | BVA13 | Hạn sửa đánh giá | max+1 (8) | 5 | 50 | **8** | 1 | Không hợp lệ (False) | X6 |
-| 14 | BVA14 | Đã mua hàng | min (1) | 5 | 50 | 3 | **1** | Hợp lệ (True) | B16 |
-| 15 | BVA15 | Đã mua hàng | max (1) | 5 | 50 | 3 | **1** | Hợp lệ (True) | B20 |
-| 16 | BVA16 | Đã mua hàng | min-1 (0) | 5 | 50 | 3 | **0** | Không hợp lệ (False) | X7 |
-| 17 | BVA17 | Đã mua hàng | max+1 (2) | 5 | 50 | 3 | **2** | Không hợp lệ (False) | X8 |
+### 2.3 Bảng Quyết định tổng hợp (Collapsed Decision Table)
+
+| Condition/Action | R1 | R2 | R3 | R4 | R5 | R6 | R7 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **C1: Quyền truy cập hợp lệ (ROLE_USER)?**| N | Y | Y | Y | Y | Y | Y |
+| **C2: SP đang ACTIVE?** | - | N | Y | Y | Y | Y | Y |
+| **C3: Số sao [1, 5] & Nội dung OK?** | - | - | N | Y | Y | Y | Y |
+| **C4: Là Chủ sở hữu bài Review?** | - | - | - | N | Y | Y | Y |
+| **C5: Nằm trong 5 phút vàng (Dành cho Sửa)?**| - | - | - | - | N | Y | Y |
+| **A1: Báo lỗi 401/403 (Phân quyền)** | X | - | - | - | - | - | - |
+| **A2: Báo lỗi (Sản phẩm không bán)** | - | X | - | - | - | - | - |
+| **A3: Báo lỗi 400 (Validation Form)** | - | - | X | - | - | - | - |
+| **A4: Báo lỗi Cấm sửa của người khác** | - | - | - | X | - | - | - |
+| **A5: Báo lỗi Quá 5 phút cấm sửa** | - | - | - | - | X | - | - |
+| **A6: Thành công (Tạo/Sửa/Xóa + Tính lại điểm)**| - | - | - | - | - | X | X |
+| **Test Case Tương ứng** | TC_REV_006, 007 | TC_REV_008 | TC_REV_003, 004, 005 | TC_REV_009 | TC_REV_010 | TC_REV_011 | TC_REV_001, 002 |
 
 ---
 
-## Câu 3. Thiết kế test case
 
-Dựa trên kết quả Câu 1 và Câu 2, bộ **17 test case** được thiết kế theo nguyên lý **Single Fault Assumption ($4n + 1 = 17$)** để vừa kế thừa chuẩn BVA cho 4 biến đầu vào, vừa thỏa mãn đầy đủ các yêu cầu của đề bài:
-- Có test case baseline hợp lệ danh định (nominal).
-- Có test case hợp lệ tại biên (`min`, `max`).
-- Có test case không hợp lệ ngoài biên (`min - 1`, `max + 1`) kèm lý do chi tiết.
-- Bao phủ toàn diện 100% các tag lớp tương đương ($V1 - V4$, $X1 - X8$) và các tag biên trọng yếu.
+## 3. Bảng Test Case Chi Tiết
 
-### 1. Bảng test case tổng hợp (Test Case, Input, Expected Outcome, New Tags Covered)
+| Mã kiểm thử | Kỹ thuật áp dụng | Tiêu đề | Điều kiện tiên quyết | Các bước kiểm tra | Dữ liệu kiểm thử | Kết quả dự kiến | Tag được bao phủ | Kết quả thực tế | Trạng thái |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
+| **TC_REV_001** | BVA (Max / R7) | Đánh giá hợp lệ 5 sao và tính điểm tự động | User `buyer` đăng nhập, gọi API POST. | Gửi Body JSON hợp lệ đánh giá 5 sao. | `ratingValue = 5`, Comment = "Giày rất êm". | Lưu Review thành công. Kéo điểm trung bình của Product lên tương ứng. | **V1, V2, V4, V5, B5, B8** | Khớp Unit Test `saveReview_trimsAndReturnsCreatedReview`. | Pass |
+| **TC_REV_002** | BVA (Min / R7) | Đánh giá hợp lệ 1 sao và tính điểm tự động | User `buyer` đăng nhập, gọi API POST. | Gửi Body JSON hợp lệ đánh giá 1 sao. | `ratingValue = 1`, Comment = "Giao hàng chậm". | Lưu Review. Điểm trung bình của Product tụt xuống mức thực tế. | **V1, V2, V4, V5, B1, B8** | Khớp DAO `saveReview_acceptsCaseInsensitiveActiveStatus`. | Pass |
+| **TC_REV_003** | Đoán lỗi (R3) | Chặn lưu đánh giá khi Comment rỗng hoặc quá 2000 ký tự | User `buyer` đăng nhập. | Gửi Form bình luận nhưng để tham số sai rào cản. | `comment = "   "` hoặc dài $2001$ ký tự `x`. | Báo lỗi Validation 400 Bad Request. | **X7, X8, B6-1, B10+1** | Khớp với Unit Test API & DAO. | Pass |
+| **TC_REV_004** | BVA (Min-1 / R3) | Chặn đánh giá 0 sao | Mở Postman gửi API trực tiếp. | Cố tình hack tham số Rating bằng 0. | `ratingValue = 0` | Chặn lại, báo lỗi số sao phải lớn hơn 0. | **X5, B1-1** | Khớp Unit Test API. | Pass |
+| **TC_REV_005** | BVA (Max+1 / R3) | Chặn đánh giá 6 sao | Mở Postman gửi API trực tiếp. | Cố tình hack tham số Rating vượt giới hạn. | `ratingValue = 6` | Chặn lại, báo lỗi số sao không vượt quá 5. | **X6, B5+1** | Khớp Unit Test API. | Pass |
+| **TC_REV_006** | EP (Guest / R1) | Báo lỗi 401: Khách vãng lai không được Đánh giá | Bắn API không mang theo Token. | Bắn POST `/api/v1/reviews`. | Trạng thái Unauthenticated. | Server từ chối thẳng với mã lỗi HTTP 401. | **X1** | Khớp Unit Test `saveReview_rejectsLoginRequired`. | Pass |
+| **TC_REV_007** | EP (Admin / R1) | Báo lỗi 403: Cấm Admin dùng quyền tạo đánh giá ảo | Bắn API bằng tài khoản mang `ROLE_ADMIN`. | Gọi API tạo đánh giá. | User có quyền Admin. | Cấm Admin thao tác để chống Seeding bẩn. Lỗi 403 Forbidden. | **X2** | Khớp Unit Test `saveReview_rejectsAdminRole`. | Pass |
+| **TC_REV_008** | EP (Product / R2) | Chặn đánh giá vào Sản phẩm đang bị Tắt (INACTIVE) | Sản phẩm mã `P001` đang bị Admin chuyển sang Inactive. | Gọi API tạo đánh giá cho mã `P001`. | Trạng thái Product là INACTIVE hoặc DRAFT. | Dao chặn lại và văng lỗi IllegalArgumentException. | **X3** | Khớp Unit Test `saveReview_rejectsMissingOrNonActiveProduct`. | Pass |
+| **TC_REV_009** | EP (Owner / R4) | Chặn hành vi sửa/xóa Review của người khác | Có 1 bài Review ID=1 của user `alice`. | User `bob` gọi API PUT/DELETE vào ID=1. | `alice` $\neq$ `bob`. | Báo lỗi vì không phải chủ sở hữu bài viết (Ownership). | **X4** | Khớp Unit Test `updateReview_returnsFalseForDifferentOwner`. | Pass |
+| **TC_REV_010** | BVA (Time / R5) | Chặn quyền chỉnh sửa Review khi đã quá 5 phút | User `alice` có bài Review ID=1 tạo từ rất lâu. | Kịch bản BVA ném thời điểm tạo lùi về 301,000 milliseconds trước. | Time Window $> 5$ phút. | Mất quyền Sửa. Hệ thống khóa cứng bài đánh giá. | **X9, B15+1** | Khớp Unit Test `updateReview_returnsFalseOutsideFiveMinuteWindow`. | Pass |
+| **TC_REV_011** | EP (CRUD / R7) | Xóa thành công Review và Khôi phục điểm Rating gốc | Khách hàng thực thi quyền Xóa đúng bài của mình. | Bắn DELETE API. | Thỏa mãn quyền Owner. | Xóa thành công bài đánh giá, điểm tổng Product cập nhật lại như cũ. | **V1, V3** | Khớp Unit Test `deleteReview_deletesAndRefreshesProductCache`. | Pass |
 
-| Test Case | Input | Expected Outcome | New Tags Covered |
-|---|---|---|---|
-| TC01 | ratingStar: 5, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
-| TC02 | ratingStar: 1, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | B1 |
-| TC03 | ratingStar: 5, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | B5 |
-| TC04 | ratingStar: 0, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Không hợp lệ (False): Số sao đánh giá nhỏ hơn 1 | X1 |
-| TC05 | ratingStar: 6, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Không hợp lệ (False): Số sao đánh giá lớn hơn 5 | X2 |
-| TC06 | ratingStar: 5, commentLength: 5, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | B6 |
-| TC07 | ratingStar: 5, commentLength: 500, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | B10 |
-| TC08 | ratingStar: 5, commentLength: 4, editWindowDays: 3, userPurchased: 1 | Không hợp lệ (False): Nhận xét nhỏ hơn 5 ký tự | X3 |
-| TC09 | ratingStar: 5, commentLength: 501, editWindowDays: 3, userPurchased: 1 | Không hợp lệ (False): Nhận xét lớn hơn 500 ký tự | X4 |
-| TC10 | ratingStar: 5, commentLength: 50, editWindowDays: 0, userPurchased: 1 | Hợp lệ (True) | B11 |
-| TC11 | ratingStar: 5, commentLength: 50, editWindowDays: 7, userPurchased: 1 | Hợp lệ (True) | B15 |
-| TC12 | ratingStar: 5, commentLength: 50, editWindowDays: -1, userPurchased: 1 | Không hợp lệ (False): Ngày sửa nhỏ hơn 0 | X5 |
-| TC13 | ratingStar: 5, commentLength: 50, editWindowDays: 8, userPurchased: 1 | Không hợp lệ (False): Quá hạn 7 ngày chỉnh sửa | X6 |
-| TC14 | ratingStar: 5, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | B16 |
-| TC15 | ratingStar: 5, commentLength: 50, editWindowDays: 3, userPurchased: 1 | Hợp lệ (True) | B20 |
-| TC16 | ratingStar: 5, commentLength: 50, editWindowDays: 3, userPurchased: 0 | Không hợp lệ (False): Chưa mua sản phẩm này | X7 |
-| TC17 | ratingStar: 5, commentLength: 50, editWindowDays: 3, userPurchased: 2 | Không hợp lệ (False): Trạng thái không hợp lệ | X8 |
-
-### 2. Bảng test case chi tiết theo đề bài (8 cột)
-
-| STT | Tên test case | Số sao đánh giá | Độ dài nhận xét | Hạn sửa (ngày) | Đã mua hàng | Kết quả mong đợi | Tag được bao phủ |
-|:---:|:---|:---:|:---:|:---:|:---:|:---|:---|
-| 1 | Baseline danh định (nominal) | 5 | 50 | 3 | 1 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
-| 2 | Biên dưới hợp lệ ratingStar = min (1) | **1** | 50 | 3 | 1 | Hợp lệ (True) | B1 |
-| 3 | Biên trên hợp lệ ratingStar = max (5) | **5** | 50 | 3 | 1 | Hợp lệ (True) | B5 |
-| 4 | Ngoài biên dưới ratingStar < min (0) | **0** | 50 | 3 | 1 | Không hợp lệ (False): Số sao đánh giá nhỏ hơn 1 | X1 |
-| 5 | Ngoài biên trên ratingStar > max (6) | **6** | 50 | 3 | 1 | Không hợp lệ (False): Số sao đánh giá lớn hơn 5 | X2 |
-| 6 | Biên dưới hợp lệ commentLength = min (5) | 5 | **5** | 3 | 1 | Hợp lệ (True) | B6 |
-| 7 | Biên trên hợp lệ commentLength = max (500) | 5 | **500** | 3 | 1 | Hợp lệ (True) | B10 |
-| 8 | Ngoài biên dưới commentLength < min (4) | 5 | **4** | 3 | 1 | Không hợp lệ (False): Nhận xét nhỏ hơn 5 ký tự | X3 |
-| 9 | Ngoài biên trên commentLength > max (501) | 5 | **501** | 3 | 1 | Không hợp lệ (False): Nhận xét lớn hơn 500 ký tự | X4 |
-| 10 | Biên dưới hợp lệ editWindowDays = min (0) | 5 | 50 | **0** | 1 | Hợp lệ (True) | B11 |
-| 11 | Biên trên hợp lệ editWindowDays = max (7) | 5 | 50 | **7** | 1 | Hợp lệ (True) | B15 |
-| 12 | Ngoài biên dưới editWindowDays < min (-1) | 5 | 50 | **-1** | 1 | Không hợp lệ (False): Ngày sửa nhỏ hơn 0 | X5 |
-| 13 | Ngoài biên trên editWindowDays > max (8) | 5 | 50 | **8** | 1 | Không hợp lệ (False): Quá hạn 7 ngày chỉnh sửa | X6 |
-| 14 | Biên dưới hợp lệ userPurchased = min (1) | 5 | 50 | 3 | **1** | Hợp lệ (True) | B16 |
-| 15 | Biên trên hợp lệ userPurchased = max (1) | 5 | 50 | 3 | **1** | Hợp lệ (True) | B20 |
-| 16 | Ngoài biên dưới userPurchased < min (0) | 5 | 50 | 3 | **0** | Không hợp lệ (False): Chưa mua sản phẩm này | X7 |
-| 17 | Ngoài biên trên userPurchased > max (2) | 5 | 50 | 3 | **2** | Không hợp lệ (False): Trạng thái không hợp lệ | X8 |
 
 ---
 
-### 3. Bổ sung: Bảng Quyết định quyền đánh giá (Decision Table - 4 Rules)
+## 4. Bảng Đối Chiếu & Ý Nghĩa Nhãn Tag (Tag Traceability Legend)
 
-| Condition / Action | Rule 1 (R1) | Rule 2 (R2) | Rule 3 (R3) | Rule 4 (R4) |
-| :--- | :---: | :---: | :---: | :---: |
-| **C1: User đã đăng nhập?** | **N** | Y | Y | Y |
-| **C2: Đã mua và đơn hàng `DELIVERED`?** | - | **N** | Y | Y |
-| **C3: Trong vòng 7 ngày kể từ khi nhận?** | - | - | **N** | **Y** |
-| *A1: Yêu cầu đăng nhập trước khi đánh giá* | **X** | - | - | - |
-| *A2: Báo lỗi "Chỉ khách đã mua mới được đánh giá"* | - | **X** | - | - |
-| *A3: Báo lỗi "Đã quá hạn 7 ngày chỉnh sửa đánh giá"* | - | - | **X** | - |
-| *A4: Cho phép gửi / cập nhật đánh giá thành công* | - | - | - | **X** |
-
----
-
-## Câu 4. Triển khai kiểm thử tự động
-
-```python
-def ValidateReviewRating(ratingStar: int, commentLength: int, editWindowDays: int, userPurchased: int) -> bool:
-    """
-    Kiểm tra tính hợp lệ của đánh giá & nhận xét:
-    - 1 <= ratingStar <= 5 (Số sao từ 1 đến 5)
-    - 5 <= commentLength <= 500 (Nội dung từ 5 đến 500 ký tự)
-    - 0 <= editWindowDays <= 7 (Hạn sửa trong vòng 7 ngày)
-    - userPurchased == 1 (User đã mua và nhận hàng thành công)
-    Trả về True nếu tất cả điều kiện thỏa mãn, ngược lại False.
-    """
-    if not (isinstance(ratingStar, int) and not isinstance(ratingStar, bool) and 1 <= ratingStar <= 5):
-        return False
-    if not (isinstance(commentLength, int) and not isinstance(commentLength, bool) and 5 <= commentLength <= 500):
-        return False
-    if not (isinstance(editWindowDays, int) and not isinstance(editWindowDays, bool) and 0 <= editWindowDays <= 7):
-        return False
-    if not (isinstance(userPurchased, int) and not isinstance(userPurchased, bool) and userPurchased == 1):
-        return False
-    return True
-```
-
-```pytest
-# thiết kế các test cases từ câu 3.
-# Run test case 
-import pytest
-
-test_cases_m6 = [
-    ("TC01", 5, 50, 3, 1, True, "V1, V2, V3, V4, B3, B8, B13, B18"),
-    ("TC02", 1, 50, 3, 1, True, "B1"),
-    ("TC03", 5, 50, 3, 1, True, "B5"),
-    ("TC04", 0, 50, 3, 1, False, "X1"),
-    ("TC05", 6, 50, 3, 1, False, "X2"),
-    ("TC06", 5, 5, 3, 1, True, "B6"),
-    ("TC07", 5, 500, 3, 1, True, "B10"),
-    ("TC08", 5, 4, 3, 1, False, "X3"),
-    ("TC09", 5, 501, 3, 1, False, "X4"),
-    ("TC10", 5, 50, 0, 1, True, "B11"),
-    ("TC11", 5, 50, 7, 1, True, "B15"),
-    ("TC12", 5, 50, -1, 1, False, "X5"),
-    ("TC13", 5, 50, 8, 1, False, "X6"),
-    ("TC14", 5, 50, 3, 1, True, "B16"),
-    ("TC15", 5, 50, 3, 1, True, "B20"),
-    ("TC16", 5, 50, 3, 0, False, "X7"),
-    ("TC17", 5, 50, 3, 2, False, "X8"),
-]
-
-@pytest.mark.parametrize("tc_id,rStar,cLen,eDays,uPurch,expected,tag", test_cases_m6)
-def test_review_validation(tc_id, rStar, cLen, eDays, uPurch, expected, tag):
-    """Kiểm thử tự động 17 test case đánh giá theo nguyên lý 4n + 1."""
-    assert ValidateReviewRating(rStar, cLen, eDays, uPurch) == expected
-
-if __name__ == "__main__":
-    pytest.main(["-v", __file__])
-```
-
-```kết quả test
-============================= test session starts =============================
-platform win32 -- Python 3.14.0, pytest-8.4.2, pluggy-1.6.0
-rootdir: D:\LapTrinhAI\Testing
-collected 17 items
-
-test_review_rating.py::test_review_validation[TC01-5-50-3-1-True-V1, V2, V3, V4, B3, B8, B13, B18] PASSED [  5%]
-test_review_rating.py::test_review_validation[TC02-1-50-3-1-True-B1] PASSED [ 11%]
-test_review_rating.py::test_review_validation[TC03-5-50-3-1-True-B5] PASSED [ 17%]
-test_review_rating.py::test_review_validation[TC04-0-50-3-1-False-X1] PASSED [ 23%]
-test_review_rating.py::test_review_validation[TC05-6-50-3-1-False-X2] PASSED [ 29%]
-test_review_rating.py::test_review_validation[TC06-5-5-3-1-True-B6] PASSED [ 35%]
-test_review_rating.py::test_review_validation[TC07-5-500-3-1-True-B10] PASSED [ 41%]
-test_review_rating.py::test_review_validation[TC08-5-4-3-1-False-X3] PASSED [ 47%]
-test_review_rating.py::test_review_validation[TC09-5-501-3-1-False-X4] PASSED [ 52%]
-test_review_rating.py::test_review_validation[TC10-5-50-0-1-True-B11] PASSED [ 58%]
-test_review_rating.py::test_review_validation[TC11-5-50-7-1-True-B15] PASSED [ 64%]
-test_review_rating.py::test_review_validation[TC12-5-50--1-1-False-X5] PASSED [ 70%]
-test_review_rating.py::test_review_validation[TC13-5-50-8-1-False-X6] PASSED [ 76%]
-test_review_rating.py::test_review_validation[TC14-5-50-3-1-True-B16] PASSED [ 82%]
-test_review_rating.py::test_review_validation[TC15-5-50-3-1-True-B20] PASSED [ 88%]
-test_review_rating.py::test_review_validation[TC16-5-50-3-0-False-X7] PASSED [ 94%]
-test_review_rating.py::test_review_validation[TC17-5-50-3-2-False-X8] PASSED [100%]
-
-============================= 17 passed in 0.14s ==============================
-```
+| Nhóm Tag | Mã Tag | Ý nghĩa nghiệp vụ | Trạng thái |
+| :---: | :---: | :--- | :---: |
+| **Valid EP** | **V1** | Khách hàng đã đăng nhập có quyền đánh giá | Hợp lệ |
+| | **V2** | Sản phẩm được đánh giá đang mở bán (ACTIVE) | Hợp lệ |
+| | **V3** | Người thao tác là chủ sở hữu bài review | Hợp lệ |
+| | **V4** | Số sao nằm trong khoảng hợp lệ [1, 5] | Hợp lệ |
+| | **V5** | Nội dung bình luận hợp lệ từ 1 đến 2000 ký tự | Hợp lệ |
+| | **V6** | Thao tác sửa bài trong vòng 5 phút (<= 300,000 ms) | Hợp lệ |
+| **Invalid EP**| **X1** | Khách vãng lai chưa đăng nhập (Báo lỗi 401) | Không hợp lệ |
+| | **X2** | Admin cố tình tạo đánh giá ảo (Báo lỗi 403) | Không hợp lệ |
+| | **X3** | Sản phẩm không tồn tại hoặc đã ngừng bán | Không hợp lệ |
+| | **X4** | Người dùng can thiệp bài review của người khác (Báo lỗi 403) | Không hợp lệ |
+| | **X5** | Số sao đánh giá nhỏ hơn 1 (<= 0 sao) | Không hợp lệ |
+| | **X6** | Số sao đánh giá lớn hơn 5 (>= 6 sao) | Không hợp lệ |
+| | **X7** | Bình luận để trống, null hoặc chỉ có khoảng trắng | Không hợp lệ |
+| | **X8** | Bình luận vượt quá 2000 ký tự | Không hợp lệ |
+| | **X9** | Bài review đã quá hạn 5 phút cho phép chỉnh sửa | Không hợp lệ |
+| **Boundary** | **B1 - B5**| Điểm biên số sao: min (1), min+ (2), nom (3), max- (4), max (5) | Hợp lệ |
+| | **B1-1** | Ngoài biên dưới số sao: 0 sao | Không hợp lệ |
+| | **B5+1** | Ngoài biên trên số sao: 6 sao | Không hợp lệ |
+| | **B6 - B10**| Điểm biên độ dài bình luận: min (1), min+ (2), nom (50), max- (1999), max (2000) | Hợp lệ |
+| | **B11 - B15**| Điểm biên thời hạn sửa bài: min (0ms), min+ (1s), nom (2.5p), max- (4p59s), max (5p) | Hợp lệ |
+| | **B15+1** | Ngoài biên trên thời hạn sửa bài: 301,000 ms (5 phút 1 giây) | Không hợp lệ |
