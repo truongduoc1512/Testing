@@ -11,4 +11,4 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar shoeshop-app.jar
 
 EXPOSE 8080
-ENTRYPOINT [ "java", "-jar", "shoeshop-app.jar" ]
+ENTRYPOINT [ "sh", "-c", "java $JAVA_OPTS -jar shoeshop-app.jar" ]

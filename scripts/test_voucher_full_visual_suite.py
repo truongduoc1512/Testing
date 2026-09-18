@@ -89,7 +89,7 @@ def add_product_to_cart(driver, code=PRODUCT_CODE):
         """, code)
         time.sleep(0.8)
 
-def test_apply_voucher_ui(driver, tc_id, tc_section, tc_name, voucher_code, exp_behavior):
+def run_apply_voucher_ui_step(driver, tc_id, tc_section, tc_name, voucher_code, exp_behavior):
     """Điền voucher vào ô input trên giỏ hàng, bấm áp dụng và chụp ảnh trực quan"""
     driver.get(f"{BASE_URL}/shoppingCart")
     time.sleep(0.8)
@@ -204,7 +204,7 @@ def run_voucher_visual_suite():
             ("TC_VOU_ST_005", "I. State Transition", "S1 -> S4 (Admin vô hiệu hóa mã giảm giá)", "SALE10_INACTIVE", "REJECT")
         ]
         for tid, sec, name, code, exp in st_cases:
-            test_results.append(test_apply_voucher_ui(driver, tid, sec, name, code, exp))
+            test_results.append(run_apply_voucher_ui_step(driver, tid, sec, name, code, exp))
 
         # =========================================================================
         # PHẦN II: DECISION TABLE TESTING (8 TCs)
@@ -222,7 +222,7 @@ def run_voucher_visual_suite():
             ("TC_VOU_DT_008", "II. Decision Table", "Rule 8: Luồng áp dụng thành công đầy đủ điều kiện (Happy Path)", "TESTPERCENT20", "ACCEPT")
         ]
         for tid, sec, name, code, exp in dt_cases:
-            test_results.append(test_apply_voucher_ui(driver, tid, sec, name, code, exp))
+            test_results.append(run_apply_voucher_ui_step(driver, tid, sec, name, code, exp))
 
         # =========================================================================
         # PHẦN III: ROBUSTNESS BVA (12 TCs)
@@ -244,7 +244,7 @@ def run_voucher_visual_suite():
             ("TC_VOU_BVA_009", "III. Robustness BVA", "percent max = 100%", "TESTPERCENT20", "ACCEPT")
         ]
         for tid, sec, name, code, exp in bva_cases:
-            test_results.append(test_apply_voucher_ui(driver, tid, sec, name, code, exp))
+            test_results.append(run_apply_voucher_ui_step(driver, tid, sec, name, code, exp))
 
         # =========================================================================
         # PHẦN IV: EQUIVALENCE PARTITIONING (8 TCs)
@@ -262,7 +262,7 @@ def run_voucher_visual_suite():
             ("EP_VOU_INV_03", "IV. Equivalence Partitioning", "EP Invalid 3: Chặn tạo voucher với mã rỗng", "", "REJECT")
         ]
         for tid, sec, name, code, exp in ep_cases:
-            test_results.append(test_apply_voucher_ui(driver, tid, sec, name, code, exp))
+            test_results.append(run_apply_voucher_ui_step(driver, tid, sec, name, code, exp))
 
     finally:
         time.sleep(2.0)

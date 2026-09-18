@@ -53,12 +53,12 @@ services:
     restart: unless-stopped
     environment:
       - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL:-jdbc:mysql://shoeshop-mysql:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=30000}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://shoeshop-mysql:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=30000&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME:-root}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD:-${MYSQL_ROOT_PASSWORD:-truonghoaiduoc5}}
       - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai-service:8000}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-dummy-google-client-id}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-dummy-google-client-secret}
     deploy:
       resources:
         limits:
