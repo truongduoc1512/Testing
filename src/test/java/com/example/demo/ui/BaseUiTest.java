@@ -22,8 +22,10 @@ public class BaseUiTest {
     @BeforeEach
     void setup() {
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--remote-allow-origins=*");
-        options.addArguments("--headless=new"); // Use new headless mode for better stability
+        boolean isHeadless = Boolean.parseBoolean(System.getProperty("headless", "false"));
+        if (isHeadless) {
+            options.addArguments("--headless=new"); // Bật headless khi có tham số -Dheadless=true
+        }
         options.addArguments("--disable-gpu");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -41,6 +43,14 @@ public class BaseUiTest {
     void teardown() {
         if (driver != null) {
             driver.quit();
+        }
+    }
+
+    protected void pause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 }
