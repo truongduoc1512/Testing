@@ -1,0 +1,213 @@
+{
+  "info": {
+    "_postman_id": "group2-pagination-sorting-id",
+    "name": "Group 2: Pagination & Sorting (Nhóm 2 - Phân trang & Sắp xếp)",
+    "description": "Tập hợp các testcase kiểm thử API Phân trang (Trang 1, Trang 2, Trang âm, Trang quá giới hạn), Sắp xếp theo giá và Kiểm thử biên cực đại (Worst-Case BVA).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC_PAG_01 - Phân trang trang 1 mặc định",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify page 1 attributes and max result boundary', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(1);",
+              "    pm.expect(jsonData.maxResult).to.eql(12);",
+              "    pm.expect(jsonData.list.length).to.be.at.most(12);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_PAG_02 - Phân trang chuyển sang trang 2",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=2",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "2" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify currentPage is 2', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(2);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_PAG_03 - Truy vấn với số trang âm hoặc bằng 0 (Standardization B0)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=-1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "-1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify page -1 is automatically normalized to currentPage 1', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_PAG_04 - Số trang vượt quá tổng số trang hiện có",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=99999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "99999" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify empty list when page exceeds totalPages', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(99999);",
+              "    pm.expect(jsonData.list).to.be.an('array').that.is.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_PAG_05 - Phân trang kết hợp Sắp xếp theo giá tăng dần (priceAsc)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?sort=priceAsc&page=1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "sort", "value": "priceAsc" },
+            { "key": "page", "value": "1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify products are sorted in ascending price order', function () {",
+              "    var jsonData = pm.response.json();",
+              "    var list = jsonData.list;",
+              "    for (var i = 0; i < list.length - 1; i++) {",
+              "        var p1 = list[i].price * (100 - (list[i].discountPercent || 0)) / 100.0;",
+              "        var p2 = list[i+1].price * (100 - (list[i+1].discountPercent || 0)) / 100.0;",
+              "        pm.expect(p1).to.be.at.most(p2);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_PAG_06 - Worst-Case BVA cực đại (page=999999 & size=999999)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=999999&size=999999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "page", "value": "999999" },
+            { "key": "size", "value": "999999" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Ensure system caps maxResult safely and prevents OOM/Crash', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.maxResult).to.be.at.most(12);",
+              "    pm.expect(pm.responseTime).to.be.below(3000);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

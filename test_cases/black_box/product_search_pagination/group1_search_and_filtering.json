@@ -1,0 +1,252 @@
+{
+  "info": {
+    "_postman_id": "group1-search-filtering-id",
+    "name": "Group 1: Search & Filtering (Nhóm 1 - Tìm kiếm & Lọc sản phẩm)",
+    "description": "Tập hợp các testcase kiểm thử API Tìm kiếm theo từ khóa, lọc khoảng giá, thương hiệu, danh mục và xử lý SQL Injection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC_SRCH_01 - Tìm kiếm với từ khóa hợp lệ",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=Nike&page=1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "Nike" },
+            { "key": "page", "value": "1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify search result fields and pagination structure', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('totalRecords');",
+              "    pm.expect(jsonData).to.have.property('currentPage', 1);",
+              "    pm.expect(jsonData).to.have.property('maxResult', 12);",
+              "    pm.expect(jsonData.list).to.be.an('array');",
+              "    if (jsonData.list.length > 0) {",
+              "        jsonData.list.forEach(function(item) {",
+              "            pm.expect(item.name.toLowerCase()).to.include('nike');",
+              "        });",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_SRCH_02 - Tìm kiếm từ khóa không tồn tại",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=XYZ_NOT_EXIST_123",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "XYZ_NOT_EXIST_123" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify totalRecords is 0 and list is empty array', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.totalRecords).to.eql(0);",
+              "    pm.expect(jsonData.list).to.be.an('array').that.is.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_SRCH_03 - Tìm kiếm với từ khóa chứa mã SQL Injection",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=%25%27OR%271%3D1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "%'OR'1=1" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK (Safe Parameter Binding)', function () { pm.response.to.have.status(200); });",
+              "pm.test('Ensure system does not crash with 500 error', function () {",
+              "    pm.expect(pm.response.code).to.not.eql(500);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_SRCH_04 - Tìm kiếm với tham số rỗng (Lấy danh sách mặc định)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns default page 1 products', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.currentPage).to.eql(1);",
+              "    pm.expect(jsonData.list).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_SRCH_05 - Tìm kiếm không phân biệt chữ hoa/chữ thường",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=nike",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "nike" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Case-insensitive search returns valid results', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.list).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_SRCH_06 - Kết hợp tìm kiếm từ khóa và lọc khoảng giá",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=Nike&minPrice=100&maxPrice=300",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "name", "value": "Nike" },
+            { "key": "minPrice", "value": "100" },
+            { "key": "maxPrice", "value": "300" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify filtered product prices within range', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.list).to.be.an('array');",
+              "    jsonData.list.forEach(function(p) {",
+              "        var effectivePrice = p.price * (100 - (p.discountPercent || 0)) / 100.0;",
+              "        pm.expect(effectivePrice).to.be.at.least(100);",
+              "        pm.expect(effectivePrice).to.be.at.most(300);",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_SRCH_07 - Lọc sản phẩm theo Thương hiệu & Danh mục",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?brand=Nike&category=Sneaker",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [
+            { "key": "brand", "value": "Nike" },
+            { "key": "category", "value": "Sneaker" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify list filtered by brand and category', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.list).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

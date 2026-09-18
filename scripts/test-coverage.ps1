@@ -212,6 +212,9 @@ try {
         $mavenArguments += "-Dtest=$TestSelector"
     }
     $mavenArguments += @(
+        "`"-Dspring.datasource.url=$env:SPRING_DATASOURCE_URL`"",
+        "`"-Dspring.datasource.username=$env:SPRING_DATASOURCE_USERNAME`"",
+        "`"-Dspring.datasource.password=$env:SPRING_DATASOURCE_PASSWORD`"",
         '-Dsurefire.rerunFailingTestsCount=2',
         'test',
         "org.jacoco:jacoco-maven-plugin:${JaCoCoVersion}:report"

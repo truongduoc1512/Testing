@@ -15,19 +15,30 @@ import org.testcontainers.containers.MySQLContainer;
 @ContextConfiguration(initializers = MySqlIntegrationTestBase.MySqlInitializer.class)
 abstract class MySqlIntegrationTestBase {
 
-    private static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("test24")
-            .withUsername("test24")
-            .withPassword("test24")
-            .withReuse(false);
+    private static final MySQLContainer<?> MYSQL;
 
     static {
-        // Docker Engine 29 rejects docker-java's legacy default API (1.32).
-        // Keep this compatibility override in test scope instead of changing the host config.
-        if (System.getProperty("api.version") == null) {
-            System.setProperty("api.version", "1.44");
+        String existingUrl = System.getProperty("spring.datasource.url");
+        if (existingUrl == null || existingUrl.trim().isEmpty()) {
+            existingUrl = System.getenv("SPRING_DATASOURCE_URL");
         }
-        MYSQL.start();
+
+        if (existingUrl != null && !existingUrl.trim().isEmpty()) {
+            MYSQL = null;
+        } else {
+            // Docker Engine 29 rejects docker-java's legacy default API (1.32).
+            // Keep this compatibility override in test scope instead of changing the host config.
+            if (System.getProperty("api.version") == null) {
+                System.setProperty("api.version", "1.44");
+            }
+            MySQLContainer<?> container = new MySQLContainer<>("mysql:8.0")
+                    .withDatabaseName("test24")
+                    .withUsername("test24")
+                    .withPassword("test24")
+                    .withReuse(false);
+            container.start();
+            MYSQL = container;
+        }
     }
 
     static final class MySqlInitializer
@@ -35,12 +46,15 @@ abstract class MySqlIntegrationTestBase {
 
         @Override
         public void initialize(ConfigurableApplicationContext context) {
-            TestPropertyValues.of(
-                    "spring.datasource.url=" + MYSQL.getJdbcUrl(),
-                    "spring.datasource.username=" + MYSQL.getUsername(),
-                    "spring.datasource.password=" + MYSQL.getPassword(),
-                    "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver")
-                    .applyTo(context.getEnvironment());
+            if (MYSQL != null && MYSQL.isRunning()) {
+                TestPropertyValues.of(
+                        "spring.datasource.url=" + MYSQL.getJdbcUrl(),
+                        "spring.datasource.username=" + MYSQL.getUsername(),
+                        "spring.datasource.password=" + MYSQL.getPassword(),
+                        "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver")
+                        .applyTo(context.getEnvironment());
+            }
         }
     }
 }
+

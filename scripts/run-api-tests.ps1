@@ -1,4 +1,4 @@
-<#
+cd<#
 .SYNOPSIS
     Runs the Shoeshop API Postman Collection using Newman.
 .DESCRIPTION
