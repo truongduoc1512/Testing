@@ -1,104 +1,220 @@
-# Bảng Test Case: Chức năng 8 - Quản lý Trị sự (Admin Management)
-**Người thực hiện:** Được 
+# BÀI LÀM: KIỂM THỬ CHỨC NĂNG 8 - QUẢN LÝ ĐƠN HÀNG & SẢN PHẨM ADMIN (ADMIN MANAGEMENT)
 
-## 1. Thông tin Kỹ thuật & Thực thi
-- **Kỹ thuật Thiết kế (Test Design):** 
-  - **Phân hoạch lớp tương đương (EP):** Quản lý Phân quyền (RBAC), Giới hạn Phạm vi Quản lý (Management Scope) và Quyền sở hữu chéo (Cross-Ownership) giữa các Admin.
-  - **Phân tích giá trị biên (BVA) & Chuyển đổi trạng thái:** Giới hạn số lượng tài khoản quyền lực nhất (Super Admin).
-- **Kỹ thuật Thực thi (Test Execution):** 
-  - Kiểm thử Tích hợp & Unit Test bằng JUnit/Mockito (`UserControllerCoverageTest.java`, `ProductApiControllerTest.java`, `OrderApiControllerTest.java`).
-  - Kiểm thử API E2E bằng Postman.
+- **Họ và tên sinh viên:** Nguyễn Hoàng Phương
+- **Mã số sinh viên (MSSV):** 080205010954
+- **Môn học:** Kiểm Chứng Phần Mềm
+- **Chủ đề:** Phân hoạch lớp tương đương, phân tích giá trị biên, bảng quyết định, chuyển đổi trạng thái, thiết kế test case và kiểm thử tự động
 
 ---
 
-## 2. Phân tích Kỹ thuật Thiết kế (Test Design Analysis)
+## Bảng phân tích điều kiện kiểm thử (Test Conditions)
 
-### 2.1 Bảng Chuyển đổi trạng thái (State Transition Table)
-Hệ thống kiểm soát chặt chẽ máy trạng thái FSM đối với cả **Vòng đời Đơn hàng** và **Vòng đời Tài khoản Quản trị viên**, ngăn chặn mọi hành vi ép trạng thái sai quy trình:
-
-| Đối tượng | Trạng thái hiện tại | Thao tác (Action) | Quyền thực thi / Điều kiện | Trạng thái kỳ vọng (Next State) | Tính hợp lệ | Test Case liên quan |
-| :--- | :--- | :--- | :--- | :--- | :--- | :---: |
-| **Đơn hàng** | `PENDING` | Duyệt giao hàng (Ship) | Admin có Scope quản lý | `SHIPPING` | Hợp lệ | TC_ADM_008 |
-| **Đơn hàng** | `SHIPPING` | Hoàn tất giao hàng | Admin có Scope quản lý | `COMPLETED` | Hợp lệ | TC_ADM_008 |
-| **Đơn hàng** | `CANCELLED` | Cố tình ép sang Giao hàng | Admin | *(Bị chặn, giữ nguyên `CANCELLED`)* | Báo lỗi 409 Conflict (Sai luồng FSM) | TC_ADM_010 |
-| **Đơn hàng** | `RETURN_PENDING` | Phê duyệt trả hàng (Approve) | Admin có Scope quản lý | `RETURNED` | Hợp lệ (Cộng kho, trừ sales) | TC_CAN_008 |
-| **Đơn hàng** | `RETURN_PENDING` | Từ chối trả hàng (Reject) | Admin có Scope quản lý | `COMPLETED` | Hợp lệ (Giữ nguyên kho) | TC_CAN_009 |
-| **Admin Account** | `ROLE_ADMIN` (Active) | Hạ cấp xuống `ROLE_USER` | Số Admin Active = 1 | *(Bị chặn, giữ nguyên `ROLE_ADMIN`)* | Báo lỗi (Chặn mất Admin cuối cùng) | TC_ADM_001 |
-| **Admin Account** | `ROLE_ADMIN` (Active) | Vô hiệu hóa / Khóa | Số Admin Active = 1 | *(Bị chặn, giữ nguyên Active)* | Báo lỗi (Chặn khóa Admin cuối cùng) | TC_ADM_002 |
-| **Admin Account** | `ROLE_ADMIN` (Active) | Hạ cấp xuống `ROLE_USER` | Số Admin Active ≥ 2 | `ROLE_USER` (Active) | Hợp lệ | TC_ADM_003 |
-
-### 2.2 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
-
-| Biến đầu vào / Điều kiện | Lớp tương đương Hợp lệ | Tag | Lớp tương đương Không hợp lệ | Tag |
-| :--- | :--- | :---: | :--- | :---: |
-| **Số Admin hoạt động (`countAdmin`)**| Số lượng Admin Active ≥ 2 | **V1** | Số lượng Admin Active = 1 (Chặn mất quyền) | **X1** |
-| **Quyền hạn tài khoản (`userRole`)** | Tài khoản mang quyền `ROLE_ADMIN` | **V2** | `ROLE_USER` thường<br>Khách vãng lai chưa xác thực | **X2**<br>**X3** |
-| **Quyền sở hữu sản phẩm (`owner`)** | Admin thao tác trên SP do chính mình tạo | **V3** | Admin can thiệp sửa/xóa SP của Admin khác | **X4** |
-| **Phạm vi quản lý đơn hàng (`scope`)**| Đơn hàng thuộc Scope quản lý phụ trách | **V4** | Đơn hàng nằm ngoài Scope phân quyền | **X5** |
-| **Biểu mẫu sản phẩm (`productForm`)** | Mã $[1, 20]$ ký tự, Tên $[1, 255]$ ký tự | **V5** | Bỏ trống Mã (`code` null/rỗng)<br>Bỏ trống Tên (`name` null/rỗng) | **X6**<br>**X7** |
-| **Chu trình FSM Đơn hàng (`state`)** | Chuyển trạng thái hợp lệ theo quy trình | **V6** | Ép trạng thái sai chu trình (VD: CANCELLED -> SHIPPING) | **X8** |
-
-### 2.3 Bảng Phân tích giá trị biên (Standard Boundary Value Analysis - BVA)
-
-| Biến đầu vào | Miền hợp lệ | min | min+ | nominal | max- | max | Tag biên |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Số Admin Active (`countAdmin`)** | $[2, 10]$ tài khoản | 2 | 3 | 5 | 9 | 10 | **B1, B2, B3, B4, B5** |
-| **Độ dài Mã sản phẩm (`code`)** | $[1, 20]$ ký tự | 1 | 2 | 6 | 19 | 20 | **B6, B7, B8, B9, B10** |
-| **Độ dài Tên sản phẩm (`name`)** | $[1, 255]$ ký tự | 1 | 2 | 50 | 254 | 255 | **B11, B12, B13, B14, B15** |
-
-*Ghi chú mở rộng (Robustness BVA):*
-- Ngoài biên dưới của số Admin: $count = 1$ (Tag **B0** / min-1) -> Hệ thống chặn đứng hành vi hạ cấp hoặc khóa tài khoản, bảo toàn quản trị viên duy nhất.
-- Ngoài biên dưới của mã/tên sản phẩm: $L = 0$ (Tag **B6-1**, **B11-1**) -> Báo lỗi 400 Bad Request.
-- Ngoài biên trên của mã/tên sản phẩm: $L = 21$ (Tag **B10+1**), $L = 256$ (Tag **B15+1**) -> Báo lỗi quá độ dài.
+| Conditions | Valid Partition | Tag | Invalid Partitions | Tag | Valid Boundaries | Tag |
+|---|---|---|---|---|---|---|
+| **Giá bán sản phẩm** (`productPrice` - k) | 10.0 ≤ productPrice ≤ 50000.0 | V1 | • productPrice < 10.0<br>• productPrice > 50000.0 | X1<br>X2 | • 10.0 (min)<br>• 11.0 (min+)<br>• 1500.0 (nominal)<br>• 49999.0 (max-)<br>• 50000.0 (max) | B1<br>B2<br>B3<br>B4<br>B5 |
+| **Số lượng tồn kho** (`stockQty`) | 0 ≤ stockQty ≤ 10000 | V2 | • stockQty < 0<br>• stockQty > 10000 | X3<br>X4 | • 0 (min)<br>• 1 (min+)<br>• 100 (nominal)<br>• 9999 (max-)<br>• 10000 (max) | B6<br>B7<br>B8<br>B9<br>B10 |
+| **Độ dài tên sản phẩm** (`productNameLength`) | 5 ≤ productNameLength ≤ 100 | V3 | • productNameLength < 5<br>• productNameLength > 100 | X5<br>X6 | • 5 (min)<br>• 6 (min+)<br>• 25 (nominal)<br>• 99 (max-)<br>• 100 (max) | B11<br>B12<br>B13<br>B14<br>B15 |
+| **Quyền quản trị viên** (`adminRoleLevel`) | adminRoleLevel = 1 | V4 | • adminRoleLevel = 0<br>• adminRoleLevel > 1 | X7<br>X8 | • 1 (min)<br>• 1 (min+)<br>• 1 (nominal)<br>• 1 (max-)<br>• 1 (max) | B16<br>B17<br>B18<br>B19<br>B20 |
 
 ---
 
-## 3. Bảng Test Case Chi Tiết
+## Câu 1. Xác định lớp tương đương
 
-### A. Quản lý Tài khoản (Account Management)
-| Mã kiểm thử | Kỹ thuật áp dụng | Tiêu đề | Điều kiện tiên quyết | Các bước kiểm tra | Dữ liệu kiểm thử | Kết quả dự kiến | Tag được bao phủ | Kết quả thực tế | Trạng thái |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
-| **TC_ADM_001** | BVA / EP | Chặn hạ cấp (Downgrade) quyền của Admin duy nhất còn hoạt động | Trong DB chỉ còn 1 tài khoản `ROLE_ADMIN` đang Active. | Vào trang Edit Admin đó, đổi Role thành `ROLE_USER` và Lưu. | Dữ liệu chuẩn TC_ADM_001 | Hệ thống chặn lại và báo lỗi. Tài khoản vẫn giữ quyền `ROLE_ADMIN`. (Khớp `userEditSave_blocksLastActiveAdminFromLosingAdminRole`) | **X1, B0** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_002** | BVA / EP | Chặn Khóa/Vô hiệu hóa Admin duy nhất còn hoạt động | Trong DB chỉ còn 1 tài khoản `ROLE_ADMIN` đang Active. | Đổi checkbox Tình trạng hoạt động thành `false`. | Dữ liệu chuẩn TC_ADM_002 | Hệ thống chặn lại và báo lỗi. Trạng thái không bị thay đổi. | **X1, B0** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_003** | EP | Cho phép hạ cấp Admin nếu vẫn còn Admin khác | Trong DB có >= 2 Admin đang Active. | Hạ cấp một Admin xuống `ROLE_USER`. | Dữ liệu chuẩn TC_ADM_003 | Thành công. | **V1, B1** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_004** | Quyền | Chặn User thường cố tình vào xem Danh sách User của Admin | Khách hàng User đăng nhập. | Cố tình gõ URL `/admin/users`. | Dữ liệu chuẩn TC_ADM_004 | Bị đá văng sang trang 403 Forbidden. | **X2** | Khớp với kết quả kiểm thử | Pass |
-
-### B. Quản lý Sản phẩm (Product Management)
-| Mã kiểm thử | Kỹ thuật áp dụng | Tiêu đề | Điều kiện tiên quyết | Các bước kiểm tra | Dữ liệu kiểm thử | Kết quả dự kiến | Tag được bao phủ | Kết quả thực tế | Trạng thái |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
-| **TC_ADM_005** | Ownership | Chặn Admin sửa sản phẩm của Admin khác | Admin A đăng nhập. Sản phẩm X thuộc sở hữu của Admin B. | Admin A gọi API Sửa sản phẩm X. | Dữ liệu chuẩn TC_ADM_005 | Báo lỗi 403 Forbidden. Cấm cập nhật Foreign Product. (Khớp `saveProduct_forbidsUpdatingForeignProduct`) | **X4** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_006** | Ownership | Chặn Admin xóa (deactivate) sản phẩm của Admin khác | Admin A đăng nhập. Sản phẩm X của Admin B. | Admin A gọi API Xóa sản phẩm X. | Dữ liệu chuẩn TC_ADM_006 | Báo lỗi 403 Forbidden. (Khớp `deleteProduct_forbidsProductOwnedByAnotherPrincipal`) | **X4** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_007** | Validation | Báo lỗi khi tạo sản phẩm thiếu Mã Code hoặc Tên | Admin thêm sản phẩm mới. | Điền Form nhưng bỏ trống Code hoặc Name (Dấu cách). | Dữ liệu chuẩn TC_ADM_007 | Báo lỗi Validation 400 Bad Request. | **X6, X7, B6-1, B11-1** | Khớp với kết quả kiểm thử | Pass |
-
-### C. Quản lý Đơn hàng (Order Management)
-| Mã kiểm thử | Kỹ thuật áp dụng | Tiêu đề | Điều kiện tiên quyết | Các bước kiểm tra | Dữ liệu kiểm thử | Kết quả dự kiến | Tag được bao phủ | Kết quả thực tế | Trạng thái |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
-| **TC_ADM_008** | Scope EP | Chặn Admin thao tác đơn hàng nằm ngoài phạm vi quản lý | Admin đăng nhập. Đơn hàng Y không thuộc Scope của Admin này. | Admin cố tình gọi API Update Status Đơn hàng Y. | Dữ liệu chuẩn TC_ADM_008 | Báo lỗi 403 Forbidden. Chặn đổi trạng thái. (Khớp `updateStatus_rejectsPrincipalOutsideManagementScope`) | **X5** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_009** | Algorithm | Tự động tính lại giá trị (Recalculate) khi xem đơn của Khách | Admin đăng nhập. | Admin xem chi tiết Đơn hàng của User. | Dữ liệu chuẩn TC_ADM_009 | Hệ thống chạy lệnh `Recalculate Amount` để ra giá thực tế thay vì lấy giá lưu cứng. (Khớp `getOrder_recalculatesAmountWhenAdminIsNotOrderCustomer`) | **V2, V4** | Khớp với kết quả kiểm thử | Pass |
-| **TC_ADM_010** | State | Chặn Admin ép trạng thái đơn hàng sai luồng | Admin duyệt Đơn hàng Z. | Đơn đang bị Hủy (`CANCELLED`), cố tình bắn API ép thành Giao Hàng (`SHIPPING`). | Dữ liệu chuẩn TC_ADM_010 | Báo lỗi 409 Conflict. State FSM từ chối Invalid Transition. | **X8** | Khớp với kết quả kiểm thử | Pass |
-
+| Biến đầu vào | Lớp hợp lệ | Tag | Lớp không hợp lệ | Tag |
+|---|---|---|---|---|
+| **Giá bán sản phẩm** (`productPrice`) | 10.0 ≤ productPrice ≤ 50000.0 | V1 | • productPrice < 10.0 (Giá quá thấp)<br>• productPrice > 50000.0 (Vượt giá trần) | X1<br>X2 |
+| **Số lượng tồn kho** (`stockQty`) | 0 ≤ stockQty ≤ 10000 | V2 | • stockQty < 0 (Tồn kho âm)<br>• stockQty > 10000 (Vượt sức chứa kho) | X3<br>X4 |
+| **Độ dài tên sản phẩm** (`productNameLength`) | 5 ≤ productNameLength ≤ 100 | V3 | • productNameLength < 5 (Tên quá ngắn)<br>• productNameLength > 100 (Tên quá dài) | X5<br>X6 |
+| **Quyền quản trị viên** (`adminRoleLevel`) | adminRoleLevel = 1 (ROLE_ADMIN) | V4 | • adminRoleLevel = 0 (ROLE_USER/EMPLOYEE)<br>• adminRoleLevel ≠ 1 (Không có quyền) | X7<br>X8 |
 
 ---
 
-## 4. Bảng Đối Chiếu & Ý Nghĩa Nhãn Tag (Tag Traceability Legend)
+## Câu 2. Phân tích giá trị biên
 
-| Nhóm Tag | Mã Tag | Ý nghĩa nghiệp vụ | Trạng thái |
-| :---: | :---: | :--- | :---: |
-| **Valid EP** | **V1** | Hệ thống còn >= 2 Admin hoạt động, cho phép hạ cấp | Hợp lệ |
-| | **V2** | Tài khoản mang quyền Quản trị viên (ROLE_ADMIN) | Hợp lệ |
-| | **V3** | Admin thao tác trên sản phẩm do chính mình tạo ra | Hợp lệ |
-| | **V4** | Admin thao tác trong phạm vi đơn hàng được phân quyền | Hợp lệ |
-| | **V5** | Form sản phẩm hợp lệ đầy đủ mã và tên | Hợp lệ |
-| | **V6** | Chuyển đổi trạng thái đơn hàng đúng quy trình máy trạng thái | Hợp lệ |
-| **Invalid EP**| **X1** | Cố tình hạ cấp/khóa Admin duy nhất còn lại của hệ thống | Không hợp lệ |
-| | **X2** | User thông thường cố tình truy cập khu vực Admin (Báo lỗi 403) | Không hợp lệ |
-| | **X3** | Khách vãng lai cố tình truy cập trang Admin (Báo lỗi 401) | Không hợp lệ |
-| | **X4** | Admin can thiệp sửa/xóa sản phẩm của Admin khác (Báo lỗi 403) | Không hợp lệ |
-| | **X5** | Admin thao tác đơn hàng ngoài phạm vi quản lý (Báo lỗi 403) | Không hợp lệ |
-| | **X6** | Mã sản phẩm bị bỏ trống hoặc null | Không hợp lệ |
-| | **X7** | Tên sản phẩm bị bỏ trống hoặc null | Không hợp lệ |
-| | **X8** | Ép trạng thái đơn hàng sai luồng FSM (Báo lỗi 409) | Không hợp lệ |
-| **Boundary** | **B1 - B5**| Điểm biên số Admin Active: min (2), min+ (3), nom (5), max- (9), max (10) | Hợp lệ |
-| | **B0** | Điểm ngoài biên dưới số Admin: count = 1 tài khoản | Không hợp lệ |
-| | **B6 - B10**| Điểm biên độ dài Mã sản phẩm: min (1), min+ (2), nom (6), max- (19), max (20) | Hợp lệ |
-| | **B11 - B15**| Điểm biên độ dài Tên sản phẩm: min (1), min+ (2), nom (50), max- (254), max (255) | Hợp lệ |
+### 1. Bảng 5 giá trị biên cho từng biến đầu vào
+
+| Biến đầu vào | min | min+ | nominal | max- | max | Tag biên |
+|---|---:|---:|---:|---:|---:|---|
+| **Giá bán sản phẩm** (`productPrice`) | 10.0 | 11.0 | 1500.0 | 49999.0 | 50000.0 | B1, B2, B3, B4, B5 |
+| **Số lượng tồn kho** (`stockQty`) | 0 | 1 | 100 | 9999 | 10000 | B6, B7, B8, B9, B10 |
+| **Độ dài tên sản phẩm** (`productNameLength`) | 5 | 6 | 25 | 99 | 100 | B11, B12, B13, B14, B15 |
+| **Quyền quản trị viên** (`adminRoleLevel`) | 1 | 1 | 1 | 1 | 1 | B16, B17, B18, B19, B20 |
+
+### 2. Bảng 17 test case Standard BVA (Single Fault Assumption: $4n + 1 = 17$)
+
+Theo kỹ thuật Standard Boundary Value Analysis, với $n = 4$ biến đầu vào, số test case là:
+$$4n + 1 = 4 \times 4 + 1 = \mathbf{17\text{ test case}}$$
+
+Giữ $n - 1$ biến tại giá trị danh định (`nominal`), lần lượt thay đổi 1 biến qua 4 giá trị biên (`min`, `min+`, `max-`, `max`):
+
+| STT | Mã TC | Biến kiểm thử biên | Điểm biên kiểm tra | Giá bán (k) | Tồn kho | Tên SP (len) | Quyền Admin | Kết quả mong đợi | Tag bao phủ |
+|:---:|:---:|:---|:---|:---:|:---:|:---:|:---:|:---|:---|
+| 1 | BVA01 | Baseline (Tất cả) | Nominal | 1500.0 | 100 | 25 | 1 | Hợp lệ (True) | B3, B8, B13, B18 |
+| 2 | BVA02 | Giá bán sản phẩm | min (10.0) | **10.0** | 100 | 25 | 1 | Hợp lệ (True) | B1 |
+| 3 | BVA03 | Giá bán sản phẩm | max (50000.0) | **50000.0** | 100 | 25 | 1 | Hợp lệ (True) | B5 |
+| 4 | BVA04 | Giá bán sản phẩm | min-1 (9.0) | **9.0** | 100 | 25 | 1 | Không hợp lệ (False) | X1 |
+| 5 | BVA05 | Giá bán sản phẩm | max+1 (50001.0) | **50001.0** | 100 | 25 | 1 | Không hợp lệ (False) | X2 |
+| 6 | BVA06 | Tồn kho | min (0) | 1500.0 | **0** | 25 | 1 | Hợp lệ (True) | B6 |
+| 7 | BVA07 | Tồn kho | max (10000) | 1500.0 | **10000** | 25 | 1 | Hợp lệ (True) | B10 |
+| 8 | BVA08 | Tồn kho | min-1 (-1) | 1500.0 | **-1** | 25 | 1 | Không hợp lệ (False) | X3 |
+| 9 | BVA09 | Tồn kho | max+1 (10001) | 1500.0 | **10001** | 25 | 1 | Không hợp lệ (False) | X4 |
+| 10 | BVA10 | Độ dài tên SP | min (5) | 1500.0 | 100 | **5** | 1 | Hợp lệ (True) | B11 |
+| 11 | BVA11 | Độ dài tên SP | max (100) | 1500.0 | 100 | **100** | 1 | Hợp lệ (True) | B15 |
+| 12 | BVA12 | Độ dài tên SP | min-1 (4) | 1500.0 | 100 | **4** | 1 | Không hợp lệ (False) | X5 |
+| 13 | BVA13 | Độ dài tên SP | max+1 (101) | 1500.0 | 100 | **101** | 1 | Không hợp lệ (False) | X6 |
+| 14 | BVA14 | Quyền quản trị | min (1) | 1500.0 | 100 | 25 | **1** | Hợp lệ (True) | B16 |
+| 15 | BVA15 | Quyền quản trị | max (1) | 1500.0 | 100 | 25 | **1** | Hợp lệ (True) | B20 |
+| 16 | BVA16 | Quyền quản trị | min-1 (0) | 1500.0 | 100 | 25 | **0** | Không hợp lệ (False) | X7 |
+| 17 | BVA17 | Quyền quản trị | max+1 (2) | 1500.0 | 100 | 25 | **2** | Không hợp lệ (False) | X8 |
+
+---
+
+## Câu 3. Thiết kế test case
+
+Dựa trên kết quả Câu 1 và Câu 2, bộ **17 test case** được thiết kế theo nguyên lý **Single Fault Assumption ($4n + 1 = 17$)** để vừa kế thừa chuẩn BVA cho 4 biến đầu vào, vừa thỏa mãn đầy đủ các yêu cầu của đề bài:
+- Có test case baseline hợp lệ danh định (nominal).
+- Có test case hợp lệ tại biên (`min`, `max`).
+- Có test case không hợp lệ ngoài biên (`min - 1`, `max + 1`) kèm lý do chi tiết.
+- Bao phủ toàn diện 100% các tag lớp tương đương ($V1 - V4$, $X1 - X8$) và các tag biên trọng yếu.
+
+### 1. Bảng test case tổng hợp (Test Case, Input, Expected Outcome, New Tags Covered)
+
+| Test Case | Input | Expected Outcome | New Tags Covered |
+|---|---|---|---|
+| TC01 | productPrice: 1500.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
+| TC02 | productPrice: 10.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | B1 |
+| TC03 | productPrice: 50000.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | B5 |
+| TC04 | productPrice: 9.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Không hợp lệ (False): Giá bán nhỏ hơn 10.0k | X1 |
+| TC05 | productPrice: 50001.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Không hợp lệ (False): Giá bán lớn hơn 50000.0k | X2 |
+| TC06 | productPrice: 1500.0, stockQty: 0, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | B6 |
+| TC07 | productPrice: 1500.0, stockQty: 10000, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | B10 |
+| TC08 | productPrice: 1500.0, stockQty: -1, productNameLength: 25, adminRoleLevel: 1 | Không hợp lệ (False): Tồn kho nhỏ hơn 0 | X3 |
+| TC09 | productPrice: 1500.0, stockQty: 10001, productNameLength: 25, adminRoleLevel: 1 | Không hợp lệ (False): Tồn kho lớn hơn 10000 | X4 |
+| TC10 | productPrice: 1500.0, stockQty: 100, productNameLength: 5, adminRoleLevel: 1 | Hợp lệ (True) | B11 |
+| TC11 | productPrice: 1500.0, stockQty: 100, productNameLength: 100, adminRoleLevel: 1 | Hợp lệ (True) | B15 |
+| TC12 | productPrice: 1500.0, stockQty: 100, productNameLength: 4, adminRoleLevel: 1 | Không hợp lệ (False): Tên SP nhỏ hơn 5 ký tự | X5 |
+| TC13 | productPrice: 1500.0, stockQty: 100, productNameLength: 101, adminRoleLevel: 1 | Không hợp lệ (False): Tên SP lớn hơn 100 ký tự | X6 |
+| TC14 | productPrice: 1500.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | B16 |
+| TC15 | productPrice: 1500.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 1 | Hợp lệ (True) | B20 |
+| TC16 | productPrice: 1500.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 0 | Không hợp lệ (False): Không có quyền Admin (HTTP 403) | X7 |
+| TC17 | productPrice: 1500.0, stockQty: 100, productNameLength: 25, adminRoleLevel: 2 | Không hợp lệ (False): Quyền hạn không hợp lệ | X8 |
+
+### 2. Bảng test case chi tiết theo đề bài (8 cột)
+
+| STT | Tên test case | Giá bán (k) | Tồn kho | Độ dài tên SP | Quyền Admin | Kết quả mong đợi | Tag được bao phủ |
+|:---:|:---|:---:|:---:|:---:|:---:|:---|:---|
+| 1 | Baseline danh định (nominal) | 1500.0 | 100 | 25 | 1 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
+| 2 | Biên dưới hợp lệ productPrice = min (10.0) | **10.0** | 100 | 25 | 1 | Hợp lệ (True) | B1 |
+| 3 | Biên trên hợp lệ productPrice = max (50000.0) | **50000.0** | 100 | 25 | 1 | Hợp lệ (True) | B5 |
+| 4 | Ngoài biên dưới productPrice < min (9.0) | **9.0** | 100 | 25 | 1 | Không hợp lệ (False): Giá bán nhỏ hơn 10.0k | X1 |
+| 5 | Ngoài biên trên productPrice > max (50001.0) | **50001.0** | 100 | 25 | 1 | Không hợp lệ (False): Giá bán lớn hơn 50000.0k | X2 |
+| 6 | Biên dưới hợp lệ stockQty = min (0) | 1500.0 | **0** | 25 | 1 | Hợp lệ (True) | B6 |
+| 7 | Biên trên hợp lệ stockQty = max (10000) | 1500.0 | **10000** | 25 | 1 | Hợp lệ (True) | B10 |
+| 8 | Ngoài biên dưới stockQty < min (-1) | 1500.0 | **-1** | 25 | 1 | Không hợp lệ (False): Tồn kho nhỏ hơn 0 | X3 |
+| 9 | Ngoài biên trên stockQty > max (10001) | 1500.0 | **10001** | 25 | 1 | Không hợp lệ (False): Tồn kho lớn hơn 10000 | X4 |
+| 10 | Biên dưới hợp lệ productNameLength = min (5) | 1500.0 | 100 | **5** | 1 | Hợp lệ (True) | B11 |
+| 11 | Biên trên hợp lệ productNameLength = max (100) | 1500.0 | 100 | **100** | 1 | Hợp lệ (True) | B15 |
+| 12 | Ngoài biên dưới productNameLength < min (4) | 1500.0 | 100 | **4** | 1 | Không hợp lệ (False): Tên SP nhỏ hơn 5 ký tự | X5 |
+| 13 | Ngoài biên trên productNameLength > max (101) | 1500.0 | 100 | **101** | 1 | Không hợp lệ (False): Tên SP lớn hơn 100 ký tự | X6 |
+| 14 | Biên dưới hợp lệ adminRoleLevel = min (1) | 1500.0 | 100 | 25 | **1** | Hợp lệ (True) | B16 |
+| 15 | Biên trên hợp lệ adminRoleLevel = max (1) | 1500.0 | 100 | 25 | **1** | Hợp lệ (True) | B20 |
+| 16 | Ngoài biên dưới adminRoleLevel < min (0) | 1500.0 | 100 | 25 | **0** | Không hợp lệ (False): Không có quyền Admin (HTTP 403) | X7 |
+| 17 | Ngoài biên trên adminRoleLevel > max (2) | 1500.0 | 100 | 25 | **2** | Không hợp lệ (False): Quyền hạn không hợp lệ | X8 |
+
+---
+
+### 3. Bổ sung: Bảng Quyết định phân quyền Admin (Decision Table - 4 Rules)
+
+| Condition / Action | Rule 1 (Guest) | Rule 2 (User) | Rule 3 (Admin) | Rule 4 (SuperAdmin) |
+| :--- | :---: | :---: | :---: | :---: |
+| **C1: Quyền truy cập (`ROLE`)** | ANONYMOUS | ROLE_USER | ROLE_ADMIN | ROLE_SUPER_ADMIN |
+| *A1: Chuyển hướng về trang `/login` (302)* | **X** | - | - | - |
+| *A2: Chặn truy cập trái phép (HTTP 403 Forbidden)* | - | **X** | - | - |
+| *A3: Cho phép CRUD Sản phẩm & Đơn hàng (200)* | - | - | **X** | **X** |
+| *A4: Toàn quyền cấu hình hệ thống & Nhân sự* | - | - | - | **X** |
+
+---
+
+## Câu 4. Triển khai kiểm thử tự động
+
+```python
+def ValidateAdminManagement(productPrice: float, stockQty: int, productNameLength: int, adminRoleLevel: int) -> bool:
+    """
+    Kiểm tra tính hợp lệ của thao tác quản lý Admin:
+    - 10.0 <= productPrice <= 50000.0 (Giá bán từ 10k đến 50tr)
+    - 0 <= stockQty <= 10000 (Tồn kho từ 0 đến 10.000 đôi)
+    - 5 <= productNameLength <= 100 (Tên sản phẩm từ 5 đến 100 ký tự)
+    - adminRoleLevel == 1 (Yêu cầu tài khoản có quyền ROLE_ADMIN)
+    Trả về True nếu tất cả điều kiện thỏa mãn, ngược lại False.
+    """
+    if not (isinstance(productPrice, (int, float)) and not isinstance(productPrice, bool) and 10.0 <= productPrice <= 50000.0):
+        return False
+    if not (isinstance(stockQty, int) and not isinstance(stockQty, bool) and 0 <= stockQty <= 10000):
+        return False
+    if not (isinstance(productNameLength, int) and not isinstance(productNameLength, bool) and 5 <= productNameLength <= 100):
+        return False
+    if not (isinstance(adminRoleLevel, int) and not isinstance(adminRoleLevel, bool) and adminRoleLevel == 1):
+        return False
+    return True
+```
+
+```pytest
+# thiết kế các test cases từ câu 3.
+# Run test case 
+import pytest
+
+test_cases_m8 = [
+    ("TC01", 1500.0, 100, 25, 1, True, "V1, V2, V3, V4, B3, B8, B13, B18"),
+    ("TC02", 10.0, 100, 25, 1, True, "B1"),
+    ("TC03", 50000.0, 100, 25, 1, True, "B5"),
+    ("TC04", 9.0, 100, 25, 1, False, "X1"),
+    ("TC05", 50001.0, 100, 25, 1, False, "X2"),
+    ("TC06", 1500.0, 0, 25, 1, True, "B6"),
+    ("TC07", 1500.0, 10000, 25, 1, True, "B10"),
+    ("TC08", 1500.0, -1, 25, 1, False, "X3"),
+    ("TC09", 1500.0, 10001, 25, 1, False, "X4"),
+    ("TC10", 1500.0, 100, 5, 1, True, "B11"),
+    ("TC11", 1500.0, 100, 100, 1, True, "B15"),
+    ("TC12", 1500.0, 100, 4, 1, False, "X5"),
+    ("TC13", 1500.0, 100, 101, 1, False, "X6"),
+    ("TC14", 1500.0, 100, 25, 1, True, "B16"),
+    ("TC15", 1500.0, 100, 25, 1, True, "B20"),
+    ("TC16", 1500.0, 100, 25, 0, False, "X7"),
+    ("TC17", 1500.0, 100, 25, 2, False, "X8"),
+]
+
+@pytest.mark.parametrize("tc_id,price,stock,pLen,roleLvl,expected,tag", test_cases_m8)
+def test_admin_validation(tc_id, price, stock, pLen, roleLvl, expected, tag):
+    """Kiểm thử tự động 17 test case quản trị Admin theo nguyên lý 4n + 1."""
+    assert ValidateAdminManagement(price, stock, pLen, roleLvl) == expected
+
+if __name__ == "__main__":
+    pytest.main(["-v", __file__])
+```
+
+```kết quả test
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\LapTrinhAI\Testing
+collected 17 items
+
+test_admin.py::test_admin_validation[TC01-1500.0-100-25-1-True-V1, V2, V3, V4, B3, B8, B13, B18] PASSED [  5%]
+test_admin.py::test_admin_validation[TC02-10.0-100-25-1-True-B1] PASSED [ 11%]
+test_admin.py::test_admin_validation[TC03-50000.0-100-25-1-True-B5] PASSED [ 17%]
+test_admin.py::test_admin_validation[TC04-9.0-100-25-1-False-X1] PASSED [ 23%]
+test_admin.py::test_admin_validation[TC05-50001.0-100-25-1-False-X2] PASSED [ 29%]
+test_admin.py::test_admin_validation[TC06-1500.0-0-25-1-True-B6] PASSED [ 35%]
+test_admin.py::test_admin_validation[TC07-1500.0-10000-25-1-True-B10] PASSED [ 41%]
+test_admin.py::test_admin_validation[TC08-1500.0--1-25-1-False-X3] PASSED [ 47%]
+test_admin.py::test_admin_validation[TC09-1500.0-10001-25-1-False-X4] PASSED [ 52%]
+test_admin.py::test_admin_validation[TC10-1500.0-100-5-1-True-B11] PASSED [ 58%]
+test_admin.py::test_admin_validation[TC11-1500.0-100-100-1-True-B15] PASSED [ 64%]
+test_admin.py::test_admin_validation[TC12-1500.0-100-4-1-False-X5] PASSED [ 70%]
+test_admin.py::test_admin_validation[TC13-1500.0-100-101-1-False-X6] PASSED [ 76%]
+test_admin.py::test_admin_validation[TC14-1500.0-100-25-1-True-B16] PASSED [ 82%]
+test_admin.py::test_admin_validation[TC15-1500.0-100-25-1-True-B20] PASSED [ 88%]
+test_admin.py::test_admin_validation[TC16-1500.0-100-25-0-False-X7] PASSED [ 94%]
+test_admin.py::test_admin_validation[TC17-1500.0-100-25-2-False-X8] PASSED [100%]
+
+============================= 17 passed in 0.14s ==============================
+```

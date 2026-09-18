@@ -4,7 +4,7 @@
 
 | Nội dung | Kết quả |
 |---|---:|
-| Tests | 1.074 total, 1.073 passed, 0 failures, 0 errors, 1 skipped |
+| Tests | 1.108 total, 1.106 passed, 0 failures, 0 errors, 2 skipped |
 | Thời gian thực thi lần cuối | 44,95 giây cho Maven; khoảng 48 giây end-to-end |
 | Instruction coverage | 14.508/14.528 — **99,8623%** |
 | Line coverage | 3.372/3.377 — **99,8519%** |
@@ -172,24 +172,33 @@ config:
 ---
 flowchart TD
     N1(("1")) --> N2(("2"))
-    N2 --> N3(("3"))
-    N2 --> N4(("4"))
+    N2 -- "T" --> N3(("3"))
+    N2 -- "F" --> N4(("4"))
     N3 --> N6(("6"))
-    N4 --> N5(("5"))
-    N4 --> N6
+    N4 -- "T" --> N5(("5"))
+    N4 -- "F" --> N6
     N5 --> N6
-    N6 --> N7(("7"))
-    N6 --> N8(("8"))
-    N7 --> N8
-    N8 --> N9(("9"))
-    N8 --> N10(("10"))
+    N6 -- "T" --> N7(("7"))
+    N6 -- "F" --> N8(("8"))
+    N7 --> N10(("10"))
+    N8 -- "T" --> N9(("9"))
+    N8 -- "F" --> N10
     N9 --> N10
-    N10 --> N11(("11"))
-    N10 --> N12(("12"))
-    N11 --> N12
+    N10 -- "T" --> N11(("11"))
+    N10 -- "F" --> N12(("12"))
+    N11 --> N14(("14"))
+    N12 -- "T" --> N13(("13"))
+    N12 -- "F" --> N14
+    N13 --> N14
+    N14 -- "T" --> N15(("15"))
+    N14 -- "F" --> N16(("16"))
+    N15 --> N18(("18"))
+    N16 -- "T" --> N17(("17"))
+    N16 -- "F" --> N18
+    N17 --> N18
 
     classDef cfgNode fill:#ffffff,stroke:#1597a5,stroke-width:2px,color:#111111;
-    class N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N11,N12 cfgNode;
+    class N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N11,N12,N13,N14,N15,N16,N17,N18 cfgNode;
 ```
 
 | Node | Câu lệnh/basic block | Luồng kế tiếp |
@@ -200,24 +209,30 @@ flowchart TD
 | 4 | Email không rỗng và sai định dạng? | T → 5; F → 6 |
 | 5 | Reject `Pattern.customerForm.email` | 6 |
 | 6 | Name khác `null` và dài hơn 255 ký tự? | T → 7; F → 8 |
-| 7 | Reject `Length.customerForm.name` | 8 |
-| 8 | Address khác `null` và dài hơn 255 ký tự? | T → 9; F → 10 |
-| 9 | Reject `Length.customerForm.address` | 10 |
-| 10 | Phone khác `null` và dài hơn 128 ký tự? | T → 11; F → 12 |
-| 11 | Reject `Length.customerForm.phone` | 12 |
-| 12 | Kết thúc hàm | — |
+| 7 | Reject `Length.customerForm.name` | 10 |
+| 8 | Name không rỗng và chứa ký tự cấm (`!NAME_PATTERN`)? | T → 9; F → 10 |
+| 9 | Reject `Pattern.customerForm.name` | 10 |
+| 10 | Address khác `null` và dài hơn 255 ký tự? | T → 11; F → 12 |
+| 11 | Reject `Length.customerForm.address` | 14 |
+| 12 | Address không rỗng và chứa ký tự cấm (`!ADDRESS_PATTERN`)? | T → 13; F → 14 |
+| 13 | Reject `Pattern.customerForm.address` | 14 |
+| 14 | Phone khác `null` và dài hơn 128 ký tự? | T → 15; F → 16 |
+| 15 | Reject `Length.customerForm.phone` | 18 |
+| 16 | Phone không rỗng và chứa ký tự cấm (`!PHONE_PATTERN`)? | T → 17; F → 18 |
+| 17 | Reject `Pattern.customerForm.phone` | 18 |
+| 18 | Kết thúc hàm | — |
 
-`T` = True, `F` = False. Đồ thị có **N = 12** node, **E = 16** cạnh và **P = 5** node
-quyết định (`2`, `4`, `6`, `8`, `10`).
+`T` = True, `F` = False. Đồ thị có **N = 18** node, **E = 25** cạnh và **P = 8** node
+quyết định (`2`, `4`, `6`, `8`, `10`, `12`, `14`, `16`).
 
 ### 9.3. Tính thủ công độ phức tạp Cyclomatic
 
 ```text
-V(G) = E - N + 2 = 16 - 12 + 2 = 6
-V(G) = P + 1     = 5 + 1         = 6
+V(G) = E - N + 2 = 25 - 18 + 2 = 9
+V(G) = P + 1     = 8 + 1         = 9
 ```
 
-Hai công thức cùng cho **V(G) = 6**, tương ứng sáu independent basis paths.
+Hai công thức cùng cho **V(G) = 9**, tương ứng chín independent basis paths.
 
 ### 9.4. Basis Path Coverage và Test Cases
 
@@ -225,15 +240,18 @@ Actor là test method gọi `validator.validate(form, errors)`.
 
 | Path | Start state | Input | Chuỗi node trên CFG | Expected output (finish state) | Test case |
 |---|---|---|---|---|---|
-| B1 | Form nền hợp lệ; `errors` rỗng | Các trường có khoảng trắng; email viết hoa | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(F) → 12 | Không có lỗi; form được trim và email chuyển thành chữ thường | `validate_validCustomer_normalizesInputAndHasNoErrors` |
-| B2 | Form nền hợp lệ; `errors` rỗng | Email dài 129 ký tự | 1 → 2(T) → 3 → 6(F) → 8(F) → 10(F) → 12 | Email có lỗi `Length.customerForm.email` | `validate_emailOverMaximumLength_rejectsOnlyLengthCode` |
-| B3 | Form nền hợp lệ; `errors` rỗng | Email là `invalid-email` | 1 → 2(F) → 4(T) → 5 → 6(F) → 8(F) → 10(F) → 12 | Email có lỗi `Pattern.customerForm.email` | `validate_invalidEmail_rejectsPatternCode` |
-| B4 | Form nền hợp lệ; `errors` rỗng | Name dài 256 ký tự | 1 → 2(F) → 4(F) → 6(T) → 7 → 8(F) → 10(F) → 12 | Name có lỗi `Length.customerForm.name` | `validate_nameOutsideBoundary_rejectsExpectedCode` |
-| B5 | Form nền hợp lệ; `errors` rỗng | Address dài 256 ký tự | 1 → 2(F) → 4(F) → 6(F) → 8(T) → 9 → 10(F) → 12 | Address có lỗi `Length.customerForm.address` | `validate_addressOverMaximumLength_rejectsLengthCode` |
-| B6 | Form nền hợp lệ; `errors` rỗng | Phone dài 129 ký tự | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(T) → 11 → 12 | Phone có lỗi `Length.customerForm.phone` | `validate_phoneOverMaximumLength_rejectsLengthCode` |
+| B1 | Form nền hợp lệ; `errors` rỗng | Các trường có khoảng trắng; email viết hoa | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(F) → 12(F) → 14(F) → 16(F) → 18 | Không có lỗi; form được trim và email chuyển thành chữ thường | `validate_validCustomer_normalizesInputAndHasNoErrors` |
+| B2 | Form nền hợp lệ; `errors` rỗng | Email dài 129 ký tự | 1 → 2(T) → 3 → 6(F) → 8(F) → 10(F) → 12(F) → 14(F) → 16(F) → 18 | Email có lỗi `Length.customerForm.email` | `validate_emailOverMaximumLength_rejectsOnlyLengthCode` |
+| B3 | Form nền hợp lệ; `errors` rỗng | Email là `invalid-email` | 1 → 2(F) → 4(T) → 5 → 6(F) → 8(F) → 10(F) → 12(F) → 14(F) → 16(F) → 18 | Email có lỗi `Pattern.customerForm.email` | `validate_invalidEmail_rejectsPatternCode` |
+| B4 | Form nền hợp lệ; `errors` rỗng | Name dài 256 ký tự | 1 → 2(F) → 4(F) → 6(T) → 7 → 10(F) → 12(F) → 14(F) → 16(F) → 18 | Name có lỗi `Length.customerForm.name` | `validate_nameOutsideBoundary_rejectsExpectedCode` |
+| B5 | Form nền hợp lệ; `errors` rỗng | Name chứa `@#$%` | 1 → 2(F) → 4(F) → 6(F) → 8(T) → 9 → 10(F) → 12(F) → 14(F) → 16(F) → 18 | Name có lỗi `Pattern.customerForm.name` | `validate_dangerousCharacters_rejected` |
+| B6 | Form nền hợp lệ; `errors` rỗng | Address dài 256 ký tự | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(T) → 11 → 14(F) → 16(F) → 18 | Address có lỗi `Length.customerForm.address` | `validate_addressOverMaximumLength_rejectsLengthCode` |
+| B7 | Form nền hợp lệ; `errors` rỗng | Address chứa `<script>` | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(F) → 12(T) → 13 → 14(F) → 16(F) → 18 | Address có lỗi `Pattern.customerForm.address` | `validate_dangerousCharacters_rejected` |
+| B8 | Form nền hợp lệ; `errors` rỗng | Phone dài 129 ký tự | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(F) → 12(F) → 14(T) → 15 → 18 | Phone có lỗi `Length.customerForm.phone` | `validate_phoneOverMaximumLength_rejectsLengthCode` |
+| B9 | Form nền hợp lệ; `errors` rỗng | Phone chứa chữ cái `090abc` | 1 → 2(F) → 4(F) → 6(F) → 8(F) → 10(F) → 12(F) → 14(F) → 16(T) → 17 → 18 | Phone có lỗi `Pattern.customerForm.phone` | `validate_dangerousCharacters_rejected` |
 
-Mỗi hàng thể hiện `Start state → Input → path trên CFG → expected finish state`. B1–B6 tạo
-thành sáu independent basis paths đúng bằng `V(G)` và đi qua cả hai hướng của năm node quyết định.
+Mỗi hàng thể hiện `Start state → Input → path trên CFG → expected finish state`. B1–B9 tạo
+thành chín independent basis paths đúng bằng `V(G)` và đi qua cả hai hướng của tám node quyết định.
 
 ## 10. File bàn giao
 

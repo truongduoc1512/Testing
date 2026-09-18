@@ -81,6 +81,42 @@ class CustomerFormValidatorTest {
         assertFieldHasCode(errors, "email", "Pattern.customerForm.email");
     }
 
+    @ParameterizedTest(name = "name with special chars [{0}] is rejected")
+    @ValueSource(strings = { "Nguyễn Văn A #@!", "John<Doe>", "Test@User", "Admin%#^" })
+    void validate_nameWithSpecialCharacters_rejectsPatternCode(String invalidName) {
+        CustomerForm form = validForm();
+        form.setName(invalidName);
+        BeanPropertyBindingResult errors = errorsFor(form);
+
+        validator.validate(form, errors);
+
+        assertFieldHasCode(errors, "name", "Pattern.customerForm.name");
+    }
+
+    @ParameterizedTest(name = "address with unsafe chars [{0}] is rejected")
+    @ValueSource(strings = { "123 Đường <script>alert(1)</script>", "Số 5 {block} #1", "Đường ^$%*" })
+    void validate_addressWithInvalidSpecialCharacters_rejectsPatternCode(String invalidAddress) {
+        CustomerForm form = validForm();
+        form.setAddress(invalidAddress);
+        BeanPropertyBindingResult errors = errorsFor(form);
+
+        validator.validate(form, errors);
+
+        assertFieldHasCode(errors, "address", "Pattern.customerForm.address");
+    }
+
+    @ParameterizedTest(name = "phone with special chars [{0}] is rejected")
+    @ValueSource(strings = { "0988@123#456", "phone_number", "090-abc-def" })
+    void validate_phoneWithSpecialCharacters_rejectsPatternCode(String invalidPhone) {
+        CustomerForm form = validForm();
+        form.setPhone(invalidPhone);
+        BeanPropertyBindingResult errors = errorsFor(form);
+
+        validator.validate(form, errors);
+
+        assertFieldHasCode(errors, "phone", "Pattern.customerForm.phone");
+    }
+
     // Standard BVA (4n+1)
     @ParameterizedTest(name = "name length {0} is valid")
     @ValueSource(ints = { 1, 2, 50, 254, 255 })

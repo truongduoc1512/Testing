@@ -33,7 +33,7 @@ Write-Host "---------------------------------------------" -ForegroundColor Cyan
 # We use --yes to automatically confirm the download prompt.
 npx --yes newman run $CollectionPath `
     -e $EnvironmentPath `
-    -r cli,htmlextra `
+    -r 'cli,htmlextra' `
     --reporter-htmlextra-export $ReportPath `
     --insecure
 

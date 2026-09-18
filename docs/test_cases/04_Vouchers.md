@@ -1,123 +1,240 @@
-# Bảng Test Case: Chức năng 4 - Quản lý và Áp dụng Mã giảm giá (Vouchers)
-**Người thực hiện:** Được 
+# BÀI LÀM: KIỂM THỬ CHỨC NĂNG 4 - QUẢN LÝ VÀ ÁP DỤNG MÃ GIẢM GIÁ (VOUCHERS)
 
-## 1. Thông tin Kỹ thuật & Thực thi
-- **Kỹ thuật Thiết kế (Test Design):** 
-  - Phân hoạch lớp tương đương (EP)
-  - Phân tích giá trị biên (BVA)
-  - Bảng quyết định (Decision Table). Sử dụng để tối ưu hóa tổ hợp các ràng buộc validation phức tạp.
-- **Kỹ thuật Thực thi (Test Execution):** 
-  - Kiểm thử Tích hợp (Integration Test) & Đơn vị (Unit Test) qua JUnit / Mockito.
-  - Kiểm thử API End-to-End (Black-box E2E API Testing) qua Postman.
-- **File Code Thực thi (Automation Script):** 
-  - Backend Logic: `src/test/java/com/example/demo/VoucherTests.java` và `dao/VoucherDAOTest.java`
-  - Postman API: `docs/Shoeshop_API_Collection.json`
+- **Họ và tên sinh viên:** Nguyễn Hoàng Phương
+- **Mã số sinh viên (MSSV):** 080205010954
+- **Môn học:** Kiểm Chứng Phần Mềm
+- **Chủ đề:** Phân hoạch lớp tương đương, phân tích giá trị biên, bảng quyết định, chuyển đổi trạng thái, thiết kế test case và kiểm thử tự động
 
 ---
 
-## 2. Phân tích Kỹ thuật Thiết kế (Test Design Analysis)
+## Bảng phân tích điều kiện kiểm thử (Test Conditions)
 
-Theo chuẩn ISTQB, chức năng Voucher áp dụng đồng thời 3 kỹ thuật. Dưới đây là phân tích chi tiết cho từng kỹ thuật:
+| Conditions | Valid Partition | Tag | Invalid Partitions | Tag | Valid Boundaries | Tag |
+|---|---|---|---|---|---|---|
+| **Giá trị đơn hàng** (`orderAmount`) | 500.0 ≤ orderAmount ≤ 50000.0 | V1 | • orderAmount < 500.0<br>• orderAmount > 50000.0 | X1<br>X2 | • 500.0 (min)<br>• 501.0 (min+)<br>• 25000.0 (nominal)<br>• 49999.0 (max-)<br>• 50000.0 (max) | B1<br>B2<br>B3<br>B4<br>B5 |
+| **Tỷ lệ chiết khấu** (`discountPercent`) | 1.0 ≤ discountPercent ≤ 100.0 | V2 | • discountPercent < 1.0<br>• discountPercent > 100.0 | X3<br>X4 | • 1.0 (min)<br>• 1.1 (min+)<br>• 20.0 (nominal)<br>• 99.9 (max-)<br>• 100.0 (max) | B6<br>B7<br>B8<br>B9<br>B10 |
+| **Lượt dùng chung toàn hệ thống** (`usedCount`) | 0 ≤ usedCount ≤ 49 | V3 | • usedCount < 0<br>• usedCount ≥ 50 | X5<br>X6 | • 0 (min)<br>• 1 (min+)<br>• 25 (nominal)<br>• 48 (max-)<br>• 49 (max) | B11<br>B12<br>B13<br>B14<br>B15 |
+| **Lượt dùng cá nhân của User** (`userUsedCount`) | 0 ≤ userUsedCount ≤ 1 | V4 | • userUsedCount < 0<br>• userUsedCount ≥ 2 | X7<br>X8 | • 0 (min)<br>• 1 (min+)<br>• 1 (nominal)<br>• 1 (max-)<br>• 1 (max) | B16<br>B17<br>B18<br>B19<br>B20 |
 
+---
 
-### 2.1 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
+## Câu 1. Xác định lớp tương đương
 
-| Biến đầu vào / Điều kiện | Lớp tương đương Hợp lệ | Tag | Lớp tương đương Không hợp lệ | Tag |
-| :--- | :--- | :---: | :--- | :---: |
-| **Mã Voucher (`voucherCode`)** | Mã tồn tại trong CSDL | **V1** | Mã không tồn tại / Mã rác | **X1** |
-| **Trạng thái kích hoạt (`active`)** | Đang kích hoạt (`active = true`) | **V2** | Bị vô hiệu hóa (`active = false`) | **X2** |
-| **Hạn sử dụng (`expirationDate`)** | Ngày áp dụng ≤ Ngày hết hạn | **V3** | Đã quá ngày hết hạn (date > expiry) | **X3** |
-| **Đơn tối thiểu (`minOrderValue`)** | Tổng đơn ≥ minOrderValue | **V4** | Tổng đơn < minOrderValue | **X4** |
-| **Lượt dùng chung (`usageLimit`)** | Lượt đã dùng < usageLimit | **V5** | Đã hết lượt (usedCount ≥ usageLimit) | **X5** |
-| **Lượt dùng cá nhân (`perUserLimit`)**| Khách đăng nhập: used < perUserLimit<br>Khách vãng lai: Không ràng buộc | **V6**<br>**V7** | Khách đăng nhập: used ≥ perUserLimit | **X6** |
-| **Hình thức giảm giá (`discountType`)**| Giảm theo % (`PERCENT`) có chặn trần<br>Giảm trừ tiền cứng (`FIXED`) | **V8**<br>**V9** | N/A | |
-| **Quyền Admin CRUD (`role`)** | Tài khoản có quyền `ROLE_ADMIN` | **V10** | Tài khoản không có quyền Admin | **X7** |
+| Biến đầu vào | Lớp hợp lệ | Tag | Lớp không hợp lệ | Tag |
+|---|---|---|---|---|
+| **Giá trị đơn hàng** (`orderAmount` - nghìn đồng) | 500.0 ≤ orderAmount ≤ 50000.0 | V1 | • orderAmount < 500.0 (Chưa đạt mốc tối thiểu)<br>• orderAmount > 50000.0 (Vượt trần giao dịch) | X1<br>X2 |
+| **Tỷ lệ chiết khấu** (`discountPercent` - %) | 1.0 ≤ discountPercent ≤ 100.0 | V2 | • discountPercent < 1.0 (Tỷ lệ không hợp lệ)<br>• discountPercent > 100.0 (Vượt quá 100%) | X3<br>X4 |
+| **Lượt dùng chung** (`usedCount` - lượt) | 0 ≤ usedCount ≤ 49 (Limit = 50) | V3 | • usedCount < 0 (Số âm bất thường)<br>• usedCount ≥ 50 (Đã cạn lượt toàn hệ thống) | X5<br>X6 |
+| **Lượt dùng cá nhân** (`userUsedCount` - lượt) | 0 ≤ userUsedCount ≤ 1 (Limit = 2) | V4 | • userUsedCount < 0 (Số âm bất thường)<br>• userUsedCount ≥ 2 (Đã hết hạn mức cá nhân) | X7<br>X8 |
 
+---
 
-### 2.2 Bảng Phân tích giá trị biên (Standard Boundary Value Analysis - BVA)
+## Câu 2. Phân tích giá trị biên
 
-| Biến đầu vào | Miền hợp lệ | min | min+ | nominal | max- | max | Tag biên |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Đơn hàng tối thiểu (`orderAmount`)** | $[500, 10000]$ đô | 500 | 501 | 1500 | 9999 | 10000 | **B1, B2, B3, B4, B5** |
-| **Lượt dùng chung (`usedCount`)** | $[0, 49]$ lượt *(Limit=50)* | 0 | 1 | 25 | 48 | 49 | **B6, B7, B8, B9, B10** |
-| **Lượt dùng cá nhân (`userUsedCount`)**| $[0, 1]$ lượt *(Limit=2)* | 0 | 1 | 1 | 1 | 1 | **B11, B12, B13, B14, B15** |
-| **Tỷ lệ chiết khấu % (`percent`)** | $[1, 100]$ % | 1 | 2 | 20 | 99 | 100 | **B16, B17, B18, B19, B20** |
+### 1. Bảng 5 giá trị biên cho từng biến đầu vào
 
-*Ghi chú mở rộng (Robustness BVA):*
-- Giá trị dưới biên của đơn tối thiểu: $orderAmount = 499$ đô (Tag **B0** / min-1) -> Báo lỗi chưa đạt mốc tối thiểu.
-- Giá trị ngoài biên của lượt dùng chung: $usedCount = 50$ (Tag **B10+1**) -> Báo lỗi hết lượt dùng toàn hệ thống.
-- Giá trị ngoài biên của lượt dùng cá nhân: $userUsedCount = 2$ (Tag **B15+1**) -> Báo lỗi hết lượt cá nhân.
+| Biến đầu vào | min | min+ | nominal | max- | max | Tag biên |
+|---|---:|---:|---:|---:|---:|---|
+| **Giá trị đơn hàng** (`orderAmount`) | 500.0 | 501.0 | 25000.0 | 49999.0 | 50000.0 | B1, B2, B3, B4, B5 |
+| **Tỷ lệ chiết khấu** (`discountPercent`) | 1.0 | 1.1 | 20.0 | 99.9 | 100.0 | B6, B7, B8, B9, B10 |
+| **Lượt dùng chung** (`usedCount`) | 0 | 1 | 25 | 48 | 49 | B11, B12, B13, B14, B15 |
+| **Lượt dùng cá nhân** (`userUsedCount`) | 0 | 1 | 1 | 1 | 1 | B16, B17, B18, B19, B20 |
 
+### 2. Bảng 17 test case Standard BVA (Single Fault Assumption: $4n + 1 = 17$)
 
-### 2.3 Bảng Quyết định tổng hợp (Collapsed Decision Table)
-Gộp các vùng dữ liệu trên vào Ma trận Quyết định để che phủ luồng Áp dụng Voucher (Luật từ chối theo thứ tự ưu tiên của Backend):
+Theo kỹ thuật Standard Boundary Value Analysis, với $n = 4$ biến đầu vào, số test case là:
+$$4n + 1 = 4 \times 4 + 1 = \mathbf{17\text{ test case}}$$
 
-| Condition/Action | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 |
+Giữ $n - 1$ biến tại giá trị danh định (`nominal`), lần lượt thay đổi 1 biến qua 4 giá trị biên (`min`, `min+`, `max-`, `max`):
+
+| STT | Mã TC | Biến kiểm thử biên | Điểm biên kiểm tra | Đơn hàng (k) | Chiết khấu (%) | Lượt dùng chung | Lượt cá nhân | Kết quả mong đợi | Tag bao phủ |
+|:---:|:---:|:---|:---|:---:|:---:|:---:|:---:|:---|:---|
+| 1 | BVA01 | Baseline (Tất cả) | Nominal | 25000.0 | 20.0 | 25 | 1 | Hợp lệ (True) | B3, B8, B13, B18 |
+| 2 | BVA02 | Giá trị đơn hàng | min (500.0) | **500.0** | 20.0 | 25 | 1 | Hợp lệ (True) | B1 |
+| 3 | BVA03 | Giá trị đơn hàng | min+ (501.0) | **501.0** | 20.0 | 25 | 1 | Hợp lệ (True) | B2 |
+| 4 | BVA04 | Giá trị đơn hàng | max- (49999.0) | **49999.0** | 20.0 | 25 | 1 | Hợp lệ (True) | B4 |
+| 5 | BVA05 | Giá trị đơn hàng | max (50000.0) | **50000.0** | 20.0 | 25 | 1 | Hợp lệ (True) | B5 |
+| 6 | BVA06 | Tỷ lệ chiết khấu | min (1.0) | 25000.0 | **1.0** | 25 | 1 | Hợp lệ (True) | B6 |
+| 7 | BVA07 | Tỷ lệ chiết khấu | min+ (1.1) | 25000.0 | **1.1** | 25 | 1 | Hợp lệ (True) | B7 |
+| 8 | BVA08 | Tỷ lệ chiết khấu | max- (99.9) | 25000.0 | **99.9** | 25 | 1 | Hợp lệ (True) | B9 |
+| 9 | BVA09 | Tỷ lệ chiết khấu | max (100.0) | 25000.0 | **100.0** | 25 | 1 | Hợp lệ (True) | B10 |
+| 10 | BVA10 | Lượt dùng chung | min (0) | 25000.0 | 20.0 | **0** | 1 | Hợp lệ (True) | B11 |
+| 11 | BVA11 | Lượt dùng chung | min+ (1) | 25000.0 | 20.0 | **1** | 1 | Hợp lệ (True) | B12 |
+| 12 | BVA12 | Lượt dùng chung | max- (48) | 25000.0 | 20.0 | **48** | 1 | Hợp lệ (True) | B14 |
+| 13 | BVA13 | Lượt dùng chung | max (49) | 25000.0 | 20.0 | **49** | 1 | Hợp lệ (True) | B15 |
+| 14 | BVA14 | Lượt dùng cá nhân | min (0) | 25000.0 | 20.0 | 25 | **0** | Hợp lệ (True) | B16 |
+| 15 | BVA15 | Lượt dùng cá nhân | min+ (1) | 25000.0 | 20.0 | 25 | **1** | Hợp lệ (True) | B17 |
+| 16 | BVA16 | Lượt dùng cá nhân | max- (1) | 25000.0 | 20.0 | 25 | **1** | Hợp lệ (True) | B19 |
+| 17 | BVA17 | Lượt dùng cá nhân | max (1) | 25000.0 | 20.0 | 25 | **1** | Hợp lệ (True) | B20 |
+
+---
+
+## Câu 3. Thiết kế test case
+
+Dựa trên kết quả Câu 1 và Câu 2, bộ **17 test case** được thiết kế theo nguyên lý **Single Fault Assumption ($4n + 1 = 17$)** để vừa kế thừa chuẩn BVA cho 4 biến đầu vào, vừa thỏa mãn đầy đủ các yêu cầu của đề bài:
+- Có test case baseline hợp lệ danh định (nominal).
+- Có test case hợp lệ tại biên (`min`, `max`).
+- Có test case không hợp lệ ngoài biên (`min - 1`, `max + 1`) kèm lý do chi tiết.
+- Bao phủ toàn diện 100% các tag lớp tương đương ($V1 - V4$, $X1 - X8$) và các tag biên trọng yếu.
+
+### 1. Bảng test case tổng hợp (Test Case, Input, Expected Outcome, New Tags Covered)
+
+| Test Case | Input | Expected Outcome | New Tags Covered |
+|---|---|---|---|
+| TC01 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 1 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
+| TC02 | orderAmount: 500.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 1 | Hợp lệ (True) | B1 |
+| TC03 | orderAmount: 50000.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 1 | Hợp lệ (True) | B5 |
+| TC04 | orderAmount: 499.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 1 | Không hợp lệ (False): Đơn hàng nhỏ hơn 500.0k | X1 |
+| TC05 | orderAmount: 50001.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 1 | Không hợp lệ (False): Đơn hàng vượt trần 50000.0k | X2 |
+| TC06 | orderAmount: 25000.0, discountPercent: 1.0, usedCount: 25, userUsedCount: 1 | Hợp lệ (True) | B6 |
+| TC07 | orderAmount: 25000.0, discountPercent: 100.0, usedCount: 25, userUsedCount: 1 | Hợp lệ (True) | B10 |
+| TC08 | orderAmount: 25000.0, discountPercent: 0.9, usedCount: 25, userUsedCount: 1 | Không hợp lệ (False): Tỷ lệ chiết khấu nhỏ hơn 1.0% | X3 |
+| TC09 | orderAmount: 25000.0, discountPercent: 100.1, usedCount: 25, userUsedCount: 1 | Không hợp lệ (False): Tỷ lệ chiết khấu lớn hơn 100.0% | X4 |
+| TC10 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 0, userUsedCount: 1 | Hợp lệ (True) | B11 |
+| TC11 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 49, userUsedCount: 1 | Hợp lệ (True) | B15 |
+| TC12 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: -1, userUsedCount: 1 | Không hợp lệ (False): Lượt dùng chung nhỏ hơn 0 | X5 |
+| TC13 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 50, userUsedCount: 1 | Không hợp lệ (False): Lượt dùng chung đã đạt tối đa 50 | X6 |
+| TC14 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 0 | Hợp lệ (True) | B16 |
+| TC15 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 1 | Hợp lệ (True) | B20 |
+| TC16 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 25, userUsedCount: -1 | Không hợp lệ (False): Lượt cá nhân nhỏ hơn 0 | X7 |
+| TC17 | orderAmount: 25000.0, discountPercent: 20.0, usedCount: 25, userUsedCount: 2 | Không hợp lệ (False): Lượt cá nhân đã đạt tối đa 2 | X8 |
+
+### 2. Bảng test case chi tiết theo đề bài (8 cột)
+
+| STT | Tên test case | Giá trị đơn hàng (k) | Tỷ lệ chiết khấu (%) | Lượt dùng chung | Lượt cá nhân | Kết quả mong đợi | Tag được bao phủ |
+|:---:|:---|:---:|:---:|:---:|:---:|:---|:---|
+| 1 | Baseline danh định (nominal) | 25000.0 | 20.0 | 25 | 1 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
+| 2 | Biên dưới hợp lệ orderAmount = min (500.0) | **500.0** | 20.0 | 25 | 1 | Hợp lệ (True) | B1 |
+| 3 | Biên trên hợp lệ orderAmount = max (50000.0) | **50000.0** | 20.0 | 25 | 1 | Hợp lệ (True) | B5 |
+| 4 | Ngoài biên dưới orderAmount < min (499.0) | **499.0** | 20.0 | 25 | 1 | Không hợp lệ (False): Đơn hàng nhỏ hơn 500.0k | X1 |
+| 5 | Ngoài biên trên orderAmount > max (50001.0) | **50001.0** | 20.0 | 25 | 1 | Không hợp lệ (False): Đơn hàng vượt trần 50000.0k | X2 |
+| 6 | Biên dưới hợp lệ discountPercent = min (1.0) | 25000.0 | **1.0** | 25 | 1 | Hợp lệ (True) | B6 |
+| 7 | Biên trên hợp lệ discountPercent = max (100.0) | 25000.0 | **100.0** | 25 | 1 | Hợp lệ (True) | B10 |
+| 8 | Ngoài biên dưới discountPercent < min (0.9) | 25000.0 | **0.9** | 25 | 1 | Không hợp lệ (False): Tỷ lệ chiết khấu nhỏ hơn 1.0% | X3 |
+| 9 | Ngoài biên trên discountPercent > max (100.1) | 25000.0 | **100.1** | 25 | 1 | Không hợp lệ (False): Tỷ lệ chiết khấu lớn hơn 100.0% | X4 |
+| 10 | Biên dưới hợp lệ usedCount = min (0) | 25000.0 | 20.0 | **0** | 1 | Hợp lệ (True) | B11 |
+| 11 | Biên trên hợp lệ usedCount = max (49) | 25000.0 | 20.0 | **49** | 1 | Hợp lệ (True) | B15 |
+| 12 | Ngoài biên dưới usedCount < min (-1) | 25000.0 | 20.0 | **-1** | 1 | Không hợp lệ (False): Lượt dùng chung nhỏ hơn 0 | X5 |
+| 13 | Ngoài biên trên usedCount > max (50) | 25000.0 | 20.0 | **50** | 1 | Không hợp lệ (False): Lượt dùng chung đã đạt tối đa 50 | X6 |
+| 14 | Biên dưới hợp lệ userUsedCount = min (0) | 25000.0 | 20.0 | 25 | **0** | Hợp lệ (True) | B16 |
+| 15 | Biên trên hợp lệ userUsedCount = max (1) | 25000.0 | 20.0 | 25 | **1** | Hợp lệ (True) | B20 |
+| 16 | Ngoài biên dưới userUsedCount < min (-1) | 25000.0 | 20.0 | 25 | **-1** | Không hợp lệ (False): Lượt cá nhân nhỏ hơn 0 | X7 |
+| 17 | Ngoài biên trên userUsedCount > max (2) | 25000.0 | 20.0 | 25 | **2** | Không hợp lệ (False): Lượt cá nhân đã đạt tối đa 2 | X8 |
+
+---
+
+### 3. Bổ sung: Ma trận Bảng quyết định rút gọn (Collapsed Decision Table - 8 Rules)
+
+| Điều kiện & Hành động | Rule 1 (R1) | Rule 2 (R2) | Rule 3 (R3) | Rule 4 (R4) | Rule 5 (R5) | Rule 6 (R6) | Rule 7 (R7) | Rule 8 (R8) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **C1: Tồn tại trong DB?** | N | Y | Y | Y | Y | Y | Y | Y |
-| **C2: Trạng thái Active?** | - | N | Y | Y | Y | Y | Y | Y |
-| **C3: Còn hạn sử dụng?** | - | - | N | Y | Y | Y | Y | Y |
-| **C4: Đạt đơn tối thiểu?** | - | - | - | N | Y | Y | Y | Y |
-| **C5: Còn lượt Global?** | - | - | - | - | N | Y | Y | Y |
-| **C6: Là Khách vãng lai?** | - | - | - | - | - | Y | N | N |
-| **C7: Còn lượt Cá nhân?** | - | - | - | - | - | - | N | Y |
-| **A1: Báo lỗi Không tồn tại** | X | - | - | - | - | - | - | - |
-| **A2: Báo lỗi Vô hiệu hóa** | - | X | - | - | - | - | - | - |
-| **A3: Báo lỗi Quá hạn** | - | - | X | - | - | - | - | - |
-| **A4: Báo lỗi Chưa đạt mốc** | - | - | - | X | - | - | - | - |
-| **A5: Báo lỗi Hết lượt Global**| - | - | - | - | X | - | - | - |
-| **A6: Báo lỗi Hết lượt Cá nhân**| - | - | - | - | - | - | X | - |
-| **A7: Áp dụng thành công** | - | - | - | - | - | X | - | X |
-| **Test Case Tương ứng** | TC_VOU_005 | TC_VOU_009 | TC_VOU_003 | TC_VOU_002 | TC_VOU_004 | TC_VOU_008 | TC_VOU_007 | TC_VOU_001, 006 |
+| **C1: Mã tồn tại trong CSDL?** | **N** | Y | Y | Y | Y | Y | Y | Y |
+| **C2: Đang kích hoạt (`active = true`)?** | - | **N** | Y | Y | Y | Y | Y | Y |
+| **C3: Còn hạn dùng (`date <= expiry`)?** | - | - | **N** | Y | Y | Y | Y | Y |
+| **C4: Đạt đơn tối thiểu (`total >= min`)?** | - | - | - | **N** | Y | Y | Y | Y |
+| **C5: Còn lượt chung (`used < limit`)?** | - | - | - | - | **N** | Y | Y | Y |
+| **C6: Là Khách vãng lai (Guest)?** | - | - | - | - | - | **Y** | N | N |
+| **C7: Còn lượt User (`userUsed < limit`)?** | - | - | - | - | - | - | **N** | **Y** |
+| *A1: Báo lỗi 'Mã không tồn tại'* | **X** | - | - | - | - | - | - | - |
+| *A2: Báo lỗi 'Mã đã bị vô hiệu hóa'* | - | **X** | - | - | - | - | - | - |
+| *A3: Báo lỗi 'Mã đã hết hạn dùng'* | - | - | **X** | - | - | - | - | - |
+| *A4: Báo lỗi 'Chưa đạt đơn tối thiểu'* | - | - | - | **X** | - | - | - | - |
+| *A5: Báo lỗi 'Mã đã hết lượt sử dụng'* | - | - | - | - | **X** | - | - | - |
+| *A6: Báo lỗi 'Bạn đã hết lượt dùng'* | - | - | - | - | - | - | **X** | - |
+| *A7: Áp dụng mã thành công (HTTP 200)* | - | - | - | - | - | **X** | - | **X** |
 
 ---
 
+## Câu 4. Triển khai kiểm thử tự động
 
-## 3. Bảng Test Case Chi Tiết (Nghiệp vụ Áp Mã & API Admin)
+```python
+def ValidateVoucher(orderAmount: float, discountPercent: float, usedCount: int, userUsedCount: int) -> bool:
+    """
+    Kiểm tra tính hợp lệ của yêu cầu áp dụng mã giảm giá (Voucher):
+    - 500.0 <= orderAmount <= 50000.0 (Giá trị đơn hàng: 500.000đ - 50.000.000đ)
+    - 1.0 <= discountPercent <= 100.0 (Tỷ lệ chiết khấu: 1% - 100%)
+    - 0 <= usedCount <= 49 (Số lượt toàn hệ thống đã dùng < limit 50)
+    - 0 <= userUsedCount <= 1 (Số lượt cá nhân đã dùng < perUserLimit 2)
+    Trả về True nếu tất cả điều kiện thỏa mãn, ngược lại False.
+    """
+    if not (isinstance(orderAmount, (int, float)) and not isinstance(orderAmount, bool) and 500.0 <= orderAmount <= 50000.0):
+        return False
+    if not (isinstance(discountPercent, (int, float)) and not isinstance(discountPercent, bool) and 1.0 <= discountPercent <= 100.0):
+        return False
+    if not (isinstance(usedCount, int) and not isinstance(usedCount, bool) and 0 <= usedCount <= 49):
+        return False
+    if not (isinstance(userUsedCount, int) and not isinstance(userUsedCount, bool) and 0 <= userUsedCount <= 1):
+        return False
+    return True
+```
 
-| Mã kiểm thử | Kỹ thuật áp dụng | Tiêu đề | Điều kiện tiên quyết | Các bước kiểm tra | Dữ liệu kiểm thử | Kết quả dự kiến | Tag được bao phủ | Kết quả thực tế | Trạng thái |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
-| **TC_VOU_001** | Bảng QĐ (R8) / EP / BVA | Kiểm tra áp dụng thành công mã hợp lệ (Giảm %) | Giỏ hàng 500 đô. Khách hàng đã Đăng nhập. | Nhập mã Voucher và Áp dụng. | `TESTPERCENT20` (Giảm 20%, max 50, MinOrder=100) | Hệ thống báo thành công. Tiền giảm chặn ở 50 đô (thay vì 100 đô). Hóa đơn 450 đô. | **V1, V2, V3, V4, V5, V6, V8, B1, B6, B18** | Khớp với Unit Test. | Pass |
-| **TC_VOU_002** | Bảng QĐ (R4) / BVA | Kiểm tra chặn áp mã khi hóa đơn chưa đạt Min Order Value | Giỏ hàng 200 đô. | Nhập mã Voucher và Áp dụng. | `TESTMINORDER` (Yêu cầu hóa đơn từ 500 đô). | Báo lỗi chứa cụm từ "tối thiểu". Tiền giảm 0. | **X4, B0** | Khớp với Unit Test. | Pass |
-| **TC_VOU_003** | Bảng QĐ (R3) / EP | Kiểm tra chặn áp mã khi Voucher đã quá hạn (Expired) | Giỏ hàng 200 đô, đạt Min Order. | Nhập mã Voucher và Áp dụng. | `TESTEXPIRED` (Bị lùi ngày hết hạn về 5 ngày trước). | Báo lỗi chứa cụm từ "hết hạn". Tiền giảm 0. | **X3** | Khớp với Unit Test. | Pass |
-| **TC_VOU_004** | Bảng QĐ (R5) / BVA | Kiểm tra chặn áp mã khi Voucher cạn lượt chung (Usage Limit) | Giỏ hàng 200 đô. | Nhập mã Voucher và Áp dụng. | `TESTLIMITREJECT` (UsageLimit=1, đã bị xài 1 lần). | Báo lỗi chứa cụm từ "hết số lượt". Tiền giảm 0. | **X5, B10+1** | Khớp với Unit Test. | Pass |
-| **TC_VOU_005** | Bảng QĐ (R1) / EP | Kiểm tra hệ thống chặn mã rác / mã không tồn tại | Giỏ hàng hợp lệ. | Nhập mã Voucher rác. | `MISSING` (Code không có trong DB). | Báo lỗi Mã giảm giá không tồn tại. | **X1** | Khớp với Unit Test. | Pass |
-| **TC_VOU_006** | Bảng QĐ (R8) / EP | Kiểm tra áp dụng thành công mã hợp lệ (Trừ tiền cứng) | Giỏ hàng 200 đô. | Nhập mã Voucher và Áp dụng. | `TESTFIXED30` (Loại trừ tiền cứng 30 đô). | Thành công. Tiền giảm đúng 30 đô. | **V1, V2, V3, V4, V5, V9, B1** | Khớp với Unit Test. | Pass |
-| **TC_VOU_007** | Bảng QĐ (R7) / BVA | Kiểm tra chặn áp mã do giới hạn Cá nhân (Per User Limit) | User `alice` có đơn hàng 100 đô. | Gọi API áp dụng Voucher cho User `alice`. | Mã `SALE10` (Giới hạn cá nhân = 2, `alice` đã xài 2 lần). | API từ chối áp mã. Báo lỗi "đã dùng hết số lượt cho phép". | **X6, B15+1** | Khớp với `VoucherDAOTest`. | Pass |
-| **TC_VOU_008** | Bảng QĐ (R6) / EP | Khách vãng lai (Guest) không bị ràng buộc giới hạn cá nhân | Khách vãng lai (username trống/null). | Gọi API áp dụng Voucher. | Mã `SALE10` (Giới hạn cá nhân = 0). | API cho phép áp mã thành công. | **V1, V2, V3, V4, V5, V7, V8** | Khớp với `VoucherDAOTest`. | Pass |
-| **TC_VOU_009** | Bảng QĐ (R2) / EP | Kiểm tra chặn áp mã đã bị khóa (Inactive) | Giỏ hàng hợp lệ. | Cố tình nhập mã đã bị khóa. | Mã `SALE10` có trường `active = false`. | Báo lỗi "Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa". | **X2** | Khớp với `VoucherDAOTest`. | Pass |
-| **TC_VOU_010** | EP / CRUD | Admin tạo mã giảm giá mới qua API (Create) | Tài khoản Admin. | Gửi `POST /api/v1/admin/vouchers` với body hợp lệ. | Body chứa `code=NEWYEAR`, `discountValue=20`, v.v... | Server trả về 200 OK. Mã mới xuất hiện trong DB. | **V10** | Khớp API Postman. | Pass |
-| **TC_VOU_011** | EP / CRUD | Admin vô hiệu hóa mã giảm giá qua API (Deactivate) | Tài khoản Admin. | Gửi `DELETE /api/v1/admin/vouchers/SALE10`. | Endpoint đi kèm Code voucher hợp lệ. | Trả về 200 OK. Cột `active` chuyển thành `false`. | **V10** | Khớp API Postman. | Pass |
-| **TC_VOU_012** | EP / CRUD | Khách hàng lấy danh sách Voucher còn hiệu lực (List Active) | Không cần phân quyền. | Gửi `GET /api/v1/vouchers`. | Bắn Request GET đơn giản. | Trả về danh sách chứa các Voucher thỏa mãn: active=true, còn hạn, còn lượt sử dụng. | **V1, V2, V3, V5** | Khớp API Postman. | Pass |
+```pytest
+# thiết kế các test cases từ câu 3.
+# Run test case 
+import pytest
 
+test_cases_voucher = [
+    # TC01: Baseline nominal (Tất cả biến tại giá trị danh định)
+    ("TC01", 25000.0, 20.0, 25, 1, True, "V1, V2, V3, V4, B3, B8, B13, B18"),
+    
+    # TC02 - TC05: Biên biến orderAmount (min, max, min-1, max+1)
+    ("TC02", 500.0, 20.0, 25, 1, True, "B1"),
+    ("TC03", 50000.0, 20.0, 25, 1, True, "B5"),
+    ("TC04", 499.0, 20.0, 25, 1, False, "X1"),
+    ("TC05", 50001.0, 20.0, 25, 1, False, "X2"),
+    
+    # TC06 - TC09: Biên biến discountPercent (min, max, min-0.1, max+0.1)
+    ("TC06", 25000.0, 1.0, 25, 1, True, "B6"),
+    ("TC07", 25000.0, 100.0, 25, 1, True, "B10"),
+    ("TC08", 25000.0, 0.9, 25, 1, False, "X3"),
+    ("TC09", 25000.0, 100.1, 25, 1, False, "X4"),
+    
+    # TC10 - TC13: Biên biến usedCount (min, max, min-1, max+1)
+    ("TC10", 25000.0, 20.0, 0, 1, True, "B11"),
+    ("TC11", 25000.0, 20.0, 49, 1, True, "B15"),
+    ("TC12", 25000.0, 20.0, -1, 1, False, "X5"),
+    ("TC13", 25000.0, 20.0, 50, 1, False, "X6"),
+    
+    # TC14 - TC17: Biên biến userUsedCount (min, max, min-1, max+1)
+    ("TC14", 25000.0, 20.0, 25, 0, True, "B16"),
+    ("TC15", 25000.0, 20.0, 25, 1, True, "B20"),
+    ("TC16", 25000.0, 20.0, 25, -1, False, "X7"),
+    ("TC17", 25000.0, 20.0, 25, 2, False, "X8"),
+]
 
----
+@pytest.mark.parametrize("tc_id,orderAmount,discountPercent,usedCount,userUsedCount,expected,tag", test_cases_voucher)
+def test_voucher_validation(tc_id, orderAmount, discountPercent, usedCount, userUsedCount, expected, tag):
+    """Kiểm thử tự động toàn bộ 17 test case thiết kế cho Phân hệ 4 Voucher theo nguyên lý 4n + 1."""
+    assert ValidateVoucher(orderAmount, discountPercent, usedCount, userUsedCount) == expected
 
-## 4. Bảng Đối Chiếu & Ý Nghĩa Nhãn Tag (Tag Traceability Legend)
+if __name__ == "__main__":
+    pytest.main(["-v", __file__])
+```
 
-| Nhóm Tag | Mã Tag | Ý nghĩa nghiệp vụ | Trạng thái |
-| :---: | :---: | :--- | :---: |
-| **Valid EP** | **V1** | Mã voucher tồn tại trong CSDL | Hợp lệ |
-| | **V2** | Trạng thái kích hoạt (active = true) | Hợp lệ |
-| | **V3** | Voucher còn hạn sử dụng | Hợp lệ |
-| | **V4** | Tổng đơn hàng đạt giá trị tối thiểu (orderAmount >= minOrderValue) | Hợp lệ |
-| | **V5** | Lượt dùng toàn hệ thống còn khả dụng (usedCount < usageLimit) | Hợp lệ |
-| | **V6** | Khách hàng đã đăng nhập chưa vượt giới hạn cá nhân | Hợp lệ |
-| | **V7** | Khách vãng lai không bị kiểm tra giới hạn cá nhân | Hợp lệ |
-| | **V8** | Hình thức chiết khấu phần trăm (PERCENT) | Hợp lệ |
-| | **V9** | Hình thức chiết khấu số tiền cố định (FIXED) | Hợp lệ |
-| | **V10**| Quyền hạn Quản trị viên (ROLE_ADMIN) quản lý mã | Hợp lệ |
-| **Invalid EP**| **X1** | Mã voucher không tồn tại trong CSDL | Không hợp lệ |
-| | **X2** | Mã voucher đã bị vô hiệu hóa (active = false) | Không hợp lệ |
-| | **X3** | Mã voucher đã hết hạn sử dụng | Không hợp lệ |
-| | **X4** | Đơn hàng chưa đạt giá trị tối thiểu | Không hợp lệ |
-| | **X5** | Mã voucher đã hết số lượt sử dụng toàn hệ thống | Không hợp lệ |
-| | **X6** | Người dùng đã sử dụng hết số lượt cá nhân cho phép | Không hợp lệ |
-| | **X7** | Người dùng không có quyền Admin cố tình gọi API quản trị | Không hợp lệ |
-| **Boundary** | **B1 - B5**| Điểm biên đơn tối thiểu: min (500), min+ (501), nom (1500), max- (9999), max (10000) | Hợp lệ |
-| | **B0** | Điểm ngoài biên dưới đơn tối thiểu: orderAmount = 499 đô | Không hợp lệ |
-| | **B6 - B10**| Điểm biên lượt dùng chung: min (0), min+ (1), nom (25), max- (48), max (49) | Hợp lệ |
-| | **B10+1** | Điểm ngoài biên trên lượt dùng chung: usedCount = 50 | Không hợp lệ |
-| | **B11 - B15**| Điểm biên lượt dùng cá nhân: min (0), min+ (1), nom (1), max- (1), max (1) | Hợp lệ |
-| | **B15+1** | Điểm ngoài biên trên lượt cá nhân: userUsedCount = 2 | Không hợp lệ |
-| | **B16 - B20**| Điểm biên phần trăm giảm: min (1), min+ (2), nom (20), max- (99), max (100) | Hợp lệ |
+```kết quả test
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\LapTrinhAI\Testing
+plugins: anyio-4.12.1, Faker-40.1.2, asyncio-0.26.0, cov-7.1.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 17 items
+
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC01-25000.0-20.0-25-1-True-V1, V2, V3, V4, B3, B8, B13, B18] PASSED [  5%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC02-500.0-20.0-25-1-True-B1] PASSED [ 11%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC03-50000.0-20.0-25-1-True-B5] PASSED [ 17%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC04-499.0-20.0-25-1-False-X1] PASSED [ 23%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC05-50001.0-20.0-25-1-False-X2] PASSED [ 29%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC06-25000.0-1.0-25-1-True-B6] PASSED [ 35%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC07-25000.0-100.0-25-1-True-B10] PASSED [ 41%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC08-25000.0-0.9-25-1-False-X3] PASSED [ 47%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC09-25000.0-100.1-25-1-False-X4] PASSED [ 52%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC10-25000.0-20.0-0-1-True-B11] PASSED [ 58%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC11-25000.0-20.0-49-1-True-B15] PASSED [ 64%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC12-25000.0-20.0--1-1-False-X5] PASSED [ 70%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC13-25000.0-20.0-50-1-False-X6] PASSED [ 76%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC14-25000.0-20.0-25-0-True-B16] PASSED [ 82%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC15-25000.0-20.0-25-1-True-B20] PASSED [ 88%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC16-25000.0-20.0-25--1-False-X7] PASSED [ 94%]
+scripts/test_voucher_standard_bva.py::test_voucher_validation[TC17-25000.0-20.0-25-2-False-X8] PASSED [100%]
+
+============================= 17 passed in 0.14s ==============================
+```

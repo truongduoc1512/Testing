@@ -1,110 +1,224 @@
-# Bảng Test Case: Chức năng 2 - Tìm kiếm & Phân trang Sản phẩm (Search & Pagination)
-**Người thực hiện:** Thịnh
+# BÀI LÀM: KIỂM THỬ CHỨC NĂNG 2 - TÌM KIẾM & PHÂN TRANG SẢN PHẨM (SEARCH & PAGINATION)
 
-## 1. Thông tin Kỹ thuật & Thực thi
-- **Kỹ thuật Thiết kế (Test Design):**
-  - **Phân hoạch lớp tương đương (EP):** Chia lớp hợp lệ/không hợp lệ cho các tham số tìm kiếm (`name`, `brand`, `category`) và phân trang (`page`, `size`).
-  - **Phân tích giá trị biên (BVA & Worst-Case BVA):** Áp dụng để tìm các lỗi tràn bộ nhớ (Load Test / Performance) khi người dùng nhập số trang khổng lồ.
-  - **Bảng quyết định (Decision Table):** Kết hợp các điều kiện lọc để phân định rạch ròi luồng trả về kết quả hoặc báo lỗi.
-- **Kỹ thuật Thực thi (Test Execution):** Kiểm thử API Tự động (Black-box API Testing) kết hợp Kiểm thử Tải (Load Testing).
-- **File Code Thực thi (Automation Script):** `scripts/test_search_pagination_api.py`
+- **Họ và tên sinh viên:** Nguyễn Hoàng Phương
+- **Mã số sinh viên (MSSV):** 080205010954
+- **Môn học:** Kiểm Chứng Phần Mềm
+- **Chủ đề:** Phân hoạch lớp tương đương, phân tích giá trị biên, bảng quyết định, chuyển đổi trạng thái, thiết kế test case và kiểm thử tự động
 
 ---
 
-## 2. Phân tích Kỹ thuật Thiết kế (Test Design Analysis)
+## Bảng phân tích điều kiện kiểm thử (Test Conditions)
 
+| Conditions | Valid Partition | Tag | Invalid Partitions | Tag | Valid Boundaries | Tag |
+|---|---|---|---|---|---|---|
+| **Độ dài từ khóa** (`keywordLength`) | 0 ≤ keywordLength ≤ 50 | V1 | • keywordLength < 0<br>• keywordLength > 50 | X1<br>X2 | • 0 (min)<br>• 1 (min+)<br>• 10 (nominal)<br>• 49 (max-)<br>• 50 (max) | B1<br>B2<br>B3<br>B4<br>B5 |
+| **Giá lọc tối thiểu** (`minPrice` - k) | 0.0 ≤ minPrice ≤ 50000.0 | V2 | • minPrice < 0.0<br>• minPrice > 50000.0 | X3<br>X4 | • 0.0 (min)<br>• 1.0 (min+)<br>• 1000.0 (nominal)<br>• 49999.0 (max-)<br>• 50000.0 (max) | B6<br>B7<br>B8<br>B9<br>B10 |
+| **Số trang yêu cầu** (`page`) | 1 ≤ page ≤ 50 | V3 | • page < 1<br>• page > 50 | X5<br>X6 | • 1 (min)<br>• 2 (min+)<br>• 5 (nominal)<br>• 49 (max-)<br>• 50 (max) | B11<br>B12<br>B13<br>B14<br>B15 |
+| **Kích thước trang** (`pageSize`) | 1 ≤ pageSize ≤ 12 | V4 | • pageSize < 1<br>• pageSize > 12 | X7<br>X8 | • 1 (min)<br>• 2 (min+)<br>• 6 (nominal)<br>• 11 (max-)<br>• 12 (max) | B16<br>B17<br>B18<br>B19<br>B20 |
 
-### 2.1 Bảng Phân hoạch lớp tương đương (Equivalence Partitioning - EP)
+---
 
-| Biến đầu vào / Điều kiện | Lớp tương đương Hợp lệ | Tag | Lớp tương đương Không hợp lệ | Tag |
-| :--- | :--- | :---: | :--- | :---: |
-| **Từ khóa tìm kiếm (`name`)** | Chuỗi ký tự tồn tại trong CSDL | **V1** | Không tồn tại trong CSDL<br>Chứa mã độc SQL Injection (`%27OR%271%3D1`) | **X1**<br>**X2** |
-| | Để trống / Chuỗi rỗng (Lấy tất cả) | **V2** | | |
-| **Khoảng giá lọc (`minPrice`, `maxPrice`)**| $0 \le minPrice \le maxPrice$ | **V3** | $minPrice < 0$<br>$minPrice > maxPrice$ (Giá min lớn hơn max) | **X3**<br>**X4** |
-| **Số trang (`page`)** | $1 \le page \le totalPages$ | **V4** | $page < 1$ (Số âm hoặc 0)<br>$page > totalPages$ (Vượt quá số trang hiện có) | **X5**<br>**X6** |
-| **Kích thước trang (`size`)** | $1 \le size \le 12$ | **V5** | $size < 1$<br>$size > 12$ (Vượt ngưỡng hiển thị tối đa) | **X7**<br>**X8** |
-| **Trạng thái sản phẩm (`status`)** | `ACTIVE` (Đang mở bán) | **V6** | `INACTIVE` (Ngừng bán)<br>`DRAFT` (Bản nháp) | **X9**<br>**X10** |
+## Câu 1. Xác định lớp tương đương
 
+| Biến đầu vào | Lớp hợp lệ | Tag | Lớp không hợp lệ | Tag |
+|---|---|---|---|---|
+| **Độ dài từ khóa** (`keywordLength`) | 0 ≤ keywordLength ≤ 50 | V1 | • keywordLength < 0 (Số âm)<br>• keywordLength > 50 (Chuỗi quá dài) | X1<br>X2 |
+| **Giá lọc tối thiểu** (`minPrice`) | 0.0 ≤ minPrice ≤ 50000.0 | V2 | • minPrice < 0.0 (Giá âm)<br>• minPrice > 50000.0 (Vượt trần giá) | X3<br>X4 |
+| **Số trang yêu cầu** (`page`) | 1 ≤ page ≤ 50 | V3 | • page < 1 (Số trang nhỏ hơn 1)<br>• page > 50 (Vượt quá số trang CSDL) | X5<br>X6 |
+| **Kích thước trang** (`pageSize`) | 1 ≤ pageSize ≤ 12 | V4 | • pageSize < 1 (Kích thước < 1)<br>• pageSize > 12 (Vượt quá giới hạn hiển thị) | X7<br>X8 |
 
-### 2.2 Bảng Phân tích giá trị biên cực đại (Standard BVA & Worst-Case Load Test)
+---
 
-| Biến đầu vào | Miền hợp lệ | min | min+ | nominal | max- | max | Tag biên |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Số trang (`page`)** | $[1, 10]$ *(Giả sử 10 trang)* | 1 | 2 | 5 | 9 | 10 | **B1, B2, B3, B4, B5** |
-| **Kích thước trang (`size`)** | $[1, 12]$ | 1 | 2 | 6 | 11 | 12 | **B6, B7, B8, B9, B10** |
-| **Giá lọc tối thiểu (`minPrice`)** | $[0, 10000]$ | 0 | 1 | 100 | 9999 | 10000 | **B11, B12, B13, B14, B15** |
+## Câu 2. Phân tích giá trị biên
 
-*Ghi chú mở rộng (Robustness BVA & Worst-Case):*
-- Giá trị ngoài biên dưới của `page`: $page = 0$ (Tag **B0**), $page = -1$ (Tag **B0-1**) -> Hệ thống tự ép về trang 1.
-- Giá trị ngoài biên trên của `size`: $size = 100$, $size = 999999$ (Tag **B10+1**) -> Hệ thống tự động chặn ép cứng `maxResult = 12` để chống tràn bộ nhớ (OOM).
+### 1. Bảng 5 giá trị biên cho từng biến đầu vào
 
+| Biến đầu vào | min | min+ | nominal | max- | max | Tag biên |
+|---|---:|---:|---:|---:|---:|---|
+| **Độ dài từ khóa** (`keywordLength`) | 0 | 1 | 10 | 49 | 50 | B1, B2, B3, B4, B5 |
+| **Giá lọc tối thiểu** (`minPrice`) | 0.0 | 1.0 | 1000.0 | 49999.0 | 50000.0 | B6, B7, B8, B9, B10 |
+| **Số trang yêu cầu** (`page`) | 1 | 2 | 5 | 49 | 50 | B11, B12, B13, B14, B15 |
+| **Kích thước trang** (`pageSize`) | 1 | 2 | 6 | 11 | 12 | B16, B17, B18, B19, B20 |
 
-### 2.3 Bảng Quyết định tổng hợp (Collapsed Decision Table)
+### 2. Bảng 17 test case Standard BVA (Single Fault Assumption: $4n + 1 = 17$)
 
-| Condition/Action | R1 | R2 | R3 | R4 | R5 |
+Theo kỹ thuật Standard Boundary Value Analysis, với $n = 4$ biến đầu vào, số test case là:
+$$4n + 1 = 4 \times 4 + 1 = \mathbf{17\text{ test case}}$$
+
+Giữ $n - 1$ biến tại giá trị danh định (`nominal`), lần lượt thay đổi 1 biến qua 4 giá trị biên (`min`, `min+`, `max-`, `max`):
+
+| STT | Mã TC | Biến kiểm thử biên | Điểm biên kiểm tra | Từ khóa (len) | Giá min (k) | Trang | Kích thước | Kết quả mong đợi | Tag bao phủ |
+|:---:|:---:|:---|:---|:---:|:---:|:---:|:---:|:---|:---|
+| 1 | BVA01 | Baseline (Tất cả) | Nominal | 10 | 1000.0 | 5 | 6 | Hợp lệ (True) | B3, B8, B13, B18 |
+| 2 | BVA02 | Độ dài từ khóa | min (0) | **0** | 1000.0 | 5 | 6 | Hợp lệ (True) | B1 |
+| 3 | BVA03 | Độ dài từ khóa | max (50) | **50** | 1000.0 | 5 | 6 | Hợp lệ (True) | B5 |
+| 4 | BVA04 | Độ dài từ khóa | min-1 (-1) | **-1** | 1000.0 | 5 | 6 | Không hợp lệ (False) | X1 |
+| 5 | BVA05 | Độ dài từ khóa | max+1 (51) | **51** | 1000.0 | 5 | 6 | Không hợp lệ (False) | X2 |
+| 6 | BVA06 | Giá lọc tối thiểu | min (0.0) | 10 | **0.0** | 5 | 6 | Hợp lệ (True) | B6 |
+| 7 | BVA07 | Giá lọc tối thiểu | max (50000.0) | 10 | **50000.0** | 5 | 6 | Hợp lệ (True) | B10 |
+| 8 | BVA08 | Giá lọc tối thiểu | min-0.1 (-0.1) | 10 | **-0.1** | 5 | 6 | Không hợp lệ (False) | X3 |
+| 9 | BVA09 | Giá lọc tối thiểu | max+0.1 (50000.1) | 10 | **50000.1** | 5 | 6 | Không hợp lệ (False) | X4 |
+| 10 | BVA10 | Số trang | min (1) | 10 | 1000.0 | **1** | 6 | Hợp lệ (True) | B11 |
+| 11 | BVA11 | Số trang | max (50) | 10 | 1000.0 | **50** | 6 | Hợp lệ (True) | B15 |
+| 12 | BVA12 | Số trang | min-1 (0) | 10 | 1000.0 | **0** | 6 | Không hợp lệ (False) | X5 |
+| 13 | BVA13 | Số trang | max+1 (51) | 10 | 1000.0 | **51** | 6 | Không hợp lệ (False) | X6 |
+| 14 | BVA14 | Kích thước trang | min (1) | 10 | 1000.0 | 5 | **1** | Hợp lệ (True) | B16 |
+| 15 | BVA15 | Kích thước trang | max (12) | 10 | 1000.0 | 5 | **12** | Hợp lệ (True) | B20 |
+| 16 | BVA16 | Kích thước trang | min-1 (0) | 10 | 1000.0 | 5 | **0** | Không hợp lệ (False) | X7 |
+| 17 | BVA17 | Kích thước trang | max+1 (13) | 10 | 1000.0 | 5 | **13** | Không hợp lệ (False) | X8 |
+
+---
+
+## Câu 3. Thiết kế test case
+
+Dựa trên kết quả Câu 1 và Câu 2, bộ **17 test case** được thiết kế theo nguyên lý **Single Fault Assumption ($4n + 1 = 17$)** để vừa kế thừa chuẩn BVA cho 4 biến đầu vào, vừa thỏa mãn đầy đủ các yêu cầu của đề bài:
+- Có test case baseline hợp lệ danh định (nominal).
+- Có test case hợp lệ tại biên (`min`, `max`).
+- Có test case không hợp lệ ngoài biên (`min - 1`, `max + 1`) kèm lý do chi tiết.
+- Bao phủ toàn diện 100% các tag lớp tương đương ($V1 - V4$, $X1 - X8$) và các tag biên trọng yếu.
+
+### 1. Bảng test case tổng hợp (Test Case, Input, Expected Outcome, New Tags Covered)
+
+| Test Case | Input | Expected Outcome | New Tags Covered |
+|---|---|---|---|
+| TC01 | keywordLength: 10, minPrice: 1000.0, page: 5, pageSize: 6 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
+| TC02 | keywordLength: 0, minPrice: 1000.0, page: 5, pageSize: 6 | Hợp lệ (True) | B1 |
+| TC03 | keywordLength: 50, minPrice: 1000.0, page: 5, pageSize: 6 | Hợp lệ (True) | B5 |
+| TC04 | keywordLength: -1, minPrice: 1000.0, page: 5, pageSize: 6 | Không hợp lệ (False): Độ dài từ khóa < 0 | X1 |
+| TC05 | keywordLength: 51, minPrice: 1000.0, page: 5, pageSize: 6 | Không hợp lệ (False): Độ dài từ khóa > 50 | X2 |
+| TC06 | keywordLength: 10, minPrice: 0.0, page: 5, pageSize: 6 | Hợp lệ (True) | B6 |
+| TC07 | keywordLength: 10, minPrice: 50000.0, page: 5, pageSize: 6 | Hợp lệ (True) | B10 |
+| TC08 | keywordLength: 10, minPrice: -0.1, page: 5, pageSize: 6 | Không hợp lệ (False): Giá lọc nhỏ hơn 0.0 | X3 |
+| TC09 | keywordLength: 10, minPrice: 50000.1, page: 5, pageSize: 6 | Không hợp lệ (False): Giá lọc vượt trần 50000.0 | X4 |
+| TC10 | keywordLength: 10, minPrice: 1000.0, page: 1, pageSize: 6 | Hợp lệ (True) | B11 |
+| TC11 | keywordLength: 10, minPrice: 1000.0, page: 50, pageSize: 6 | Hợp lệ (True) | B15 |
+| TC12 | keywordLength: 10, minPrice: 1000.0, page: 0, pageSize: 6 | Không hợp lệ (False): Số trang nhỏ hơn 1 | X5 |
+| TC13 | keywordLength: 10, minPrice: 1000.0, page: 51, pageSize: 6 | Không hợp lệ (False): Số trang vượt quá 50 | X6 |
+| TC14 | keywordLength: 10, minPrice: 1000.0, page: 5, pageSize: 1 | Hợp lệ (True) | B16 |
+| TC15 | keywordLength: 10, minPrice: 1000.0, page: 5, pageSize: 12 | Hợp lệ (True) | B20 |
+| TC16 | keywordLength: 10, minPrice: 1000.0, page: 5, pageSize: 0 | Không hợp lệ (False): Kích thước trang nhỏ hơn 1 | X7 |
+| TC17 | keywordLength: 10, minPrice: 1000.0, page: 5, pageSize: 13 | Không hợp lệ (False): Kích thước trang lớn hơn 12 | X8 |
+
+### 2. Bảng test case chi tiết theo đề bài (8 cột)
+
+| STT | Tên test case | Độ dài từ khóa | Giá lọc tối thiểu (k) | Số trang yêu cầu | Kích thước trang | Kết quả mong đợi | Tag được bao phủ |
+|:---:|:---|:---:|:---:|:---:|:---:|:---|:---|
+| 1 | Baseline danh định (nominal) | 10 | 1000.0 | 5 | 6 | Hợp lệ (True) | V1, V2, V3, V4, B3, B8, B13, B18 |
+| 2 | Biên dưới hợp lệ keywordLength = min (0) | **0** | 1000.0 | 5 | 6 | Hợp lệ (True) | B1 |
+| 3 | Biên trên hợp lệ keywordLength = max (50) | **50** | 1000.0 | 5 | 6 | Hợp lệ (True) | B5 |
+| 4 | Ngoài biên dưới keywordLength < min (-1) | **-1** | 1000.0 | 5 | 6 | Không hợp lệ (False): Độ dài từ khóa < 0 | X1 |
+| 5 | Ngoài biên trên keywordLength > max (51) | **51** | 1000.0 | 5 | 6 | Không hợp lệ (False): Độ dài từ khóa > 50 | X2 |
+| 6 | Biên dưới hợp lệ minPrice = min (0.0) | 10 | **0.0** | 5 | 6 | Hợp lệ (True) | B6 |
+| 7 | Biên trên hợp lệ minPrice = max (50000.0) | 10 | **50000.0** | 5 | 6 | Hợp lệ (True) | B10 |
+| 8 | Ngoài biên dưới minPrice < min (-0.1) | 10 | **-0.1** | 5 | 6 | Không hợp lệ (False): Giá lọc nhỏ hơn 0.0 | X3 |
+| 9 | Ngoài biên trên minPrice > max (50000.1) | 10 | **50000.1** | 5 | 6 | Không hợp lệ (False): Giá lọc vượt trần 50000.0 | X4 |
+| 10 | Biên dưới hợp lệ page = min (1) | 10 | 1000.0 | **1** | 6 | Hợp lệ (True) | B11 |
+| 11 | Biên trên hợp lệ page = max (50) | 10 | 1000.0 | **50** | 6 | Hợp lệ (True) | B15 |
+| 12 | Ngoài biên dưới page < min (0) | 10 | 1000.0 | **0** | 6 | Không hợp lệ (False): Số trang nhỏ hơn 1 | X5 |
+| 13 | Ngoài biên trên page > max (51) | 10 | 1000.0 | **51** | 6 | Không hợp lệ (False): Số trang vượt quá 50 | X6 |
+| 14 | Biên dưới hợp lệ pageSize = min (1) | 10 | 1000.0 | 5 | **1** | Hợp lệ (True) | B16 |
+| 15 | Biên trên hợp lệ pageSize = max (12) | 10 | 1000.0 | 5 | **12** | Hợp lệ (True) | B20 |
+| 16 | Ngoài biên dưới pageSize < min (0) | 10 | 1000.0 | 5 | **0** | Không hợp lệ (False): Kích thước trang nhỏ hơn 1 | X7 |
+| 17 | Ngoài biên trên pageSize > max (13) | 10 | 1000.0 | 5 | **13** | Không hợp lệ (False): Kích thước trang lớn hơn 12 | X8 |
+
+---
+
+### 3. Bổ sung: Bảng Quyết định tìm kiếm & phân trang (Collapsed Decision Table - 5 Rules)
+
+| Condition / Action | Rule 1 (R1) | Rule 2 (R2) | Rule 3 (R3) | Rule 4 (R4) | Rule 5 (R5) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **C1: Mã / Từ khóa tồn tại?** | N | Y | Y | Y | Y |
-| **C2: Trạng thái ACTIVE?** | - | N | Y | Y | Y |
-| **C3: Khớp bộ lọc (Bộ lọc khác)?** | - | - | N | Y | Y |
-| **C4: Page hợp lệ (>= 1)?** | - | - | - | N | Y |
-| **A1: Báo lỗi 404 (Không tìm thấy SP)** | X | - | - | - | - |
-| **A2: Báo lỗi 404 (Sản phẩm ngừng bán)** | - | X | - | - | - |
-| **A3: Status 200, Trả về `list: []`** | - | - | X | - | - |
-| **A4: Status 200, Ép `page = 1`** | - | - | - | X | - |
-| **A5: Status 200, Trả kết quả phân trang** | - | - | - | - | X |
-| **Test Case Tương ứng** | TC_PROD_02 | TC_PROD_03 | TC_SRCH_02 | TC_PAG_03 | TC_PAG_01, SRCH_01 |
+| **C1: Từ khóa tồn tại trong DB?** | **N** | Y | Y | Y | Y |
+| **C2: Sản phẩm đang mở bán (Active)?** | - | **N** | Y | Y | Y |
+| **C3: Thỏa mãn bộ lọc giá?** | - | - | **N** | Y | Y |
+| **C4: Số trang hợp lệ (page >= 1)?** | - | - | - | **N** | **Y** |
+| *A1: Trả về danh sách rỗng (`[]`)* | **X** | - | - | - | - |
+| *A2: Ẩn sản phẩm khỏi kết quả* | - | **X** | - | - | - |
+| *A3: Không có sản phẩm phù hợp bộ lọc* | - | - | **X** | - | - |
+| *A4: Tự động ép về `page = 1`* | - | - | - | **X** | - |
+| *A5: Trả về trang kết quả phân trang thành công* | - | - | - | - | **X** |
 
 ---
 
+## Câu 4. Triển khai kiểm thử tự động
 
-## 3. Bảng Test Case Chi Tiết
+```python
+def ValidateSearchPagination(keywordLength: int, minPrice: float, page: int, pageSize: int) -> bool:
+    """
+    Kiểm tra tính hợp lệ của tham số tìm kiếm & phân trang:
+    - 0 <= keywordLength <= 50 (Độ dài từ khóa tìm kiếm)
+    - 0.0 <= minPrice <= 50000.0 (Khoảng giá lọc tối thiểu)
+    - 1 <= page <= 50 (Số trang hợp lệ)
+    - 1 <= pageSize <= 12 (Kích thước mỗi trang hiển thị)
+    Trả về True nếu tất cả điều kiện thỏa mãn, ngược lại False.
+    """
+    if not (isinstance(keywordLength, int) and not isinstance(keywordLength, bool) and 0 <= keywordLength <= 50):
+        return False
+    if not (isinstance(minPrice, (int, float)) and not isinstance(minPrice, bool) and 0.0 <= minPrice <= 50000.0):
+        return False
+    if not (isinstance(page, int) and not isinstance(page, bool) and 1 <= page <= 50):
+        return False
+    if not (isinstance(pageSize, int) and not isinstance(pageSize, bool) and 1 <= pageSize <= 12):
+        return False
+    return True
+```
 
-### 2. Danh sách Test Cases
+```pytest
+# thiết kế các test cases từ câu 3.
+# Run test case 
+import pytest
 
-| Mã kiểm thử | Kỹ thuật áp dụng | Tiêu đề | Điều kiện tiên quyết | Các bước kiểm tra | Dữ liệu kiểm thử | Kết quả dự kiến | Tag được bao phủ | Kết quả thực tế | Trạng thái |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- | :---: |
-| **TC_SRCH_01** | Bảng quyết định (Rule 5) / Phân vùng tương đương | Tìm kiếm với từ khóa hợp lệ | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với tham số `name` hợp lệ.. 2. Kiểm tra HTTP Status Code và JSON response body. | `name=Nike, page=1` | Status 200 OK. Body trả về `totalRecords > 0`, `currentPage = 1`, `maxResult = 12`, danh sách `list` chứa các sản phẩm có tên chứa "Nike". | **V1, V4, V5, V6, B1, B10** | Status 200 OK. Mọi sản phẩm trả về đều có tên chứa từ "Nike". | Pass |
-| **TC_SRCH_02** | Bảng quyết định (Rule 3) / Phân vùng tương đương | Tìm kiếm từ khóa không tồn tại | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với chuỗi từ khóa không có trong database.. 2. Kiểm tra JSON response body. | `name=XYZ_NOT_EXIST_123` | Status 200 OK. `totalRecords = 0`, `list = []`, `totalPages = 0`, `navigationPages = []`. | **X1, V4, V5** | Status 200 OK. Trả về danh sách rỗng và tổng số bản ghi bằng 0. | Pass |
-| **TC_SRCH_03** | BVA / Kiểm thử bảo mật (SQLi) | Tìm kiếm từ khóa chứa ký tự đặc biệt / SQL Injection | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với chuỗi SQL Injection.. 2. Kiểm tra cơ chế Parameter Binding của Hibernate DAO. | `name=%25%27OR%271%3D1` | Status 200 OK. Truy vấn an toàn qua Hibernate `setParameter()`, không bị crash (HTTP 500), không rò rỉ toàn bộ database. | **X2, V4** | Status 200 OK. Hệ thống truy vấn an toàn. | Pass |
-| **TC_SRCH_04** | Phân vùng tương đương | Tìm kiếm với tham số rỗng | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với tham số `name=` để trống.. 2. Kiểm tra danh sách sản phẩm mặc định. | `name=` | Status 200 OK. Trả về toàn bộ sản phẩm active thuộc trang 1 (`currentPage = 1`, `maxResult = 12`). | **V2, V4, V5, B1** | Status 200 OK. Lấy danh sách mặc định thành công. | Pass |
-| **TC_SRCH_05** | Phân vùng tương đương | Tìm kiếm không phân biệt hoa thường | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với `name=nike`.. 2. Gửi GET request với `name=NIKE`.. 3. So sánh kết quả trả về. | Request 1: `name=nike`. Request 2: `name=NIKE` | Status 200 OK. Nhờ hàm `lower(p.name)` trong SQL, kết quả `totalRecords` và mảng `list` của 2 request trùng khớp 100%. | **V1, V4, V5** | Status 200 OK. Kết quả trả về giống hệt nhau. | Pass |
-| **TC_SRCH_06** | Phân vùng tương đương / Kết hợp nhiều lọc | Kết hợp Tìm kiếm & Bộ lọc giá | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request kèm `name`, `minPrice`, `maxPrice`.. 2. Kiểm tra giá sau giảm của từng sản phẩm. | `name=Nike, minPrice=100, maxPrice=300` | Status 200 OK. Các sản phẩm trả về thỏa mãn tên chứa "Nike" và giá sau giảm `(price * (100 - discountPercent) / 100.0)` trong khoảng [100, 300]. | **V1, V3, V4, B13** | Status 200 OK. Lọc chính xác theo tên và khoảng giá. | Pass |
-| **TC_SRCH_07** | Phân vùng tương đương / Kết hợp nhiều lọc | Lọc sản phẩm theo Thương hiệu & Danh mục | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request kèm tham số `brand` và `category`.. 2. Kiểm tra kết quả lọc. | `brand=Nike, category=Sneaker` | Status 200 OK. Danh sách trả về chỉ chứa sản phẩm có thương hiệu "Nike" và danh mục chứa từ "Sneaker". | **X4, V4** | Status 200 OK. Lọc chính xác theo thương hiệu và danh mục. | Pass |
-| **TC_PAG_01** | Bảng quyết định (Rule 5) / Phân vùng tương đương | Phân trang trang 1 mặc định | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với `page=1`.. 2. Kiểm tra các thuộc tính phân trang. | `page=1` | Status 200 OK. `currentPage = 1`, `maxResult = 12`, độ dài `list <= 12`. | **V4, V5, B1, B10** | Status 200 OK. Tải dữ liệu trang 1. | Pass |
-| **TC_PAG_02** | Phân vùng tương đương | Phân trang chuyển sang trang 2 | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với `page=2`.. 2. Xác minh dữ liệu không trùng lặp với trang 1. | `page=2` | Status 200 OK. `currentPage = 2`. Các sản phẩm hiển thị ở trang 2 không trùng lặp với trang 1. | **V4, V5, B2** | Status 200 OK. Chuyển trang 2 chính xác. | Pass |
-| **TC_PAG_03** | Bảng quyết định (Rule 4) / BVA | Truy vấn với số trang âm / bằng 0 | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với `page=-1` hoặc `page=0`.. 2. Kiểm tra cơ chế chuẩn hóa số trang. | `page=-1` | Status 200 OK. Hàm `Math.max(page, 1)` tự động chuẩn hóa về `currentPage = 1`, không gây ngoại lệ hay crash. | **X5, B0** | Status 200 OK. Tự động chuyển về trang 1. | Pass |
-| **TC_PAG_04** | BVA | Số trang vượt quá giới hạn tổng số trang | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với `page=99999` (vượt quá `totalPages`).. 2. Kiểm tra phản hồi API. | `page=99999` | Status 200 OK. `currentPage = 99999`, `list = []`, `totalRecords` giữ nguyên tổng số thực tế trong DB. | **X5, B0-1** | Status 200 OK. Danh sách sản phẩm rỗng. | Pass |
-| **TC_PAG_05** | Phân vùng tương đương / Sắp xếp | Phân trang kết hợp Sắp xếp theo giá (priceAsc/priceDesc) | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với tham số `sort=priceAsc` hoặc `sort=priceDesc`.. 2. Kiểm tra thứ tự mảng trả về. | `sort=priceAsc, page=1` | Status 200 OK. Mảng `list` được sắp xếp theo giá sau giảm tăng dần `order by (price * (100 - discountPercent) / 100.0) asc`. | **X6, B5+1** | Status 200 OK. Sắp xếp giá tăng dần thành công. | Pass |
-| **TC_PAG_06** | Worst-Case Boundary Value Analysis (BVA 5ⁿ) | Kiểm thử giá trị biên cực đại (Worst-Case BVA) với `page` và `size` cực lớn | Đang ở trạng thái gọi API `GET /api/v1/products` | 1. Gửi GET request với `page=999999` và `size=999999`.. 2. Kiểm tra Response Time và HTTP Status Code.. 3. Kiểm tra số lượng bản ghi trong mảng `list`. | `page=999999, size=999999` | Status 200 OK. Hệ thống tự động giới hạn `maxResult = 12` (hoặc mảng `list = []`), không bị quá tải, rò rỉ bộ nhớ (RAM Crash 500) hay treo Database (Timeout). | **X8, B10+1** | Status 200 OK. Phản hồi mảng `list: []` an toàn, giới hạn `maxResult = 12`, không quá tải Server. | Pass |
-| **TC_PROD_01** | Bảng quyết định (Rule 5) | Truy vấn thông tin chi tiết sản phẩm hợp lệ | Đang ở trạng thái gọi API `GET /api/v1/products/{code}` | 1. Gửi GET request đến mã sản phẩm tồn tại và có status ACTIVE (S001 / TEST001).. 2. Kiểm tra chi tiết sản phẩm. | Endpoint: `/api/v1/products/S001` | Status 200 OK. Trả về JSON Object `ProductInfo` chứa đầy đủ các trường `code`, `name`, `price`, `status`, `category`. | **V1, V6** | Status 200 OK. Hiển thị chi tiết sản phẩm. | Pass |
-| **TC_PROD_02** | Bảng quyết định (Rule 1) | Truy vấn mã sản phẩm không tồn tại | Đang ở trạng thái gọi API `GET /api/v1/products/{code}` | 1. Gửi GET request với mã sản phẩm không có trong DB.. 2. Kiểm tra HTTP Status và ApiResponse body. | Endpoint: `/api/v1/products/INVALID_CODE_99` | Status 404 Not Found. Body chứa JSON: `{"success": false, "message": "Không tìm thấy sản phẩm với mã: INVALID_CODE_99"}`. | **X1** | Status 404 Not Found. Báo lỗi tài khoản/sản phẩm không tồn tại. | Pass |
-| **TC_PROD_03** | Bảng quyết định (Rule 2) / Kiểm thử bảo mật | Truy vấn sản phẩm bị ngừng kinh doanh (INACTIVE) / SQLi | Đang ở trạng thái gọi API `GET /api/v1/products/{code}` | 1. Gửi GET request với mã sản phẩm có status INACTIVE hoặc chuỗi SQL Injection.. 2. Kiểm tra xử lý lỗi. | Endpoint: `/api/v1/products/INACTIVE_01` | Status 404 Not Found. Body: `{"success": false, "message": "Không tìm thấy sản phẩm..."}`. Hệ thống xử lý an toàn. | **X9** | Status 404 Not Found. Xử lý an toàn. | Pass |
+test_cases_m2 = [
+    ("TC01", 10, 1000.0, 5, 6, True, "V1, V2, V3, V4, B3, B8, B13, B18"),
+    ("TC02", 0, 1000.0, 5, 6, True, "B1"),
+    ("TC03", 50, 1000.0, 5, 6, True, "B5"),
+    ("TC04", -1, 1000.0, 5, 6, False, "X1"),
+    ("TC05", 51, 1000.0, 5, 6, False, "X2"),
+    ("TC06", 10, 0.0, 5, 6, True, "B6"),
+    ("TC07", 10, 50000.0, 5, 6, True, "B10"),
+    ("TC08", 10, -0.1, 5, 6, False, "X3"),
+    ("TC09", 10, 50000.1, 5, 6, False, "X4"),
+    ("TC10", 10, 1000.0, 1, 6, True, "B11"),
+    ("TC11", 10, 1000.0, 50, 6, True, "B15"),
+    ("TC12", 10, 1000.0, 0, 6, False, "X5"),
+    ("TC13", 10, 1000.0, 51, 6, False, "X6"),
+    ("TC14", 10, 1000.0, 5, 1, True, "B16"),
+    ("TC15", 10, 1000.0, 5, 12, True, "B20"),
+    ("TC16", 10, 1000.0, 5, 0, False, "X7"),
+    ("TC17", 10, 1000.0, 5, 13, False, "X8"),
+]
 
+@pytest.mark.parametrize("tc_id,kLen,mPrice,page,pSize,expected,tag", test_cases_m2)
+def test_search_pagination_validation(tc_id, kLen, mPrice, page, pSize, expected, tag):
+    """Kiểm thử tự động 17 test case tìm kiếm & phân trang theo nguyên lý 4n + 1."""
+    assert ValidateSearchPagination(kLen, mPrice, page, pSize) == expected
 
----
+if __name__ == "__main__":
+    pytest.main(["-v", __file__])
+```
 
-## 4. Bảng Đối Chiếu & Ý Nghĩa Nhãn Tag (Tag Traceability Legend)
+```kết quả test
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-8.4.2, pluggy-1.6.0
+rootdir: D:\LapTrinhAI\Testing
+collected 17 items
 
-| Nhóm Tag | Mã Tag | Ý nghĩa nghiệp vụ | Trạng thái |
-| :---: | :---: | :--- | :---: |
-| **Valid EP** | **V1** | Từ khóa tìm kiếm tồn tại trong CSDL | Hợp lệ |
-| | **V2** | Từ khóa tìm kiếm để trống (Lấy mặc định) | Hợp lệ |
-| | **V3** | Khoảng giá lọc hợp lệ (0 <= minPrice <= maxPrice) | Hợp lệ |
-| | **V4** | Số trang hợp lệ (1 <= page <= totalPages) | Hợp lệ |
-| | **V5** | Kích thước trang hợp lệ (1 <= size <= 12) | Hợp lệ |
-| | **V6** | Trạng thái sản phẩm đang mở bán (ACTIVE) | Hợp lệ |
-| **Invalid EP**| **X1** | Từ khóa tìm kiếm không tồn tại | Không hợp lệ |
-| | **X2** | Từ khóa chứa mã độc SQL Injection | Không hợp lệ |
-| | **X3** | Giá lọc tối thiểu nhỏ hơn 0 | Không hợp lệ |
-| | **X4** | Giá lọc tối thiểu lớn hơn giá tối đa (min > max) | Không hợp lệ |
-| | **X5** | Số trang nhỏ hơn 1 (<= 0) | Không hợp lệ |
-| | **X6** | Số trang vượt quá tổng số trang hiện có | Không hợp lệ |
-| | **X7** | Kích thước trang nhỏ hơn 1 | Không hợp lệ |
-| | **X8** | Kích thước trang vượt ngưỡng tối đa (> 12) | Không hợp lệ |
-| | **X9** | Sản phẩm đã ngừng bán (INACTIVE) | Không hợp lệ |
-| | **X10**| Sản phẩm đang ở dạng bản nháp (DRAFT) | Không hợp lệ |
-| **Boundary** | **B1 - B5**| Các điểm biên số trang: min (1), min+ (2), nom (5), max- (9), max (10) | Hợp lệ |
-| | **B0** | Điểm ngoài biên dưới số trang: page = 0 | Không hợp lệ (Tự ép 1) |
-| | **B6 - B10**| Các điểm biên kích thước trang: min (1), min+ (2), nom (6), max- (11), max (12) | Hợp lệ |
-| | **B10+1** | Điểm ngoài biên trên kích thước trang: size > 12 | Không hợp lệ (Tự ép 12) |
-| | **B11 - B15**| Các điểm biên khoảng giá: min (0), min+ (1), nom (100), max- (9999), max (10000) | Hợp lệ |
+test_search_pagination.py::test_search_pagination_validation[TC01-10-1000.0-5-6-True-V1, V2, V3, V4, B3, B8, B13, B18] PASSED [  5%]
+test_search_pagination.py::test_search_pagination_validation[TC02-0-1000.0-5-6-True-B1] PASSED [ 11%]
+test_search_pagination.py::test_search_pagination_validation[TC03-50-1000.0-5-6-True-B5] PASSED [ 17%]
+test_search_pagination.py::test_search_pagination_validation[TC04--1-1000.0-5-6-False-X1] PASSED [ 23%]
+test_search_pagination.py::test_search_pagination_validation[TC05-51-1000.0-5-6-False-X2] PASSED [ 29%]
+test_search_pagination.py::test_search_pagination_validation[TC06-10-0.0-5-6-True-B6] PASSED [ 35%]
+test_search_pagination.py::test_search_pagination_validation[TC07-10-50000.0-5-6-True-B10] PASSED [ 41%]
+test_search_pagination.py::test_search_pagination_validation[TC08-10--0.1-5-6-False-X3] PASSED [ 47%]
+test_search_pagination.py::test_search_pagination_validation[TC09-10-50000.1-5-6-False-X4] PASSED [ 52%]
+test_search_pagination.py::test_search_pagination_validation[TC10-10-1000.0-1-6-True-B11] PASSED [ 58%]
+test_search_pagination.py::test_search_pagination_validation[TC11-10-1000.0-50-6-True-B15] PASSED [ 64%]
+test_search_pagination.py::test_search_pagination_validation[TC12-10-1000.0-0-6-False-X5] PASSED [ 70%]
+test_search_pagination.py::test_search_pagination_validation[TC13-10-1000.0-51-6-False-X6] PASSED [ 76%]
+test_search_pagination.py::test_search_pagination_validation[TC14-10-1000.0-5-1-True-B16] PASSED [ 82%]
+test_search_pagination.py::test_search_pagination_validation[TC15-10-1000.0-5-12-True-B20] PASSED [ 88%]
+test_search_pagination.py::test_search_pagination_validation[TC16-10-1000.0-5-0-False-X7] PASSED [ 94%]
+test_search_pagination.py::test_search_pagination_validation[TC17-10-1000.0-5-13-False-X8] PASSED [100%]
+
+============================= 17 passed in 0.14s ==============================
+```
