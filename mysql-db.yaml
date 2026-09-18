@@ -29,7 +29,7 @@ spec:
             - name: MYSQL_ROOT_PASSWORD
               value: "<YOUR_MYSQL_ROOT_PASSWORD>" # Nhập mật khẩu MySQL của bạn
             - name: MYSQL_DATABASE
-              value: "shoeshop_db"
+              value: "shoe_shopdb"
           ports:
             - containerPort: 3306
               name: mysql

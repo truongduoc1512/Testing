@@ -1,0 +1,117 @@
+{
+  "info": {
+    "_postman_id": "group2-update-review-id",
+    "name": "Group 2: Update Review (Nhóm 2 - Chỉnh sửa bài đánh giá)",
+    "description": "Kiểm thử các ràng buộc chỉnh sửa đánh giá: Chặn sửa review của người khác (Ownership EP), Chặn sửa sau 5 phút (Time Window BVA), Sửa thành công trong 5 phút.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC_REV_009 - Chặn hành vi sửa Review của người khác (Ownership Access Control)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ratingValue\": 4,\n  \"comment\": \"Cố tình can thiệp sửa nội dung bài đánh giá của người khác\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/{{other_user_review_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "{{other_user_review_id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request or 403 Forbidden', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
+              "});",
+              "pm.test('Verify ownership error message', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success', false);",
+              "    pm.expect(jsonData.message).to.include('Không thể sửa bài đánh giá');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_010 - Chặn quyền chỉnh sửa Review khi đã quá 5 phút (Time Window Boundary 301,000ms)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ratingValue\": 5,\n  \"comment\": \"Sửa bài đánh giá sau khi đã hết hạn 5 phút cho phép\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/{{expired_review_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "{{expired_review_id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });",
+              "pm.test('Verify 5-minute time window expired message', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success', false);",
+              "    pm.expect(jsonData.message).to.include('đã quá 5 phút kể từ lúc đăng');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_010B - Sửa thành công bài đánh giá trong vòng 5 phút (Chính chủ)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ratingValue\": 5,\n  \"comment\": \"Cập nhật đánh giá thành công: Sản phẩm rất chất lượng, đệm chân êm ái!\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/{{created_review_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "{{created_review_id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Verify updated review content', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.ratingValue).to.eql(5);",
+              "    pm.expect(jsonData.comment).to.include('Cập nhật đánh giá thành công');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

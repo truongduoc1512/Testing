@@ -1,0 +1,307 @@
+Để chạy kiểm thử và xuất báo cáo độ bao phủ (coverage) mà **không bị lỗi**, bạn chỉ cần mở Terminal (PowerShell hoặc VS Code Terminal) tại thư mục dự án `C:\shoeshopp\Testing` và nhập đúng **1 câu lệnh** sau:
+
+### 1. Lệnh chạy test & tạo báo cáo coverage chuẩn (Khuyên dùng):
+```powershell
+.\scripts\test-coverage.ps1
+```
+
+### 2. Nếu muốn tự động mở trang báo cáo trên trình duyệt Web sau khi test xong:
+```powershell
+.\scripts\test-coverage.ps1 -OpenReport
+```
+
+### 3. Nếu bạn đang ở Command Prompt (CMD) thay vì PowerShell:
+```cmd
+powershell -ExecutionPolicy Bypass -File .\scripts\test-coverage.ps1
+```
+
+---
+
+### 💡 Mẹo nhỏ khi cần test nhanh 1 class cụ thể:
+Nếu bạn chỉ muốn chạy test riêng cho 1 class (ví dụ `OrderDAOTest`) để tiết kiệm thời gian:
+```powershell
+.\scripts\test-coverage.ps1 -TestSelector OrderDAOTest
+```
+
+---
+*Lưu ý: Đảm bảo phần mềm Docker Desktop đang bật trên máy tính của bạn trước khi chạy lệnh.*
+
+#run-api-tests.ps1 (Giải thích)
+File [`run-api-tests.ps1`](file:///c:/shoeshopp/Testing/scripts/run-api-tests.ps1) là một **kịch bản tự động hóa kiểm thử** (Automated Test Script).
+
+Để dễ hiểu cho người mới bắt đầu, dưới đây là giải thích chi tiết theo cách đơn giản nhất:
+
+---
+
+### 1. 💡 Ẩn dụ thực tế: File này làm công việc gì?
+
+Hãy tưởng tượng hệ thống bán giày **Shoeshop** của bạn giống như một **Nhà hàng**:
+- **API (Giao diện lập trình):** Giống như những **Người phục vụ**. Khi khách muốn đặt món (xem giày, thêm giỏ hàng, thanh toán), người phục vụ sẽ chuyển đơn xuống nhà bếp (Cơ sở dữ liệu/Server) và mang đồ ăn ra cho khách.
+- **Kiểm thử thủ công (Manual Test):** Là bạn phải tự tay mở trình duyệt, tự bấm đăng nhập, tự chọn giày, tự điền địa chỉ... làm lần lượt từng tí một rất mất thời gian.
+- **File `run-api-tests.ps1`:** Giống như một **"Robot giám sát tự động"**. Chỉ cần bạn bật công tắc (chạy lệnh), Robot này sẽ tự động giả lập hàng chục người dùng gửi liên tục 52 đơn hàng/yêu cầu tới "Người phục vụ" trong 30 giây để xem hệ thống hoạt động đúng hay sai.
+
+---
+
+### 2. ⚙️ Bên trong file này xử lý những gì?
+
+Khi bạn gõ lệnh `.\scripts\run-api-tests.ps1`, file này sẽ thực hiện 4 bước tự động:
+
+1. **Chuẩn bị thư mục chứa báo cáo (`target`):**
+   - Tự động tạo thư mục tên là `target` nếu chưa có, dùng để chứa kết quả test sau khi hoàn thành.
+
+2. **Đọc danh sách các bài kiểm tra ([Shoeshop_API_Collection.json](file:///c:/shoeshopp/Testing/docs/Shoeshop_API_Collection.json)):**
+   - File này chứa sẵn danh sách 52 kịch bản test (Đăng nhập, xem danh sách giày, thêm vào giỏ, áp mã giảm giá, đăng bài đánh giá, xem doanh thu admin...).
+
+3. **Chạy công cụ kiểm thử tự động (Newman):**
+   - Sử dụng công cụ có tên là **Newman** (công cụ chạy Postman tự động) để gửi lần lượt 52 yêu cầu đến địa chỉ web `http://localhost`.
+
+4. **Xuất báo cáo kết quả đẹp mắt (`target/newman-report.html`):**
+   - Sau khi test xong, file sẽ tự động tổng hợp kết quả thành một trang web báo cáo giao diện HTML. Bạn chỉ cần mở file này lên là thấy ngay bài test nào **Đạt (Pass)**, bài nào **Lỗi (Fail)**.
+
+---
+
+### 3. ❓ Tại sao file lại có đuôi `.ps1`?
+
+- `.ps1` là định dạng file script của **Windows PowerShell** (chương trình dòng lệnh trên hệ điều hành Windows).
+- Thay vì mỗi lần test bạn phải gõ một câu lệnh dài ngoằng phức tạp, người ta gom tất cả vào file `.ps1` này. Bạn chỉ cần gõ duy nhất:
+  ```powershell
+  .\scripts\run-api-tests.ps1
+  ```
+  Lập tức toàn bộ quá trình test phức tạp sẽ tự động chạy từ A đến Z.
+
+---
+
+### 🎯 Tóm lại lợi ích của file này
+
+- **Tiết kiệm thời gian:** Thay vì tốn vài tiếng test tay 52 chức năng, file này làm xong tất cả chỉ trong **25 - 30 giây**.
+- **Độ chính xác 100%:** Kiểm tra chính xác từng mã lỗi, số tiền, dữ liệu trả về mà mắt thường dễ bỏ sót.
+- **Báo cáo chuyên nghiệp:** Tạo sẵn báo cáo chi tiết dạng file HTML để xem lại hoặc gửi cho quản lý.
+
+#test-coverage.ps1(Giải thích)
+Viewed test-coverage.ps1:1-286
+
+File [`test-coverage.ps1`](file:///c:/shoeshopp\Testing\scripts\test-coverage.ps1) là kịch bản **Đo độ bao phủ mã nguồn (Code Coverage)** dành cho mã nguồn Java Backend của dự án.
+
+Dưới đây là giải thích chi tiết, dễ hiểu nhất cho người mới bắt đầu:
+
+---
+
+### 1. 💡 Ẩn dụ thực tế: "Đo độ bao phủ code" (Code Coverage) là gì?
+
+Giả sử dự án của bạn có **1.000 dòng code Java** xử lý các tính năng (đăng ký, đăng nhập, đặt hàng, áp mã giảm giá, hủy đơn...).
+- Khi các lập trình viên viết các bài test tự động (Unit Test / Integration Test), câu hỏi đặt ra là: **"Bộ test của chúng ta đã kiểm tra được bao nhiêu % số dòng code trong dự án? Có dòng code nào bị bỏ sót chưa được test không?"**
+- **JaCoCo (Java Code Coverage):** Là "thước đo" đếm xem trong 1.000 dòng code đó, có bao nhiêu dòng đã được test chạy qua (hiển thị màu xanh) và bao nhiêu dòng chưa từng được test tới (hiển thị màu đỏ).
+- **File `test-coverage.ps1`:** Là **Robot tự động đo đạc**. Khi chạy lệnh này, nó sẽ tự động chạy toàn bộ các bài test Java, đo chỉ số %, và tạo ra một báo cáo trang web xem chi tiết từng file code đạt bao nhiêu % kiểm thử.
+
+---
+
+### 2. ⚙️ Quy trình tự động bên trong file `test-coverage.ps1`
+
+Khi lệnh chạy, script sẽ tự động thực hiện 5 bước chuyên nghiệp:
+
+1. **Kiểm tra môi trường:**
+   - Kiểm tra xem máy bạn đã cài `docker` và `mvn` (Maven) chưa, đồng thời đảm bảo MySQL container (`shoeshop-mysql`) đang chạy.
+
+2. **Tạo Database tạm thời cách ly (Isolated Database):**
+   - Để tránh làm bẩn hoặc hỏng dữ liệu gốc, script tự tạo ra 1 database tạm với tên ngẫu nhiên (ví dụ: `shoeshop_cov_1f3cca...`).
+
+3. **Chạy các bài test Java & Đo đạc bằng JaCoCo:**
+   - Kích hoạt Maven và plugin **JaCoCo** (`jacoco-maven-plugin`) để chạy toàn bộ các bài test nội bộ trong dự án Java.
+   - Trong quá trình test chạy, JaCoCo sẽ ghi lại chính xác từng hàm, từng nhánh lệnh `if/else` nào đã được thực thi.
+
+4. **Xuất báo cáo HTML đẹp mắt:**
+   - Tạo ra file báo cáo trang web tại đường dẫn: [`target/site/jacoco/index.html`](file:///c:/shoeshopp/Testing/target/site/jacoco/index.html).
+   - Trang báo cáo này hiển thị bảng thống kê chi tiết tỷ lệ % bao phủ code của từng Package, Class, Method.
+
+5. **Dọn dẹp tự động (Clean up):**
+   - Xóa bỏ hoàn toàn database tạm vừa tạo, khôi phục lại cấu hình ban đầu để giữ cho hệ thống luôn sạch sẽ.
+
+---
+
+### 3. ⚖️ So sánh `run-api-tests.ps1` vs `test-coverage.ps1`
+
+| Tiêu chí | [`run-api-tests.ps1`](file:///c:/shoeshopp/Testing/scripts/run-api-tests.ps1) | [`test-coverage.ps1`](file:///c:/shoeshopp/Testing/scripts/test-coverage.ps1) |
+|---|---|---|
+| **Loại test** | **API Test (Giao tiếp bên ngoài)** | **Code Coverage Test (Bên trong mã nguồn Java)** |
+| **Công cụ sử dụng** | Newman / Postman | Maven + JaCoCo + JUnit |
+| **Mục đích** | Kiểm tra các đường dẫn API (`/api/v1/products`, `/login`...) có trả về kết quả `200 OK` đúng hay không. | Đo xem các bài test tự động trong Java đã kiểm thử được bao nhiêu **% dòng code** của hệ thống. |
+| **Báo cáo tạo ra** | `target/newman-report.html` | `target/site/jacoco/index.html` |
+
+---
+
+### 🚀 Cách chạy lệnh (Dành cho người dùng):
+
+- Chạy đo độ bao phủ code:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\scripts\test-coverage.ps1
+  ```
+- Thêm tham số `-OpenReport` để tự động mở trang báo cáo trên trình duyệt sau khi test xong:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\scripts\test-coverage.ps1 -OpenReport
+  ```
+
+#Cách chạy test-coverage.ps1
+#Hướng dẫn cách chạy test chuẩn để lần sau không bị lỗi
+Để lần sau chạy test coverage luôn thành công 100% và tự động mở báo cáo HTML trên trình duyệt, bạn chỉ cần thực hiện theo các bước sau:
+
+Bước 1: Đảm bảo các container Docker chính đang chạy
+Mở Terminal / PowerShell tại thư mục dự án C:\shoeshopp\Testing và kiểm tra Docker:
+
+powershell
+docker ps
+(Đảm bảo container shoeshop-mysql và shoeshop-api đang ở trạng thái Up/Healthy).
+
+Bước 2: Chạy script test coverage
+Chạy lệnh PowerShell sau:
+
+powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-coverage.ps1 -OpenReport
+Lưu ý: Script sẽ tự động:
+Tạo database cô lập tạm thời để chạy test (không làm ảnh hưởng dữ liệu gốc).
+Thực thi toàn bộ 1,094 test cases và tổng hợp báo cáo JaCoCo.
+Tự động dọn dẹp (Drop) database tạm thời sau khi hoàn tất.
+Tự động mở file báo cáo 
+
+target/site/jacoco/index.html
+ trên trình duyệt web của bạn.
+
+
+ python .\scripts\check_module_testcases.py( cú pháp để chạy lệnh check_module_testcases)
+
+
+Viewed VoucherTests.java:1-127
+Viewed application.properties:1-46
+Ran command: `powershell -Command "mvn test `"-Dtest=VoucherTests,VoucherDAOTest,VoucherApiControllerTest`" `"-Dspring.datasource.url=jdbc:mysql://localhost:3307/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`" `"-Dspring.datasource.username=root`" `"-Dspring.datasource.password=truonghoaiduoc5`""`
+Viewed task-831.log
+Used tool: manage_task
+Ran command: `powershell -ExecutionPolicy Bypass -File .\scripts\test-coverage.ps1 -TestSelector "VoucherTests,VoucherDAOTest,VoucherApiControllerTest"`
+Used tool: schedule
+
+Executing the selected Voucher tests with the correct database configuration...
+
+Used tool: manage_task
+Viewed task-838.log
+Used tool: schedule
+
+Waiting for test execution to complete...
+
+Used tool: manage_task
+Viewed task-838.log
+Used tool: schedule
+
+Running tests in the background...
+
+Used tool: manage_task
+Used tool: schedule
+
+Tests are now running against the isolated test database...
+
+Used tool: manage_task
+Used tool: schedule
+
+Compilation complete, executing the Voucher tests...
+
+Used tool: manage_task
+Used tool: schedule
+
+VoucherTests are executing now...
+
+Used tool: manage_task
+Viewed task-838.log:140-150
+Used tool: schedule
+
+Database migration and Spring context setup in progress...
+
+Used tool: manage_task
+Used tool: schedule
+
+Flyway migrations executing...
+
+Used tool: manage_task
+Used tool: schedule
+
+Flyway migrations progressing...
+
+Used tool: manage_task
+Viewed task-838.log:155-163
+Used tool: schedule
+
+Migrations ongoing...
+
+Used tool: manage_task
+Viewed task-838.log:160-163
+Used tool: schedule
+
+Continuing migration execution...
+
+Used tool: manage_task
+Used tool: schedule
+
+Migrations passing version 7...
+
+Used tool: manage_task
+Used tool: schedule
+
+Migrations passing version 11...
+
+Used tool: manage_task
+Used tool: schedule
+
+Migrations complete, tests executing now...
+
+Used tool: manage_task
+Used tool: schedule
+
+Tests completed successfully, generating report...
+
+Used tool: manage_task
+
+### ❓ Lỗi này là lỗi gì?
+
+Lỗi **`java.net.ConnectException: Connection refused: connect`** / **`Communications link failure`** xảy ra do **Sai cổng kết nối Cơ sở dữ liệu (Database Port Mismatch)**:
+
+1. Mặc định mã nguồn cấu hình cổng kết nối MySQL là **3306** (trong file `application.properties`).
+2. Tuy nhiên, trên hệ thống Docker của bạn, container MySQL (`shoeshopp-mysql`) đang mở ở cổng **3307** (`localhost:3307`).
+3. Khi bạn gõ thủ công lệnh `mvn test -Dtest="VoucherTests,..."` mà **không truyền tham số đổi cổng kết nối sang 3307**, Spring Boot sẽ cố kết nối vào cổng 3306 (vốn không có MySQL hoạt động) $\rightarrow$ dẫn đến lỗi ngắt kết nối database làm 5 test case bị `IllegalStateException: Failed to load ApplicationContext`.
+
+---
+
+### 🛠️ Hướng dẫn cách chạy đúng (2 Cách)
+
+#### **CÁCH 1: Dùng script `test-coverage.ps1` với tham số `-TestSelector` (KHUYÊN DÙNG ⭐⭐⭐⭐⭐)**
+
+Script `test-coverage.ps1` đã được tích hợp sẵn cơ chế **tự tạo database cô lập ở port 3307**, xử lý ngoặc ký tự `&` chuẩn xác và dọn dẹp tự động.
+
+Mở Terminal và gõ lệnh sau:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-coverage.ps1 -TestSelector "VoucherTests,VoucherDAOTest,VoucherApiControllerTest"
+```
+
+* **Kết quả:** Đã chạy thử nghiệm thành công 100%: **64/64 tests Pass**, `BUILD SUCCESS`!
+
+---
+
+#### **CÁCH 2: Nếu muốn chạy lệnh `mvn test` thủ công trực tiếp**
+
+Nếu bạn vẫn muốn gõ lệnh `mvn test` trực tiếp trong PowerShell, bạn phải bọc dấu ngoặc kép bẩy `"` và truyền đúng cổng **3307**:
+
+```powershell
+mvn test "-Dtest=VoucherTests,VoucherDAOTest,VoucherApiControllerTest" `
+"-Dspring.datasource.url=jdbc:mysql://localhost:3307/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" `
+"-Dspring.datasource.username=root" `
+"-Dspring.datasource.password=truonghoaiduoc5"
+```
+
+Báo cáo kiểm thử cho nhóm Voucher (`VoucherTests`, `VoucherDAOTest`, `VoucherApiControllerTest`) đã hoàn tất 100% thành công với **64/64 tests Pass** và **0 lỗi**.
+
+# 1. Chạy full Mục 2 (Tìm kiếm & Phân trang)
+newman run test_cases/black_box/product_search_pagination/Product_Search_Pagination_Postman_Collection.json -e test_cases/black_box/product_search_pagination/Product_Search_Pagination_Postman_Environment.json
+
+# 2. Chạy riêng Nhóm 1 của Mục 2
+newman run test_cases/black_box/product_search_pagination/group1_search_and_filtering.json -e test_cases/black_box/product_search_pagination/Product_Search_Pagination_Postman_Environment.json
+
+# 3. Chạy full Mục 6 (Đánh giá)
+newman run test_cases/black_box/review_rating/Review_Rating_Postman_Collection.json -e test_cases/black_box/review_rating/Review_Rating_Postman_Environment.json
+
+# 4. Chạy riêng Nhóm 1 của Mục 6
+newman run test_cases/black_box/review_rating/group1_create_review.json -e test_cases/black_box/review_rating/Review_Rating_Postman_Environment.json

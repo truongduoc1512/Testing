@@ -34,7 +34,7 @@ spec:
           env:
             # Ghi đè cấu hình kết nối Database trong ứng dụng của bạn bằng thông số K8s
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql-service:3306/shoeshop_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+              value: "jdbc:mysql://mysql-service:3306/shoe_shopdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
               value: "root"
             - name: SPRING_DATASOURCE_PASSWORD

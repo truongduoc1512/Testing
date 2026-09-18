@@ -12,7 +12,7 @@ while ($(docker inspect --format='{{.State.Health.Status}}' shoeshop-mysql 2>$nu
 }
 
 Write-Host "MySQL is Healthy. Auto-seeding database from seed_data.sql..."
-Get-Content seed_data.sql | docker exec -i shoeshop-mysql mysql -uroot -ptruonghoaiduoc shoe_shopdb
+Get-Content seed_data.sql | docker exec -i shoeshop-mysql mysql -uroot -prootpassword shoe_shopdb
 
 Write-Host ""
 Write-Host "Running containers:"
