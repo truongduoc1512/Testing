@@ -1,0 +1,126 @@
+{
+  "module_id": "MODULE_01",
+  "module_name": "Đăng ký, Đăng nhập, Đổi mật khẩu (Authentication)",
+  "assignee": "Lĩnh",
+  "role": "Customer",
+  "standards": {
+    "bva_type": "Robustness BVA (6n+1)",
+    "ep_tags": ["V1-V7", "X1-X9"],
+    "decision_table_rules": 5,
+    "fsm_states": 5
+  },
+  "endpoints": [
+    {"method": "POST", "path": "/login", "desc": "Đăng nhập xác thực bằng Cookie Session"},
+    {"method": "POST", "path": "/api/v1/users/register", "desc": "REST API Đăng ký tài khoản"},
+    {"method": "POST", "path": "/api/v1/users/change-password", "desc": "REST API Đổi mật khẩu"}
+  ],
+  "robustness_bva_6n_plus_1": {
+    "variable": "Độ dài mật khẩu (Range [6, 20])",
+    "formula": "6n + 1 (n=1 => 7 test values)",
+    "points": [
+      {"name": "min-", "value": 5, "valid": false, "tag": "B0", "expected": "Báo lỗi mật khẩu tối thiểu 6 ký tự"},
+      {"name": "min", "value": 6, "valid": true, "tag": "B1", "expected": "Chấp nhận mật khẩu ngưỡng biên dưới"},
+      {"name": "min+", "value": 7, "valid": true, "tag": "B2", "expected": "Chấp nhận mật khẩu trên biên dưới"},
+      {"name": "nom", "value": 12, "valid": true, "tag": "B3", "expected": "Chấp nhận mật khẩu danh định"},
+      {"name": "max-", "value": 19, "valid": true, "tag": "B4", "expected": "Chấp nhận mật khẩu dưới biên trên"},
+      {"name": "max", "value": 20, "valid": true, "tag": "B5", "expected": "Chấp nhận mật khẩu ngưỡng biên trên"},
+      {"name": "max+", "value": 21, "valid": false, "tag": "B6", "expected": "Báo lỗi mật khẩu vượt quá 20 ký tự"}
+    ]
+  },
+  "state_transition_fsm": {
+    "states": ["UNAUTHENTICATED", "AUTHENTICATED", "LOCKED", "PASSWORD_CHANGED"],
+    "transitions": [
+      {"current_state": "UNAUTHENTICATED", "event": "Valid Login", "next_state": "AUTHENTICATED", "result": "Session created"},
+      {"current_state": "UNAUTHENTICATED", "event": "Fail 5 times", "next_state": "LOCKED", "result": "Account locked"},
+      {"current_state": "AUTHENTICATED", "event": "Change password", "next_state": "PASSWORD_CHANGED", "result": "Hash updated in DB"},
+      {"current_state": "AUTHENTICATED", "event": "Logout", "next_state": "UNAUTHENTICATED", "result": "Session invalidated"}
+    ]
+  },
+  "special_characters_check": {
+    "email_field": "Kiểm tra với Apache Commons EmailValidator. Chuỗi ký tự sai cấu trúc bị chặn và báo lỗi Pattern.registerForm.email",
+    "username_field": "Validator hiện tại kiểm tra độ dài <= 50 và rỗng, chưa chặn ký tự lạ. Khuyến nghị giữ nguyên tránh làm vỡ các test case sẵn có."
+  },
+  "test_cases": [
+    {
+      "tc_id": "TC_AUTH_001",
+      "name": "Đăng nhập tài khoản Customer hợp lệ",
+      "technique": "Decision Table (Rule 4) / EP",
+      "input": {"username": "employee1", "password": "123"},
+      "expected": "Đăng nhập thành công, chuyển về trang chủ",
+      "tags": ["V1", "V2", "V3", "V4", "B3"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_002",
+      "name": "Đăng nhập tài khoản Admin hợp lệ",
+      "technique": "Decision Table (Rule 5) / EP",
+      "input": {"username": "manager1", "password": "123"},
+      "expected": "Đăng nhập thành công, điều hướng Admin Dashboard",
+      "tags": ["V1", "V2", "V3", "V4", "B3"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_003",
+      "name": "Đăng nhập thất bại do sai mật khẩu",
+      "technique": "Decision Table (Rule 2) / EP",
+      "input": {"username": "employee1", "password": "WrongPassword123"},
+      "expected": "Báo lỗi Invalid credentials",
+      "tags": ["V1", "X3", "V3"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_004",
+      "name": "Chặn đăng nhập tài khoản chưa đăng ký",
+      "technique": "Decision Table (Rule 1) / EP",
+      "input": {"username": "nonexist_user", "password": "Password123"},
+      "expected": "Báo lỗi không tìm thấy tài khoản",
+      "tags": ["X1"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_005",
+      "name": "Chặn đăng nhập tài khoản đang bị khóa",
+      "technique": "Decision Table (Rule 3) / EP",
+      "input": {"username": "locked_user", "password": "123"},
+      "expected": "Báo lỗi Tài khoản đã bị tạm khóa",
+      "tags": ["V1", "V2", "X4"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_006",
+      "name": "Mật khẩu 5 ký tự (Dưới biên dưới min-)",
+      "technique": "Robustness BVA (min-)",
+      "input": {"password": "12345"},
+      "expected": "Báo lỗi mật khẩu tối thiểu 6 ký tự",
+      "tags": ["X6", "B0"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_007",
+      "name": "Mật khẩu 21 ký tự (Vượt biên trên max+)",
+      "technique": "Robustness BVA (max+)",
+      "input": {"password": "123456789012345678901"},
+      "expected": "Báo lỗi mật khẩu vượt quá 20 ký tự",
+      "tags": ["X7", "B6"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_008",
+      "name": "Đăng ký với email chứa chuỗi ký tự sai cú pháp",
+      "technique": "EP / Ký tự đặc biệt",
+      "input": {"email": "test!@#$%^&*@gmail.com"},
+      "expected": "Báo lỗi Pattern.registerForm.email",
+      "tags": ["X8"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_AUTH_009",
+      "name": "Chuyển trạng thái Đăng xuất thành công",
+      "technique": "State Transition Testing (FSM)",
+      "input": {"action": "POST /logout"},
+      "expected": "Hủy session, quay về UNAUTHENTICATED",
+      "tags": ["FSM_TRANS"],
+      "status": "PASS"
+    }
+  ]
+}

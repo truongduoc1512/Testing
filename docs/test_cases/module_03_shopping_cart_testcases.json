@@ -1,0 +1,107 @@
+{
+  "module_id": "MODULE_03",
+  "module_name": "Giỏ hàng: Thêm, Sửa số lượng, Xóa (Shopping Cart)",
+  "assignee": "Lĩnh",
+  "role": "Customer",
+  "standards": {
+    "bva_type": "Robustness BVA (6n+1)",
+    "ep_tags": ["V1-V5", "X1-X5"],
+    "decision_table_rules": 5,
+    "fsm_states": 5
+  },
+  "endpoints": [
+    {"method": "GET", "path": "/api/v1/cart", "desc": "Xem giỏ hàng trong session hiện tại"},
+    {"method": "POST", "path": "/api/v1/cart/add", "desc": "Thêm sản phẩm vào giỏ hàng"},
+    {"method": "PUT", "path": "/api/v1/cart/update", "desc": "Cập nhật số lượng sản phẩm"},
+    {"method": "DELETE", "path": "/api/v1/cart/remove/{code}", "desc": "Xóa 1 dòng hàng khỏi giỏ"},
+    {"method": "DELETE", "path": "/api/v1/cart/clear", "desc": "Xóa toàn bộ giỏ hàng"}
+  ],
+  "robustness_bva_6n_plus_1": {
+    "variable": "Số lượng đặt mua Q (với Tồn kho Stock = 10)",
+    "formula": "6n + 1 (n=1 => 7 test values)",
+    "points": [
+      {"name": "min-", "value": 0, "valid": false, "tag": "B0", "expected": "Báo lỗi hoặc yêu cầu xóa sản phẩm"},
+      {"name": "min", "value": 1, "valid": true, "tag": "B1", "expected": "Thêm 1 sản phẩm vào giỏ thành công"},
+      {"name": "min+", "value": 2, "valid": true, "tag": "B2", "expected": "Cộng dồn số lượng thành 2 thành công"},
+      {"name": "nom", "value": 5, "valid": true, "tag": "B3", "expected": "Thêm 5 sản phẩm thành công"},
+      {"name": "max-", "value": 9, "valid": true, "tag": "B4", "expected": "Cập nhật 9 sản phẩm thành công"},
+      {"name": "max", "value": 10, "valid": true, "tag": "B5", "expected": "Đặt mua bằng đúng tồn kho Stock = 10"},
+      {"name": "max+", "value": 11, "valid": false, "tag": "B6", "expected": "Báo lỗi vượt quá số lượng tồn kho"}
+    ]
+  },
+  "state_transition_fsm": {
+    "states": ["EMPTY_CART", "HAS_ITEMS", "QTY_UPDATED", "ITEM_REMOVED", "CHECKOUT_PREPARED"],
+    "transitions": [
+      {"current_state": "EMPTY_CART", "event": "Add item (Q >= 1)", "next_state": "HAS_ITEMS", "result": "Badge = 1, Cart not empty"},
+      {"current_state": "EMPTY_CART", "event": "Checkout attempt", "next_state": "EMPTY_CART", "result": "Blocked: Empty cart notification"},
+      {"current_state": "HAS_ITEMS", "event": "Update quantity (Q <= Stock)", "next_state": "QTY_UPDATED", "result": "Subtotal recalculated"},
+      {"current_state": "HAS_ITEMS", "event": "Remove single item", "next_state": "ITEM_REMOVED", "result": "Item deleted from session"},
+      {"current_state": "HAS_ITEMS", "event": "Proceed to Checkout", "next_state": "CHECKOUT_PREPARED", "result": "Redirect to Order Placement (Module 05)"}
+    ]
+  },
+  "test_cases": [
+    {
+      "tc_id": "TC_CART_001",
+      "name": "Thêm mới sản phẩm hợp lệ vào giỏ",
+      "technique": "Decision Table (Rule 4) / EP",
+      "input": {"code": "S001", "quantity": 1},
+      "expected": "Thêm mới thành công, badge giỏ hàng tăng 1",
+      "tags": ["V1", "V2", "V3", "V5", "B1"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_CART_002",
+      "name": "Cập nhật tăng số lượng đã có trong giỏ",
+      "technique": "Decision Table (Rule 5) / EP",
+      "input": {"code": "S001", "quantity": 2},
+      "expected": "Giỏ hàng tự cộng dồn tổng số lượng thành 3",
+      "tags": ["V1", "V2", "V3", "V4", "B2"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_CART_003",
+      "name": "Chặn nhập số lượng mua bằng 0 (min-)",
+      "technique": "Robustness BVA (min-) / Decision Table (Rule 2)",
+      "input": {"code": "S001", "quantity": 0},
+      "expected": "Hệ thống cảnh báo hoặc xóa sản phẩm khỏi giỏ",
+      "tags": ["X1", "B0"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_CART_004",
+      "name": "Chặn thêm số lượng vượt tồn kho Q = 11 (max+)",
+      "technique": "Robustness BVA (max+) / Decision Table (Rule 3)",
+      "input": {"code": "S001", "quantity": 11, "stock": 10},
+      "expected": "Báo lỗi Số lượng mua vượt quá số lượng tồn kho",
+      "tags": ["X3", "B6"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_CART_005",
+      "name": "Chặn thêm sản phẩm đã hết hàng (Stock = 0)",
+      "technique": "Decision Table (Rule 1) / EP",
+      "input": {"code": "S005", "stock": 0},
+      "expected": "Nút bị vô hiệu hóa hoặc báo sản phẩm không khả dụng",
+      "tags": ["X4"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_CART_006",
+      "name": "Xóa dòng sản phẩm khỏi giỏ thành công",
+      "technique": "State Transition Testing (FSM)",
+      "input": {"action": "DELETE /api/v1/cart/remove/S001"},
+      "expected": "Dòng hàng biến mất, tổng tiền cập nhật giảm",
+      "tags": ["FSM_TRANS"],
+      "status": "PASS"
+    },
+    {
+      "tc_id": "TC_CART_007",
+      "name": "Chặn tiến hành thanh toán khi giỏ hàng rỗng",
+      "technique": "State Transition Testing (FSM)",
+      "input": {"cartState": "EMPTY", "action": "POST /checkout"},
+      "expected": "Chặn thanh toán, báo lỗi giỏ hàng rỗng",
+      "tags": ["FSM_TRANS"],
+      "status": "PASS"
+    }
+  ]
+}

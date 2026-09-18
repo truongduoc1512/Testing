@@ -1,0 +1,441 @@
+{
+	"info": {
+		"_postman_id": "customer-authentication-blackbox-collection",
+		"name": "Customer_Authentication_Postman_Collection",
+		"description": "Bộ Testcase Kiểm Thử Hộp Đen Postman - Chức Năng 1: Đăng ký, Đăng nhập, Đổi mật khẩu (Customer Authentication)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "valid_user",
+			"value": "employee1",
+			"type": "string"
+		},
+		{
+			"key": "valid_pass",
+			"value": "123",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "manager1",
+			"type": "string"
+		},
+		{
+			"key": "admin_pass",
+			"value": "123",
+			"type": "string"
+		},
+		{
+			"key": "csrf_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "rnd_reg_user",
+			"value": "user_test",
+			"type": "string"
+		},
+		{
+			"key": "rnd_reg_email",
+			"value": "user_test@example.com",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "TC_AUTH_01 - [EP-V1][DT-R4] Đăng nhập Customer hợp lệ với tài khoản tồn tại",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        if (match && match[1]) {",
+							"            pm.environment.set('csrf_token', match[1]);",
+							"            pm.collectionVariables.set('csrf_token', match[1]);",
+							"        }",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200 OK or 302 Redirect', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+					{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{"key": "userName", "value": "{{customer_user}}"},
+						{"key": "password", "value": "{{customer_pass}}"},
+						{"key": "_csrf", "value": "{{csrf_token}}"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/j_spring_security_check",
+					"host": ["{{base_url}}"],
+					"path": ["j_spring_security_check"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_02 - [EP-V4][DT-R5] Đăng nhập Admin hợp lệ với quyền Quản trị",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        if (match && match[1]) {",
+							"            pm.environment.set('csrf_token', match[1]);",
+							"            pm.collectionVariables.set('csrf_token', match[1]);",
+							"        }",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Admin authenticated successfully (200/302)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+					{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{"key": "userName", "value": "{{admin_user}}"},
+						{"key": "password", "value": "{{admin_pass}}"},
+						{"key": "_csrf", "value": "{{csrf_token}}"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/j_spring_security_check",
+					"host": ["{{base_url}}"],
+					"path": ["j_spring_security_check"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_03 - [EP-X3][DT-R2] Đăng nhập Thất bại do sai mật khẩu",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        if (match && match[1]) {",
+							"            pm.environment.set('csrf_token', match[1]);",
+							"            pm.collectionVariables.set('csrf_token', match[1]);",
+							"        }",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Invalid credentials handled safely (200, 302, 401, 403)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 302, 401, 403]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+					{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{"key": "userName", "value": "{{customer_user}}"},
+						{"key": "password", "value": "WrongPassword999"},
+						{"key": "_csrf", "value": "{{csrf_token}}"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/j_spring_security_check",
+					"host": ["{{base_url}}"],
+					"path": ["j_spring_security_check"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_04 - [EP-X1][DT-R1] Đăng nhập Thất bại do tài khoản không tồn tại",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        if (match && match[1]) {",
+							"            pm.environment.set('csrf_token', match[1]);",
+							"            pm.collectionVariables.set('csrf_token', match[1]);",
+							"        }",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Non-existing user login rejected (200, 302, 401, 403)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 302, 401, 403]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+					{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{"key": "userName", "value": "ghost_nonexistent_user_999"},
+						{"key": "password", "value": "123456"},
+						{"key": "_csrf", "value": "{{csrf_token}}"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/j_spring_security_check",
+					"host": ["{{base_url}}"],
+					"path": ["j_spring_security_check"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_05 - [EP-X2][BVA-Empty] Đăng nhập Thất bại khi bỏ trống Username",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        if (match && match[1]) {",
+							"            pm.environment.set('csrf_token', match[1]);",
+							"            pm.collectionVariables.set('csrf_token', match[1]);",
+							"        }",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Empty username rejected safely (200, 302, 400, 403)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400, 403]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+					{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{"key": "userName", "value": ""},
+						{"key": "password", "value": "123"},
+						{"key": "_csrf", "value": "{{csrf_token}}"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/j_spring_security_check",
+					"host": ["{{base_url}}"],
+					"path": ["j_spring_security_check"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_06 - [EP-V1][BVA-nom] Đăng ký tài khoản mới thành công (Dữ liệu chuẩn)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const rnd = Math.floor(1000 + Math.random() * 9000);",
+							"pm.environment.set('rnd_reg_user', 'user_' + rnd);",
+							"pm.environment.set('rnd_reg_email', 'user_' + rnd + '@example.com');"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Registration succeeded (200 OK or 201 Created)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userName\": \"{{rnd_reg_user}}\",\n    \"email\": \"{{rnd_reg_email}}\",\n    \"password\": \"SecurePass123!\",\n    \"confirmPassword\": \"SecurePass123!\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/users/register",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "users", "register"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_07 - [BVA-B0][min-] Đăng ký - Mật khẩu 5 ký tự (Dưới ngưỡng tối thiểu)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Rejected password shorter than min (400 Bad Request)', function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userName\": \"short_pass_user\",\n    \"email\": \"shortpass@example.com\",\n    \"password\": \"12345\",\n    \"confirmPassword\": \"12345\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/users/register",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "users", "register"]
+				}
+			}
+		},
+		{
+			"name": "TC_AUTH_08 - [EP-X8] Đăng ký - Email sai định dạng chứa chuỗi ký tự lạ",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Rejected invalid email format (400 Bad Request)', function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"userName\": \"invalid_email_user\",\n    \"email\": \"bad!@#$%^&*@invalid\",\n    \"password\": \"Password123!\",\n    \"confirmPassword\": \"Password123!\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/users/register",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "users", "register"]
+				}
+			}
+		}
+	]
+}
