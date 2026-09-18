@@ -1,6 +1,7 @@
 # THIẾT KẾ TEST CASE HỘP ĐEN: QUẢN LÝ MÃ GIẢM GIÁ (ADMIN VOUCHER CRUD)
 
-> **Chức năng:** Quản lý, Thêm mới, Chỉnh sửa (Cập nhật) và Vô hiệu hóa (Xóa mềm) Mã giảm giá dành cho Quản trị viên (`ROLE_ADMIN`).
+> **Chức năng:** Quản lý, Thêm mới, Chỉnh sửa (Cập nhật) và Vô hiệu hóa (Xóa mềm) Mã giảm giá dành cho Quản trị viên (`ROLE_ADMIN`).  
+> **Người thực hiện:** Nguyễn Hoàng Phương (MSSV: `080205010954` / `NguyenHoangPhuong275`)
 
 ---
 
