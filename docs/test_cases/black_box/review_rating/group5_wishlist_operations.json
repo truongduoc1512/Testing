@@ -1,0 +1,225 @@
+{
+  "info": {
+    "_postman_id": "group5-wishlist-operations-id",
+    "name": "Group 5: Wishlist Operations & State Transitions",
+    "description": "JSON Collection riêng cho Nhóm 5: Thêm, Xóa, Kiểm tra và Chuyển đổi trạng thái Wishlist (Wishlist State Transitions)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" },
+    { "key": "valid_product_code", "value": "S001", "type": "string" },
+    { "key": "invalid_product_code", "value": "INVALID_CODE_99", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "TC_WISH_01 - Thêm sản phẩm vào Wishlist (State Transition S0 -> S1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('State Transition to FAVORITED (favorite: true)', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.favorite).to.eql(true);",
+              "    pm.expect(jsonData.message).to.include('Đã thêm');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_WISH_02 - Kiểm tra trạng thái sản phẩm trong Wishlist",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist/check/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist", "check", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns favorite: true in FAVORITED state', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.favorite).to.be.a('boolean');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_WISH_03 - Hủy yêu thích sản phẩm qua Toggle 1 chạm (State Transition S1 -> S0)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('State Transition back to UNFAVORITED (favorite: false)', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.favorite).to.eql(false);",
+              "    pm.expect(jsonData.message).to.include('Đã xóa');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_WISH_04 - Xóa sản phẩm khỏi Wishlist qua API DELETE (Direct Transition to S0)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns favorite: false and success', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.favorite).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_WISH_05 - Lấy danh sách sản phẩm yêu thích của người dùng",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns wishlist product array', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_WISH_06 - Chặn khách vãng lai chưa đăng nhập thao tác Wishlist",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 401 Unauthorized (Guest user)', function () { pm.response.to.have.status(401); });",
+              "pm.test('Returns authentication error message', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.message).to.include('Vui lòng đăng nhập');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_WISH_07 - Thêm sản phẩm không tồn tại vào Wishlist",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/wishlist/{{invalid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "wishlist", "{{invalid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });",
+              "pm.test('Returns not found error message', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.message).to.include('Không tìm thấy sản phẩm');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

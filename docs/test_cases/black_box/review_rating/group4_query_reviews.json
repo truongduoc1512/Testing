@@ -1,0 +1,40 @@
+{
+  "info": {
+    "_postman_id": "group4-query-reviews-id",
+    "name": "Group 4: Query Reviews",
+    "description": "JSON Collection riêng cho Nhóm 4: Tra cứu danh sách đánh giá",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" },
+    { "key": "valid_product_code", "value": "S001", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "TC_REV_GET_01 - Tra cứu danh sách đánh giá của sản phẩm",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/product/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "product", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns review list array', function () { var j = pm.response.json(); pm.expect(j).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

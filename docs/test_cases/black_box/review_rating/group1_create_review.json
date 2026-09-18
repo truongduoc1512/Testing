@@ -1,0 +1,193 @@
+{
+  "info": {
+    "_postman_id": "group1-create-review-id",
+    "name": "Group 1: Create Review",
+    "description": "JSON Collection riêng cho Nhóm 1: Tạo bài đánh giá mới",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "TC_REV_001 - Đánh giá 5 sao hợp lệ (BVA Max)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S001\",\n  \"ratingValue\": 5,\n  \"comment\": \"Giày rất đẹp và đi êm chân\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 201 Created', function () { pm.response.to.have.status(201); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_002 - Đánh giá 1 sao hợp lệ (BVA Min)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S001\",\n  \"ratingValue\": 1,\n  \"comment\": \"Đế hơi cứng\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 201 Created', function () { pm.response.to.have.status(201); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_003 - Chặn comment rỗng",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S001\",\n  \"ratingValue\": 4,\n  \"comment\": \"   \"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_004 - Chặn đánh giá 0 sao (BVA Min-1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S001\",\n  \"ratingValue\": 0,\n  \"comment\": \"Sản phẩm quá kém\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_005 - Chặn đánh giá 6 sao (BVA Max+1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S001\",\n  \"ratingValue\": 6,\n  \"comment\": \"Tuyệt vời 6 sao\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_006 - Báo lỗi 401 Khách vãng lai",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productCode\": \"S001\",\n  \"ratingValue\": 5,\n  \"comment\": \"Unauthenticated review attempt\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 401 Unauthorized', function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

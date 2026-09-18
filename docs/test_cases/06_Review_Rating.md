@@ -1,11 +1,11 @@
-# Bảng Test Case: Chức năng 6 - Đánh giá sản phẩm (Review & Rating)
+# Bảng Test Case: Chức năng 7 - Đánh giá & Wishlist (Review, Rating & Wishlist)
 **Người thực hiện:** Được 
 
 ## 1. Thông tin Kỹ thuật & Thực thi
 - **Kỹ thuật Thiết kế (Test Design):** 
-  - **Phân hoạch lớp tương đương (EP):** Quản lý quyền truy cập (Guest vs User vs Admin), Kiểm tra vòng đời Sản phẩm (Active vs Inactive).
-  - **Phân tích giá trị biên (BVA):** Rất quan trọng để chặn số sao ngoài khoảng [1, 5] (VD: 0 sao, 6 sao) và **Giới hạn thời gian sửa bài trong vòng 5 phút**.
-  - **Bảng quyết định (Decision Table):** Kết hợp các ràng buộc thành 7 quy tắc cốt lõi bảo vệ hệ thống.
+  - **Phân tích giá trị biên (BVA):** Chặn số sao ngoài khoảng [1, 5] (0 sao -> 400, 6 sao -> 400), độ dài comment [1, 2000] ký tự và **Giới hạn thời gian sửa bài trong vòng 5 phút** ($\le 300,000$ ms).
+  - **Bảng quyết định (Decision Table):** Kết hợp các ràng buộc phân quyền, trạng thái sản phẩm, validation form và quyền sở hữu thành các quy tắc cốt lõi.
+  - **Kiểm thử chuyển đổi trạng thái (State Transition Testing - STT / FSM):** Kiểm thử chu trình chuyển đổi trạng thái Wishlist (`UNFAVORITED` $\leftrightarrow$ `FAVORITED`) và vòng đời bài đánh giá (`NO_REVIEW` $\rightarrow$ `EDITABLE_REVIEW` $\rightarrow$ `LOCKED_REVIEW` / `DELETED_REVIEW`).
 - **Kỹ thuật Thực thi (Test Execution):** 
   - Kiểm thử Tích hợp (Integration Test) & Đơn vị (Unit Test) qua JUnit / Mockito.
   - Kiểm thử API End-to-End (Black-box E2E API Testing) qua Postman.
@@ -47,12 +47,6 @@
 
 ### 2.3 Bảng Quyết định tổng hợp (Collapsed Decision Table)
 
-| Condition/Action | R1 | R2 | R3 | R4 | R5 | R6 | R7 |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **C1: Quyền truy cập hợp lệ (ROLE_USER)?**| N | Y | Y | Y | Y | Y | Y |
-| **C2: SP đang ACTIVE?** | - | N | Y | Y | Y | Y | Y |
-| **C3: Số sao [1, 5] & Nội dung OK?** | - | - | N | Y | Y | Y | Y |
-| **C4: Là Chủ sở hữu bài Review?** | - | - | - | N | Y | Y | Y |
 | **C5: Nằm trong 5 phút vàng (Dành cho Sửa)?**| - | - | - | - | N | Y | Y |
 | **A1: Báo lỗi 401/403 (Phân quyền)** | X | - | - | - | - | - | - |
 | **A2: Báo lỗi (Sản phẩm không bán)** | - | X | - | - | - | - | - |
@@ -61,6 +55,25 @@
 | **A5: Báo lỗi Quá 5 phút cấm sửa** | - | - | - | - | X | - | - |
 | **A6: Thành công (Tạo/Sửa/Xóa + Tính lại điểm)**| - | - | - | - | - | X | X |
 | **Test Case Tương ứng** | TC_REV_006, 007 | TC_REV_008 | TC_REV_003, 004, 005 | TC_REV_009 | TC_REV_010 | TC_REV_011 | TC_REV_001, 002 |
+
+### 2.4 Sơ đồ & Ma trận Chuyển đổi trạng thái (State Transition Testing - STT / FSM)
+
+#### A. Trạng thái & Chuyển đổi Danh sách Yêu thích (Wishlist State Transition):
+- **Trạng thái $S_0$ (`UNFAVORITED`):** Sản phẩm chưa có trong danh sách yêu thích của người dùng.
+- **Trạng thái $S_1$ (`FAVORITED`):** Sản phẩm đã nằm trong danh sách yêu thích của người dùng.
+
+| Trạng thái hiện tại | Sự kiện / Hành động API | Điều kiện | Trạng thái tiếp theo | Trả về Response Body |
+| :--- | :--- | :--- | :--- | :--- |
+| **$S_0$ (Unfavorited)** | `POST /api/v1/wishlist/{code}` | User authenticated | **$S_1$ (Favorited)** | `{"success": true, "favorite": true, "message": "Đã thêm..."}` |
+| **$S_1$ (Favorited)** | `POST /api/v1/wishlist/{code}` | User authenticated | **$S_0$ (Unfavorited)** | `{"success": true, "favorite": false, "message": "Đã xóa..."}` |
+| **$S_1$ (Favorited)** | `DELETE /api/v1/wishlist/{code}` | User authenticated | **$S_0$ (Unfavorited)** | `{"success": true, "favorite": false, "message": "Đã xóa..."}` |
+| **$S_0$ (Unfavorited)** | `DELETE /api/v1/wishlist/{code}` | User authenticated | **$S_0$ (Unfavorited)** | `{"success": true, "favorite": false, "message": "Sản phẩm không có..."}` |
+| **$S_0$ hoặc $S_1$** | Any Wishlist API | Guest (Unauthenticated) | Không đổi ($S_0$/$S_1$) | `HTTP 401 Unauthorized` |
+
+#### B. Trạng thái & Chuyển đổi Bài đánh giá (Review Lifecycle State Transition):
+- **Trạng thái $R_0$ (`NO_REVIEW`):** Chưa có bài đánh giá.
+- **Trạng thái $R_1$ (`EDITABLE_REVIEW`):** Bài đánh giá mới được tạo trong vòng 5 phút ($t \le 300,000$ ms).
+- **Trạng thái $R_2$ (`LOCKED_REVIEW`):** Bài đánh giá đã quá 5 phút kể từ lúc đăng ($t > 300,000$ ms).
 
 ---
 
@@ -80,6 +93,13 @@
 | **TC_REV_009** | EP (Owner / R4) | Chặn hành vi sửa/xóa Review của người khác | Có 1 bài Review ID=1 của user `alice`. | User `bob` gọi API PUT/DELETE vào ID=1. | `alice` $\neq$ `bob`. | Báo lỗi vì không phải chủ sở hữu bài viết (Ownership). | **X4** | Khớp Unit Test `updateReview_returnsFalseForDifferentOwner`. | Pass |
 | **TC_REV_010** | BVA (Time / R5) | Chặn quyền chỉnh sửa Review khi đã quá 5 phút | User `alice` có bài Review ID=1 tạo từ rất lâu. | Kịch bản BVA ném thời điểm tạo lùi về 301,000 milliseconds trước. | Time Window $> 5$ phút. | Mất quyền Sửa. Hệ thống khóa cứng bài đánh giá. | **X9, B15+1** | Khớp Unit Test `updateReview_returnsFalseOutsideFiveMinuteWindow`. | Pass |
 | **TC_REV_011** | EP (CRUD / R7) | Xóa thành công Review và Khôi phục điểm Rating gốc | Khách hàng thực thi quyền Xóa đúng bài của mình. | Bắn DELETE API. | Thỏa mãn quyền Owner. | Xóa thành công bài đánh giá, điểm tổng Product cập nhật lại như cũ. | **V1, V3** | Khớp Unit Test `deleteReview_deletesAndRefreshesProductCache`. | Pass |
+| **TC_WISH_01** | State Transition (S0 -> S1) | Thêm sản phẩm vào Wishlist qua Toggle 1 chạm | User `buyer` đã đăng nhập. | 1. Gửi POST `/api/v1/wishlist/S001`.. 2. Kiểm tra response body. | `productCode = S001` | Status 200 OK, `favorite: true`, message "Đã thêm sản phẩm vào danh sách yêu thích!". | **V1, V2, ST1** | Status 200 OK. State chuyển sang FAVORITED. | Pass |
+| **TC_WISH_02** | State Transition (Query) | Kiểm tra trạng thái yêu thích sản phẩm | User `buyer` đã đăng nhập. | 1. Gửi GET `/api/v1/wishlist/check/S001`.. 2. Kiểm tra kết quả. | `productCode = S001` | Status 200 OK, `favorite: true`. | **V1, V2, ST4** | Status 200 OK. Trả về đúng boolean state. | Pass |
+| **TC_WISH_03** | State Transition (S1 -> S0) | Hủy yêu thích sản phẩm qua Toggle 1 chạm (lần 2) | Sản phẩm đang ở state FAVORITED (S1). | 1. Gửi POST `/api/v1/wishlist/S001` lần thứ 2.. 2. Kiểm tra response. | `productCode = S001` | Status 200 OK, `favorite: false`, message "Đã xóa sản phẩm khỏi danh sách yêu thích!". | **V1, V2, ST2** | Status 200 OK. State chuyển về UNFAVORITED. | Pass |
+| **TC_WISH_04** | State Transition (S1 -> S0) | Xóa sản phẩm khỏi Wishlist qua API DELETE | Sản phẩm đang trong Wishlist. | 1. Gửi DELETE `/api/v1/wishlist/S001`.. 2. Kiểm tra response. | `productCode = S001` | Status 200 OK, `favorite: false`, `success: true`. | **V1, V2, ST3** | Status 200 OK. Xóa thành công. | Pass |
+| **TC_WISH_05** | State Transition (Query List) | Lấy danh sách sản phẩm yêu thích của tôi | User `buyer` đã đăng nhập. | 1. Gửi GET `/api/v1/wishlist`.. 2. Kiểm tra danh sách trả về. | No params | Status 200 OK, trả về mảng JSON `List<ProductInfo>`. | **V1, ST5** | Status 200 OK. Trả về mảng danh sách SP yêu thích. | Pass |
+| **TC_WISH_06** | EP (Guest) | Báo lỗi 401 khi Khách vãng lai thao tác Wishlist | Chưa đăng nhập (Guest). | 1. Gửi POST `/api/v1/wishlist/S001` không kèm Cookie/Auth. | `productCode = S001` | Status 401 Unauthorized, message "Vui lòng đăng nhập...". | **X1** | Status 401 Unauthorized. Từ chối khách vãng lai. | Pass |
+| **TC_WISH_07** | EP (Product Invalid) | Thêm sản phẩm không tồn tại vào Wishlist | User `buyer` đã đăng nhập. | 1. Gửi POST `/api/v1/wishlist/INVALID_CODE_99`. | `productCode = INVALID_CODE_99` | Status 404 Not Found, message "Không tìm thấy sản phẩm...". | **X3** | Status 404 Not Found. Báo lỗi sản phẩm không tồn tại. | Pass |
 
 
 ---
@@ -88,15 +108,15 @@
 
 | Nhóm Tag | Mã Tag | Ý nghĩa nghiệp vụ | Trạng thái |
 | :---: | :---: | :--- | :---: |
-| **Valid EP** | **V1** | Khách hàng đã đăng nhập có quyền đánh giá | Hợp lệ |
-| | **V2** | Sản phẩm được đánh giá đang mở bán (ACTIVE) | Hợp lệ |
+| **Valid EP** | **V1** | Khách hàng đã đăng nhập có quyền đánh giá / thao tác Wishlist | Hợp lệ |
+| | **V2** | Sản phẩm đang mở bán (ACTIVE) | Hợp lệ |
 | | **V3** | Người thao tác là chủ sở hữu bài review | Hợp lệ |
 | | **V4** | Số sao nằm trong khoảng hợp lệ [1, 5] | Hợp lệ |
 | | **V5** | Nội dung bình luận hợp lệ từ 1 đến 2000 ký tự | Hợp lệ |
 | | **V6** | Thao tác sửa bài trong vòng 5 phút (<= 300,000 ms) | Hợp lệ |
 | **Invalid EP**| **X1** | Khách vãng lai chưa đăng nhập (Báo lỗi 401) | Không hợp lệ |
 | | **X2** | Admin cố tình tạo đánh giá ảo (Báo lỗi 403) | Không hợp lệ |
-| | **X3** | Sản phẩm không tồn tại hoặc đã ngừng bán | Không hợp lệ |
+| | **X3** | Sản phẩm không tồn tại hoặc đã ngừng bán (Báo lỗi 404 / 400) | Không hợp lệ |
 | | **X4** | Người dùng can thiệp bài review của người khác (Báo lỗi 403) | Không hợp lệ |
 | | **X5** | Số sao đánh giá nhỏ hơn 1 (<= 0 sao) | Không hợp lệ |
 | | **X6** | Số sao đánh giá lớn hơn 5 (>= 6 sao) | Không hợp lệ |
@@ -109,3 +129,5 @@
 | | **B6 - B10**| Điểm biên độ dài bình luận: min (1), min+ (2), nom (50), max- (1999), max (2000) | Hợp lệ |
 | | **B11 - B15**| Điểm biên thời hạn sửa bài: min (0ms), min+ (1s), nom (2.5p), max- (4p59s), max (5p) | Hợp lệ |
 | | **B15+1** | Ngoài biên trên thời hạn sửa bài: 301,000 ms (5 phút 1 giây) | Không hợp lệ |
+| **State Trans** | **ST1 - ST5** | Chuyển đổi trạng thái Wishlist (Unfavorited <-> Favorited) | Hợp lệ |
+
