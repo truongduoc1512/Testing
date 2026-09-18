@@ -137,6 +137,11 @@ public class UserAddressApiController {
         return ResponseEntity.ok(ApiResponse.success("Đã đặt làm địa chỉ mặc định!"));
     }
 
+    private static final java.util.regex.Pattern NAME_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}0-9\\s\\-'.]{1,100}$");
+    private static final java.util.regex.Pattern PHONE_PATTERN = java.util.regex.Pattern.compile("^[0-9+()\\-\\s.]{1,20}$");
+    private static final java.util.regex.Pattern ADDRESS_PATTERN = java.util.regex.Pattern.compile("^[^<>{}~^$%*\\\\]{1,255}$");
+    private static final java.util.regex.Pattern LOCATION_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}0-9\\s\\-'.]{1,100}$");
+
     private String validateAddress(UserAddressForm form) {
         if (form == null || isBlank(form.getReceiverName()) || isBlank(form.getPhone())
                 || isBlank(form.getProvince()) || isBlank(form.getDistrict())
@@ -148,6 +153,20 @@ public class UserAddressApiController {
                 || form.getWard().trim().length() > 100 || form.getStreetAddress().trim().length() > 255
                 || (form.getNote() != null && form.getNote().trim().length() > 255)) {
             return "Thông tin địa chỉ vượt quá độ dài cho phép!";
+        }
+        if (!NAME_PATTERN.matcher(form.getReceiverName().trim()).matches()) {
+            return "Tên người nhận không hợp lệ (không được chứa ký tự đặc biệt @#%^&*...)!";
+        }
+        if (!PHONE_PATTERN.matcher(form.getPhone().trim()).matches()) {
+            return "Số điện thoại không đúng định dạng!";
+        }
+        if (!LOCATION_PATTERN.matcher(form.getProvince().trim()).matches()
+                || !LOCATION_PATTERN.matcher(form.getDistrict().trim()).matches()
+                || !LOCATION_PATTERN.matcher(form.getWard().trim()).matches()) {
+            return "Tỉnh/Thành, Quận/Huyện hoặc Phường/Xã không hợp lệ!";
+        }
+        if (!ADDRESS_PATTERN.matcher(form.getStreetAddress().trim()).matches()) {
+            return "Địa chỉ đường phố chứa ký tự không hợp lệ!";
         }
         return null;
     }

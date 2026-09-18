@@ -50,3 +50,5 @@ scratch/
 tools/
 *.jtl
 *.log
+
+~$*
