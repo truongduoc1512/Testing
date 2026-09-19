@@ -547,9 +547,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/addresses",
+              "raw": "{{guest_base_url}}/api/v1/users/addresses",
               "host": [
-                "{{base_url}}"
+                "{{guest_base_url}}"
               ],
               "path": [
                 "api",

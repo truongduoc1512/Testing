@@ -90,63 +90,11 @@
               ]
             }
           }
-        },
-        {
-          "name": "0.2 POST /api/v1/cart/items - Add S001 to Cart (Qty 2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('[SETUP] Đã thêm sản phẩm vào giỏ hàng (HTTP 200 OK)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Cookie",
-                "value": "JSESSIONID={{user_session_id}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/v1/cart/items",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "cart",
-                "items"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"S001\",\n  \"quantity\": 2\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          }
         }
       ]
     },
     {
-      "name": "1. Đặt hàng thành công & Luồng danh định (Happy Path - TC_CHK_01 đến TC_CHK_04)",
+      "name": "1. Đặt hàng thành công & Luồng danh định (Happy Path & Valid Boundaries - TC_CHK_01 đến TC_CHK_04, TC_CHK_22, TC_CHK_23)",
       "item": [
         {
           "name": "TC_CHK_01 - Đặt hàng thành công cho Khách đã đăng nhập với dữ liệu danh định [V1..V7, B1, D7, ST1, ST4, ST7]",
@@ -352,11 +300,115 @@
               }
             }
           }
+        },
+        {
+          "name": "TC_CHK_22 - Đặt hàng thành công tại tất cả các mốc kề dưới min+ [V2..V6, B4, B10, B16, B22, B28, D7]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_22: Tiếp nhận form tại cận kề dưới min+ (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cart/customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cart",
+                "customer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ng\",\n  \"address\": \"12\",\n  \"email\": \"ab@b.co\",\n  \"phone\": \"09\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_CHK_23 - Đặt hàng thành công tại tất cả các mốc kề trên max- [V2..V6, B5, B11, B17, B23, B29, D7]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_23: Tiếp nhận form tại cận kề trên max- (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cart/customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cart",
+                "customer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\",\n  \"address\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\n  \"email\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.cccccccccccccccccccccccccccccccccccc.com\",\n  \"phone\": \"0000000000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     },
     {
-      "name": "2. Kiểm soát Giỏ hàng & Tồn kho (Cart & Stock Validation - TC_CHK_05, TC_CHK_18, TC_CHK_19)",
+      "name": "2. Kiểm soát Giỏ hàng & Tồn kho (Cart & Stock Validation - TC_CHK_05, TC_CHK_18, TC_CHK_19, TC_CHK_24)",
       "item": [
         {
           "name": "TC_CHK_05 - Chặn checkout khi giỏ hàng rỗng lines=[] [X1, D1, ST2]",
@@ -377,7 +429,18 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/api/v1/cart/checkout",
               "host": [
@@ -393,17 +456,15 @@
           }
         },
         {
-          "name": "TC_CHK_18 - Chặn đặt hàng khi số lượng mua vượt quá tồn kho max+ [X16, B31, D5, ST6]",
+          "name": "0.2 POST /api/v1/cart/items - Add Product to Cart (Qty 2)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_CHK_18: Giới hạn số lượng mua không vượt tồn kho (capped=true)', function () {",
+                  "pm.test('[SETUP] Đã thêm sản phẩm vào giỏ hàng (HTTP 200 OK)', function () {",
                   "    pm.expect(pm.response.code).to.equal(200);",
-                  "    var res = pm.response.json();",
-                  "    pm.expect(res.capped).to.be.true;",
                   "});"
                 ]
               }
@@ -437,7 +498,71 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"S001\",\n  \"quantity\": 99999\n}",
+              "raw": "{\n  \"code\": \"S-010\",\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_CHK_18 - Chặn đặt hàng khi số lượng mua vượt quá tồn kho max+ [X16, B31, D5, ST6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_18: Giới hạn số lượng mua không vượt tồn kho (capped=true)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.capped).to.be.true;",
+                  "});",
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/v1/cart/items',",
+                  "    method: 'PUT',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({ code: 'S-010', quantity: 2 })",
+                  "    }",
+                  "}, function () {});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cart/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cart",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"S-010\",\n  \"quantity\": 99999\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -497,11 +622,65 @@
               }
             }
           }
+        },
+        {
+          "name": "TC_CHK_24 - Chặn đặt hàng khi số lượng dòng sản phẩm bằng 0 min- hoặc số âm [X2, B26, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_24: Báo lỗi số lượng sản phẩm không hợp lệ (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('lớn hơn 0');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cart/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cart",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"S-010\",\n  \"quantity\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     },
     {
-      "name": "3. Kiểm thử Bắt lỗi Form Giao hàng (Negative Customer Form - TC_CHK_06 đến TC_CHK_17)",
+      "name": "3. Kiểm thử Bắt lỗi Form Giao hàng (Negative Customer Form - TC_CHK_06 đến TC_CHK_17, TC_CHK_25)",
       "item": [
         {
           "name": "TC_CHK_06 - Báo lỗi khi để trống họ tên người nhận min- [X3, B2, D2, ST3]",
@@ -1031,8 +1210,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_CHK_16: Kiểm tra độ dài số điện thoại (HTTP 200/400)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "pm.test('TC_CHK_16: Báo lỗi khi số điện thoại vượt quá 20 ký tự (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
                   "});"
                 ]
               }
@@ -1083,8 +1262,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_CHK_17: Kiểm tra định dạng số điện thoại (HTTP 200/400)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "pm.test('TC_CHK_17: Từ chối số điện thoại chứa chữ cái hoặc ký tự cấm (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
                   "});"
                 ]
               }
@@ -1126,11 +1305,63 @@
               }
             }
           }
+        },
+        {
+          "name": "TC_CHK_25 - Báo lỗi khi để trống địa chỉ email người nhận [X9, D2, ST3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_25: Báo lỗi email để trống (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cart/customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cart",
+                "customer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyễn Văn A\",\n  \"address\": \"123 Lê Lợi, Q1\",\n  \"email\": \"\",\n  \"phone\": \"0912345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         }
       ]
     },
     {
-      "name": "4. Bảo mật Giá & Áp dụng Voucher (Security & Voucher Integration - TC_CHK_20, TC_CHK_21)",
+      "name": "4. Bảo mật Giá & Áp dụng Voucher (Security & State Transitions - TC_CHK_20, TC_CHK_21, TC_CHK_26, TC_CHK_27)",
       "item": [
         {
           "name": "TC_CHK_20 - Tự động đồng bộ và bảo vệ giá từ CSDL (Chống can thiệp giá) [V1, V7, D7]",
@@ -1177,15 +1408,148 @@
           }
         },
         {
-          "name": "TC_CHK_21 - Áp dụng Voucher hợp lệ và chốt đơn hoàn tất [V8, V9, D7, ST4, ST7]",
+          "name": "TC_CHK_27 - Quay lại màn hình thông tin từ bước xác nhận và bảo toàn dữ liệu [ST5]",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_CHK_21: Chốt đơn hàng hoàn tất (HTTP 201 Created hoặc 400)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400]);",
+                  "pm.test('TC_CHK_27: Bảo toàn giỏ hàng và dữ liệu người mua khi chuyển bước (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.customerInfo).to.be.an('object');",
+                  "    pm.expect(res.cartLines).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cart",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cart"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_CHK_26 - Báo lỗi và từ chối áp dụng voucher không hợp lệ hoặc không tồn tại [X18, D6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_26: Từ chối voucher không hợp lệ (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vouchers/apply",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vouchers",
+                "apply"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"voucherCode\": \"INVALID_VOUCHER_CODE_XYZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_CHK_21 - Áp dụng Voucher hợp lệ và chốt đơn hoàn tất [V8, V9, D7, ST4, ST7]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/v1/cart/customer',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            name: 'Nguyễn Hoàng Phương',",
+                  "            address: '123 Lê Lợi, P. Bến Nghé, Quận 1',",
+                  "            email: 'berstock.hfuong275@gmail.com',",
+                  "            phone: '0912345678'",
+                  "        })",
+                  "    }",
+                  "}, function () {});",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/api/v1/vouchers/apply',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({ voucherCode: 'WELCOME50' })",
+                  "    }",
+                  "}, function () {});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_CHK_21: Chốt đơn hàng hoàn tất (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
                   "});"
                 ]
               }

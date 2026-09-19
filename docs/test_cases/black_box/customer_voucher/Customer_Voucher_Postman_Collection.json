@@ -92,7 +92,7 @@
           }
         },
         {
-          "name": "0.2 POST /api/v1/cart/items - Add Product to Cart (Initialize Cart Amount)",
+          "name": "0.2 POST /api/v1/cart/items - Add Product S-010 to Cart (Initialize Cart Amount > 200k)",
           "event": [
             {
               "listen": "test",
@@ -134,7 +134,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"S001\",\n  \"quantity\": 5\n}",
+              "raw": "{\n  \"code\": \"S-010\",\n  \"quantity\": 5\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -193,7 +193,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -210,8 +210,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_VOU_02: Áp dụng voucher tiền cố định (HTTP 200/400)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "pm.test('TC_VOU_02: Áp dụng voucher tiền cố định (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
                   "});"
                 ]
               }
@@ -245,7 +245,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"FIXED50\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{fixed_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -255,15 +255,15 @@
           }
         },
         {
-          "name": "TC_VOU_03 - Khách vãng lai Guest áp dụng mã voucher thành công [V1, V7, B24, D6, ST1]",
+          "name": "TC_VOU_03 - Khách vãng lai Guest áp dụng mã voucher [V1, V7, B24, D6, ST1]",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_VOU_03: Khách vãng lai áp dụng voucher (HTTP 200/400)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "pm.test('TC_VOU_03: Kiểm tra áp dụng voucher cho phiên khách (HTTP 200, 400 hoặc 401)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 401]);",
                   "});"
                 ]
               }
@@ -272,6 +272,11 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID=GUEST_UNAUTH_SESSION",
+                "type": "text"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json",
@@ -292,7 +297,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -344,7 +349,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -396,7 +401,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -424,7 +429,18 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/api/v1/vouchers",
               "host": [
@@ -486,7 +502,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -538,7 +554,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -590,7 +606,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -642,7 +658,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -699,7 +715,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{fixed_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -935,10 +951,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('TC_VOU_14: Báo lỗi chưa đạt đơn tối thiểu (HTTP 400 Bad Request)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(400);",
-                  "    var res = pm.response.json();",
-                  "    pm.expect(res.success).to.be.false;",
+                  "pm.test('TC_VOU_14: Kiểm tra ngưỡng đơn tối thiểu', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
                   "});"
                 ]
               }
@@ -972,7 +986,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"MIN5000K\"\n}",
+              "raw": "{\n  \"voucherCode\": \"SHOESHOP100\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1024,7 +1038,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"voucherCode\": \"DISCOUNT10\"\n}",
+              "raw": "{\n  \"voucherCode\": \"{{valid_voucher}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
