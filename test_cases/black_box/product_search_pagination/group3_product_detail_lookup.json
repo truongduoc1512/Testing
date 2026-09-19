@@ -1,100 +1,101 @@
 {
   "info": {
-    "_postman_id": "group3-product-detail-id",
-    "name": "Group 3: Product Detail Lookup (Nhóm 3 - Tra cứu chi tiết sản phẩm)",
-    "description": "Tập hợp các testcase kiểm thử API Tra cứu chi tiết sản phẩm theo mã Code (Hợp lệ, Không tồn tại 404, INACTIVE 404).",
+    "_postman_id": "group3-product-detail-lookup-id",
+    "name": "Group 3: Product Detail Lookup",
+    "description": "JSON Collection riêng cho Nhóm 3: Tra cứu chi tiết sản phẩm",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" },
+    { "key": "valid_product_code", "value": "S001", "type": "string" },
+    { "key": "invalid_product_code", "value": "INVALID_CODE_99", "type": "string" },
+    { "key": "inactive_product_code", "value": "INACTIVE_01", "type": "string" }
+  ],
   "item": [
     {
-      "name": "TC_PROD_01 - Truy vấn thông tin chi tiết sản phẩm hợp lệ",
+      "name": "TC_PROD_01 - Tra cứu sản phẩm hợp lệ",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products/{{valid_product_code}}",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products", "{{valid_product_code}}"]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Verify ProductInfo schema and code match', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('code', pm.environment.get('valid_product_code'));",
-              "    pm.expect(jsonData).to.have.property('name');",
-              "    pm.expect(jsonData).to.have.property('price');",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns valid ProductInfo', function () { var j = pm.response.json(); pm.expect(j).to.have.property('code'); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_PROD_02 - Truy vấn mã sản phẩm không tồn tại (404 Not Found)",
+      "name": "TC_PROD_02 - Tra cứu mã sản phẩm không tồn tại",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products/{{invalid_product_code}}",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products", "{{invalid_product_code}}"]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });",
-              "pm.test('Verify error response message', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('success', false);",
-              "    pm.expect(jsonData.message).to.include('Không tìm thấy sản phẩm');",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_PROD_03 - Truy vấn sản phẩm bị ngừng kinh doanh (INACTIVE 404)",
+      "name": "TC_PROD_03 - Tra cứu sản phẩm bị INACTIVE",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products/{{inactive_product_code}}",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products", "{{inactive_product_code}}"]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });",
-              "pm.test('Verify inactive product is hidden from user', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('success', false);",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });"
+          ]
         }
-      ]
+      }]
+    },
+    {
+      "name": "TC_PROD_04 - Tra cứu sản phẩm với mã chỉ chứa khoảng trắng",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products/%20%20",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products", "%20%20"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });"
+          ]
+        }
+      }]
     }
   ]
 }

@@ -75,6 +75,27 @@
           ]
         }
       }]
+    },
+    {
+      "name": "TC_PROD_04 - Tra cứu sản phẩm với mã chỉ chứa khoảng trắng",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products/%20%20",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products", "%20%20"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 404 Not Found', function () { pm.response.to.have.status(404); });"
+          ]
+        }
+      }]
     }
   ]
 }

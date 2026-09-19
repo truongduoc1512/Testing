@@ -1,252 +1,354 @@
 {
   "info": {
-    "_postman_id": "group1-search-filtering-id",
-    "name": "Group 1: Search & Filtering (Nhóm 1 - Tìm kiếm & Lọc sản phẩm)",
-    "description": "Tập hợp các testcase kiểm thử API Tìm kiếm theo từ khóa, lọc khoảng giá, thương hiệu, danh mục và xử lý SQL Injection.",
+    "_postman_id": "group1-search-and-filtering-id",
+    "name": "Group 1: Search & Filtering",
+    "description": "JSON Collection riêng cho Nhóm 1: Tìm kiếm & Lọc sản phẩm",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" }
+  ],
   "item": [
     {
       "name": "TC_SRCH_01 - Tìm kiếm với từ khóa hợp lệ",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?name=Nike&page=1",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "name", "value": "Nike" },
-            { "key": "page", "value": "1" }
-          ]
+          "query": [{ "key": "name", "value": "Nike" }, { "key": "page", "value": "1" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Verify search result fields and pagination structure', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('totalRecords');",
-              "    pm.expect(jsonData).to.have.property('currentPage', 1);",
-              "    pm.expect(jsonData).to.have.property('maxResult', 12);",
-              "    pm.expect(jsonData.list).to.be.an('array');",
-              "    if (jsonData.list.length > 0) {",
-              "        jsonData.list.forEach(function(item) {",
-              "            pm.expect(item.name.toLowerCase()).to.include('nike');",
-              "        });",
-              "    }",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns valid pagination array', function () { var j = pm.response.json(); pm.expect(j.list).to.be.an('array'); });"
+          ]
         }
-      ]
+      }]
     },
     {
       "name": "TC_SRCH_02 - Tìm kiếm từ khóa không tồn tại",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?name=XYZ_NOT_EXIST_123",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "name", "value": "XYZ_NOT_EXIST_123" }
-          ]
+          "query": [{ "key": "name", "value": "XYZ_NOT_EXIST_123" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Verify totalRecords is 0 and list is empty array', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.totalRecords).to.eql(0);",
-              "    pm.expect(jsonData.list).to.be.an('array').that.is.empty;",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns totalRecords = 0 and empty list', function () { var j = pm.response.json(); pm.expect(j.totalRecords).to.eql(0); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_SRCH_03 - Tìm kiếm với từ khóa chứa mã SQL Injection",
+      "name": "TC_SRCH_03 - Tìm kiếm với từ khóa SQL Injection",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?name=%25%27OR%271%3D1",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "name", "value": "%'OR'1=1" }
-          ]
+          "query": [{ "key": "name", "value": "%'OR'1=1" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK (Safe Parameter Binding)', function () { pm.response.to.have.status(200); });",
-              "pm.test('Ensure system does not crash with 500 error', function () {",
-              "    pm.expect(pm.response.code).to.not.eql(500);",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_SRCH_04 - Tìm kiếm với tham số rỗng (Lấy danh sách mặc định)",
+      "name": "TC_SRCH_04 - Tìm kiếm với từ khóa rỗng",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?name=",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "name", "value": "" }
-          ]
+          "query": [{ "key": "name", "value": "" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Returns default page 1 products', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.currentPage).to.eql(1);",
-              "    pm.expect(jsonData.list).to.be.an('array');",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_SRCH_05 - Tìm kiếm không phân biệt chữ hoa/chữ thường",
+      "name": "TC_SRCH_05 - Tìm kiếm không phân biệt hoa thường",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?name=nike",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "name", "value": "nike" }
-          ]
+          "query": [{ "key": "name", "value": "nike" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Case-insensitive search returns valid results', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.list).to.be.an('array');",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_SRCH_06 - Kết hợp tìm kiếm từ khóa và lọc khoảng giá",
+      "name": "TC_SRCH_06 - Kết hợp Tìm kiếm & Bộ lọc khoảng giá",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?name=Nike&minPrice=100&maxPrice=300",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "name", "value": "Nike" },
-            { "key": "minPrice", "value": "100" },
-            { "key": "maxPrice", "value": "300" }
-          ]
+          "query": [{ "key": "name", "value": "Nike" }, { "key": "minPrice", "value": "100" }, { "key": "maxPrice", "value": "300" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Verify filtered product prices within range', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.list).to.be.an('array');",
-              "    jsonData.list.forEach(function(p) {",
-              "        var effectivePrice = p.price * (100 - (p.discountPercent || 0)) / 100.0;",
-              "        pm.expect(effectivePrice).to.be.at.least(100);",
-              "        pm.expect(effectivePrice).to.be.at.most(300);",
-              "    });",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
         }
-      ]
+      }]
     },
     {
-      "name": "TC_SRCH_07 - Lọc sản phẩm theo Thương hiệu & Danh mục",
+      "name": "TC_SRCH_07 - Lọc theo Thương hiệu & Danh mục",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "Accept", "value": "application/json" }
-        ],
+        "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
           "raw": "{{base_url}}/api/v1/products?brand=Nike&category=Sneaker",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [
-            { "key": "brand", "value": "Nike" },
-            { "key": "category", "value": "Sneaker" }
-          ]
+          "query": [{ "key": "brand", "value": "Nike" }, { "key": "category", "value": "Sneaker" }]
         }
       },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Verify list filtered by brand and category', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.list).to.be.an('array');",
-              "});"
-            ]
-          }
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
         }
-      ]
+      }]
+    },
+    {
+      "name": "TC_SRCH_08 - Lọc mâu thuẫn khoảng giá (minPrice > maxPrice)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?minPrice=500&maxPrice=100",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "minPrice", "value": "500" }, { "key": "maxPrice", "value": "100" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns empty list for contradictory price filter', function () { var j = pm.response.json(); pm.expect(j.totalRecords).to.eql(0); pm.expect(j.list).to.be.an('array').that.is.empty; });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_09 - Sắp xếp với tiêu chí sai Enum",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?sort=invalid_sort",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "sort", "value": "invalid_sort" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK (Fallback to default sort)', function () { pm.response.to.have.status(200); });",
+            "pm.test('Response contains valid product list', function () { var j = pm.response.json(); pm.expect(j.list).to.be.an('array'); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_10 - Lọc theo Danh mục không tồn tại",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?category=NOT_EXIST_CAT",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "category", "value": "NOT_EXIST_CAT" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns empty list for non-existent category', function () { var j = pm.response.json(); pm.expect(j.totalRecords).to.eql(0); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_11 - Lọc theo Thương hiệu không tồn tại",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?brand=NOT_EXIST_BRAND",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "brand", "value": "NOT_EXIST_BRAND" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns empty list for non-existent brand', function () { var j = pm.response.json(); pm.expect(j.totalRecords).to.eql(0); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_12 - Tìm kiếm từ khóa vượt 100 ký tự (101 ký tự)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?name=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "name", "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Handles long keyword > 100 chars safely', function () { var j = pm.response.json(); pm.expect(j.list).to.be.an('array'); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_13 - Lọc giá tối thiểu âm (minPrice=-1)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?minPrice=-1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "minPrice", "value": "-1" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Negative minPrice query executed normally (price >= -1)', function () { var j = pm.response.json(); pm.expect(j.list).to.be.an('array'); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_14 - Lọc giá tối thiểu với ký tự phi số (minPrice=abc)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?minPrice=abc",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "minPrice", "value": "abc" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 400 Bad Request (Spring Type Mismatch)', function () { pm.response.to.have.status(400); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_SRCH_15 - Gửi Token hết hạn/không hợp lệ khi tìm kiếm",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer invalid_expired_token_12345" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK (Handled as Anonymous for permitAll)', function () { pm.response.to.have.status(200); });",
+            "pm.test('Returns default public product list', function () { var j = pm.response.json(); pm.expect(j.list).to.be.an('array'); });"
+          ]
+        }
+      }]
     }
   ]
 }

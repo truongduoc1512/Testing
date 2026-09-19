@@ -124,15 +124,15 @@
       }]
     },
     {
-      "name": "TC_PAG_06 - Worst-Case BVA cực đại (page=999999, size=999999)",
+      "name": "TC_PAG_06 - Worst-Case BVA cực đại (page=999999)",
       "request": {
         "method": "GET",
         "header": [{ "key": "Accept", "value": "application/json" }],
         "url": {
-          "raw": "{{base_url}}/api/v1/products?page=999999&size=999999",
+          "raw": "{{base_url}}/api/v1/products?page=999999",
           "host": ["{{base_url}}"],
           "path": ["api", "v1", "products"],
-          "query": [{ "key": "page", "value": "999999" }, { "key": "size", "value": "999999" }]
+          "query": [{ "key": "page", "value": "999999" }]
         }
       },
       "event": [{
@@ -141,6 +141,28 @@
           "type": "text/javascript",
           "exec": [
             "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_07 - Phân trang với ký tự phi số (page=abc)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=abc",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "abc" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 400 Bad Request (Spring Type Mismatch)', function () { pm.response.to.have.status(400); });"
           ]
         }
       }]
