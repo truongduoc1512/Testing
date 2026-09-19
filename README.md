@@ -167,180 +167,466 @@ graph TD
 
 ## 4. Yêu Cầu Chức Năng
 
-### Bản Đồ Chức Năng
+### 4.1. Bảng Tổng Hợp Danh Mục Chức Năng Hệ Thống
 
-```mermaid
-mindmap
-  root((ShoeShop))
-    Xác Thực & Dashboard
-      Đăng nhập Local BCrypt
-      Đăng nhập Google OAuth2
-      Quên mật khẩu qua Email
-      Dashboard tách biệt ADMIN vs USER
-      Khóa tài khoản sau 5 lần sai
-    Sổ Địa Chỉ & Checkout
-      CRUD Sổ Địa Chỉ
-      Địa Chỉ Mặc Định
-      Dropdown Checkout
-      Modal Thêm Nhanh
-    Sản Phẩm & AI Gate
-      CRUD Sản Phẩm
-      AI Quality Gate YOLOv8
-      Tồn Kho Real-time
-      Bộ Lọc & Phân Trang
-    Giỏ Hàng & Đơn Hàng
-      Session Cart & AJAX
-      Chốt Đơn & Trừ Kho
-      Hủy Đơn PENDING
-      Trả Hàng & Admin Duyệt
-    Khuyến Mãi & Yêu Thích
-      Vouchers Giảm Giá
-      Wishlist
-      Review & Rating 5 Sao
-    REST API Layer
-      Swagger UI Docs
-      ResponseEntity JSON
-      Full REST Coverage
-```
+Dưới đây là danh mục toàn bộ **38 chức năng chi tiết** của hệ thống ShoeShop, được phân loại theo 9 phân hệ nghiệp vụ, phục vụ trực tiếp cho việc thiết kế Test Case Black-box:
 
----
-
-### FR-01: Xác Thực & Dashboard
-
-#### Luồng Đăng Nhập Local
-1. Nhập `username` (`[3, 50]` ký tự) và `password` (`[8, 72]` ký tự).
-2. Hệ thống xác minh BCrypt.
-3. **Thành công** → Khởi tạo phiên, chuyển hướng về `/`.
-4. **Thất bại** → Tăng `failedAttempts`. Đạt **5 lần** → Khóa tài khoản (`accountNonLocked = false`).
-5. Tài khoản `active = false` → Từ chối với thông báo lỗi.
-
-#### Dashboard Theo Role (`/admin/accountInfo`)
-| Thành phần | ROLE_USER | ROLE_ADMIN |
-| :--- | :---: | :---: |
-| KPI chi tiêu cá nhân / đơn hàng đã đặt | ✅ | ❌ |
-| KPI tổng thành viên / tổng đơn toàn shop | ❌ | ✅ |
-| Biểu đồ doanh thu Revenue Analytics | ❌ | ✅ |
-| Trạng thái AI Service | ❌ | ✅ |
-| Quản lý Voucher | ❌ | ✅ |
-
----
-
-### FR-02: Sổ Địa Chỉ Giao Hàng
-
-**Base Endpoint:** `/api/v1/users/addresses`
-
-**Ràng buộc biến đầu vào (nguồn: `UserAddressApiController.java` & `UserAddress.java`):**
-
-| Biến | Kiểu | Ràng buộc | Nguồn code |
-| :--- | :---: | :--- | :--- |
-| `receiverName` | `String` | `[1, 100]` ký tự; chỉ `[\p{L}0-9\s\-'.]` | `NAME_PATTERN` |
-| `phone` | `String` | `[1, 20]` ký tự; chỉ `[0-9+()\-\s.]` | `PHONE_PATTERN` |
-| `province` | `String` | `[1, 100]` ký tự; chỉ `[\p{L}0-9\s\-'.]` | `LOCATION_PATTERN` |
-| `district` | `String` | `[1, 100]` ký tự; chỉ `[\p{L}0-9\s\-'.]` | `LOCATION_PATTERN` |
-| `ward` | `String` | `[1, 100]` ký tự; chỉ `[\p{L}0-9\s\-'.]` | `LOCATION_PATTERN` |
-| `streetAddress` | `String` | `[1, 255]` ký tự; không chứa `<>{}~^$%*\` | `ADDRESS_PATTERN` |
-| `isDefault` | `boolean` | `true`/`false`. Địa chỉ đầu tiên **tự động** gán `true` | `UserAddressDAO.saveAddress` |
-| `addressCount` | *(system)* | Tối đa **10 địa chỉ**/tài khoản → vượt: `HTTP 400` | `createAddress (chờ fix)` |
-
-**Luồng Thêm Địa Chỉ (`POST /api/v1/users/addresses`):**
-1. `currentUser == null` → `HTTP 401 Unauthorized`.
-2. Thiếu 1 trong 6 trường bắt buộc → `HTTP 400`.
-3. Vi phạm độ dài → `HTTP 400`.
-4. Vi phạm regex → `HTTP 400`.
-5. Đã có `>= 10` địa chỉ → `HTTP 400`.
-6. Địa chỉ đầu tiên hoặc `isDefault = true` → Tự động unset tất cả mặc định cũ.
-7. Lưu thành công → `HTTP 201 Created`.
+| Mã FR | Tên chức năng con | Tác nhân chính (Actor) | Giao diện / Endpoint | Mức độ ưu tiên |
+| :--- | :--- | :--- | :--- | :---: |
+| **FR-01** | **Phân Hệ Xác Thực & Tài Khoản** | | | |
+| FR-01.1 | Đăng ký tài khoản người dùng mới | Khách vãng lai (Guest) | `POST /register`, `POST /api/v1/auth/register` | High |
+| FR-01.2 | Đăng nhập hệ thống (Local BCrypt) | Khách / Người dùng | `POST /login`, `POST /api/v1/auth/login` | High |
+| FR-01.3 | Đăng nhập qua Google OAuth2 | Khách / Người dùng | `/oauth2/authorization/google` | Medium |
+| FR-01.4 | Quên mật khẩu & Đặt lại qua Email | Khách / Người dùng | `POST /forgot-password`, `POST /reset-password` | Medium |
+| FR-01.5 | Đăng xuất khỏi hệ thống | Người dùng / Admin | `POST /logout` | High |
+| FR-01.6 | Xem trang thông tin cá nhân & Dashboard | Người dùng / Admin | `GET /accountInfo`, `GET /admin/accountInfo` | Medium |
+| FR-01.7 | Quản lý danh sách người dùng (Admin) | Quản trị viên (Admin) | `GET /api/v1/admin/users` | Medium |
+| FR-01.8 | Kích hoạt / Khóa tài khoản người dùng | Quản trị viên (Admin) | `PUT /api/v1/admin/users/{username}/status` | High |
+| FR-01.9 | Đặt lại mật khẩu tài khoản người dùng | Quản trị viên (Admin) | `POST /api/v1/admin/users/{username}/reset-password` | Medium |
+| **FR-02** | **Phân Hệ Sổ Địa Chỉ Giao Hàng** | | | |
+| FR-02.1 | Xem danh sách địa chỉ nhận hàng | Người dùng (ROLE_USER) | `GET /api/v1/users/addresses` | High |
+| FR-02.2 | Xem chi tiết một địa chỉ nhận hàng | Người dùng (ROLE_USER) | `GET /api/v1/users/addresses/{id}` | Medium |
+| FR-02.3 | Thêm mới địa chỉ giao hàng | Người dùng (ROLE_USER) | `POST /api/v1/users/addresses` | High |
+| FR-02.4 | Cập nhật thông tin địa chỉ giao hàng | Người dùng (ROLE_USER) | `PUT /api/v1/users/addresses/{id}` | High |
+| FR-02.5 | Xóa địa chỉ giao hàng | Người dùng (ROLE_USER) | `DELETE /api/v1/users/addresses/{id}` | High |
+| FR-02.6 | Thiết lập địa chỉ nhận hàng mặc định | Người dùng (ROLE_USER) | `PUT /api/v1/users/addresses/{id}/default` | High |
+| **FR-03** | **Phân Hệ Quản Lý Sản Phẩm & AI Gate** | | | |
+| FR-03.1 | Xem danh sách và tìm kiếm sản phẩm | Mọi tác nhân | `GET /productList`, `GET /api/v1/products` | High |
+| FR-03.2 | Xem chi tiết sản phẩm | Mọi tác nhân | `GET /product`, `GET /api/v1/products/{code}` | High |
+| FR-03.3 | Thêm mới sản phẩm (Kèm AI Gate) | Quản trị viên (Admin) | `POST /product`, `POST /api/v1/products` | High |
+| FR-03.4 | Cập nhật thông tin sản phẩm | Quản trị viên (Admin) | `POST /product`, `POST /api/v1/products` | High |
+| FR-03.5 | Xóa / Ngừng kinh doanh sản phẩm | Quản trị viên (Admin) | `POST /admin/product/delete`, `DELETE /api/v1/products/{code}` | High |
+| FR-03.6 | Kiểm duyệt chất lượng ảnh sản phẩm qua AI | Hệ thống / Admin | `POST http://ai-service:8000/api/v1/analyze` | High |
+| **FR-04** | **Phân Hệ Giỏ Hàng (Cart)** | | | |
+| FR-04.1 | Xem giỏ hàng hiện tại | Mọi tác nhân | `GET /shoppingCart`, `GET /api/v1/cart` | High |
+| FR-04.2 | Thêm sản phẩm vào giỏ hàng | Mọi tác nhân | `GET /buyProduct`, `POST /api/v1/cart/items` | High |
+| FR-04.3 | Cập nhật số lượng sản phẩm trong giỏ | Mọi tác nhân | `POST /shoppingCart`, `PUT /api/v1/cart/items/{productCode}` | High |
+| FR-04.4 | Xóa từng sản phẩm khỏi giỏ hàng | Mọi tác nhân | `GET /shoppingCartRemoveProduct`, `DELETE /api/v1/cart/items/{productCode}` | High |
+| FR-04.5 | Xóa toàn bộ sản phẩm trong giỏ hàng | Mọi tác nhân | `DELETE /api/v1/cart/items` | Medium |
+| **FR-05** | **Phân Hệ Đặt Hàng & Thanh Toán (Checkout)** | | | |
+| FR-05.1 | Nhập thông tin giao hàng khách hàng | Khách / Người dùng | `POST /shoppingCartCustomer`, `POST /api/v1/cart/customer` | High |
+| FR-05.2 | Kiểm tra & Áp dụng mã giảm giá | Khách / Người dùng | `POST /api/v1/cart/voucher` | High |
+| FR-05.3 | Xác nhận tóm tắt đơn hàng | Khách / Người dùng | `GET /shoppingCartConfirmation` | High |
+| FR-05.4 | Chốt đặt hàng và trừ tồn kho | Khách / Người dùng | `POST /shoppingCartConfirmation`, `POST /api/v1/cart/checkout` | High |
+| **FR-06** | **Phân Hệ Quản Lý Đơn Hàng & Hủy/Trả** | | | |
+| FR-06.1 | Xem danh sách đơn hàng | Người dùng / Admin | `GET /orderList`, `GET /api/v1/orders` | High |
+| FR-06.2 | Xem chi tiết đơn hàng | Người dùng / Admin | `GET /order`, `GET /api/v1/orders/{orderId}` | High |
+| FR-06.3 | Cập nhật trạng thái xử lý đơn hàng | Quản trị viên (Admin) | `PUT /api/v1/admin/orders/{orderId}/status` | High |
+| FR-06.4 | Hủy đơn hàng đang chờ xử lý | Người dùng / Admin | `POST /api/v1/orders/{orderId}/cancel` | High |
+| FR-06.5 | Gửi yêu cầu trả hàng / hoàn tiền | Người dùng (ROLE_USER) | `POST /api/v1/orders/{orderId}/return` | High |
+| FR-06.6 | Xét duyệt yêu cầu trả hàng | Quản trị viên (Admin) | `PUT /api/v1/admin/orders/{orderId}/return-status` | High |
+| **FR-07** | **Phân Hệ Quản Lý Mã Giảm Giá (Voucher)** | | | |
+| FR-07.1 | Xem danh sách mã giảm giá | Người dùng / Admin | `GET /api/v1/vouchers`, `GET /admin/vouchers` | Medium |
+| FR-07.2 | Tạo mới mã giảm giá | Quản trị viên (Admin) | `POST /api/v1/admin/vouchers` | High |
+| FR-07.3 | Cập nhật thông tin mã giảm giá | Quản trị viên (Admin) | `PUT /api/v1/admin/vouchers/{id}` | High |
+| FR-07.4 | Xóa mã giảm giá | Quản trị viên (Admin) | `DELETE /api/v1/admin/vouchers/{id}` | Medium |
+| **FR-08** | **Phân Hệ Đánh Giá & Bình Luận (Review)** | | | |
+| FR-08.1 | Xem danh sách đánh giá của sản phẩm | Mọi tác nhân | `GET /api/v1/products/{productCode}/reviews` | High |
+| FR-08.2 | Gửi đánh giá và chấm điểm sản phẩm | Người dùng (ROLE_USER) | `POST /api/v1/products/{productCode}/reviews` | High |
+| FR-08.3 | Chỉnh sửa đánh giá (Trong vòng 5 phút) | Người dùng (ROLE_USER) | `PUT /api/v1/products/{productCode}/reviews/{reviewId}` | Medium |
+| FR-08.4 | Xóa đánh giá | Chủ sở hữu / Admin | `DELETE /api/v1/products/{productCode}/reviews/{reviewId}` | Medium |
+| **FR-09** | **Phân Hệ Danh Sách Yêu Thích (Wishlist)** | | | |
+| FR-09.1 | Xem danh sách sản phẩm yêu thích | Người dùng (ROLE_USER) | `GET /api/v1/wishlist` | Medium |
+| FR-09.2 | Thêm sản phẩm vào danh sách yêu thích | Người dùng (ROLE_USER) | `POST /api/v1/wishlist/{productCode}` | Medium |
+| FR-09.3 | Xóa sản phẩm khỏi danh sách yêu thích | Người dùng (ROLE_USER) | `DELETE /api/v1/wishlist/{productCode}` | Medium |
 
 ---
 
-### FR-03: Quản Lý Sản Phẩm & AI Gate
+### 4.2. Đặc Tả Chi Tiết Từng Chức Năng
 
-**Ràng buộc biến đầu vào (nguồn: `ProductFormValidator.java` & `Product.java`):**
+#### Phân Hệ 1: Xác Thực & Quản Lý Tài Khoản (Authentication & Account)
 
-| Biến | Kiểu | Ràng buộc | Nguồn code |
-| :--- | :---: | :--- | :--- |
-| `code` | `String` | `[1, 20]` ký tự, không rỗng, **duy nhất CSDL** | `MAX_CODE_LENGTH = 20` |
-| `name` | `String` | `[1, 255]` ký tự, không rỗng | `MAX_NAME_LENGTH = 255` |
-| `price` | `double` | Hữu hạn, `> 0` | `validate: price <= 0` |
-| `stockQuantity` | `int` | `>= 0`, mặc định `100` | `validate: stockQty < 0` |
-| `discountPercent` | `int` | `[0, 100]%`, mặc định `0` | `validate: < 0 or > 100` |
-| `status` | `String` | Một trong: `ACTIVE`, `INACTIVE`, `DRAFT` | `@Column length=20` |
-| `fileData` | `MultipartFile` | Tùy chọn. Nếu có: định dạng ảnh, `<= 10 MB` | `ProductDAO.save` |
+##### FR-01.1: Đăng Ký Tài Khoản Mới
+- **Tác nhân:** Khách vãng lai (Guest).
+- **Mục tiêu:** Tạo tài khoản thành viên mới trên hệ thống để mua sắm và quản lý đơn hàng.
+- **Tiền điều kiện:** Người dùng chưa đăng nhập.
+- **Dữ liệu đầu vào & Ràng buộc (Equivalence Partitioning & BVA):**
+  - `username`: Bắt buộc, chuỗi từ 3 đến 50 ký tự, định dạng `^[a-zA-Z0-9._-]+$`, không được trùng với tài khoản đã có trong hệ thống.
+  - `password`: Bắt buộc, chuỗi từ 8 đến 72 ký tự, chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số.
+  - `confirmPassword`: Bắt buộc, phải trùng khớp 100% với `password`.
+  - `email`: Bắt buộc, chuỗi từ 6 đến 128 ký tự, đúng định dạng chuẩn RFC 5322, không trùng với email đã đăng ký.
+- **Luồng sự kiện chính:**
+  1. Người dùng truy cập trang Đăng ký, điền form thông tin.
+  2. Hệ thống kiểm tra tính hợp lệ dữ liệu và tính duy nhất của `username` & `email`.
+  3. Hệ thống băm mật khẩu bằng `BCryptPasswordEncoder` (độ dài băm 60 ký tự).
+  4. Lưu thông tin tài khoản với quyền mặc định `ROLE_USER`, trạng thái `active = true`, `accountNonLocked = true`.
+  5. Trả về thông báo thành công (HTTP 201 hoặc redirect về trang Login).
+- **Luồng ngoại lệ (Exceptions):**
+  - Trùng username hoặc email: Báo lỗi "Tài khoản hoặc email đã tồn tại" (HTTP 409).
+  - Vi phạm độ dài/regex: Báo lỗi validation tương ứng (HTTP 400).
+  - Password không khớp confirmPassword: Báo lỗi "Mật khẩu xác nhận không khớp" (HTTP 400).
 
-**Luồng AI Quality Gate:**
-1. Admin gửi ảnh sản phẩm.
-2. Backend gọi `POST http://ai-service:8000/api/v1/analyze`.
-3. `approved = true` → Lưu ảnh vào DB.
-4. `approved = false` → Báo lỗi, từ chối lưu.
-5. **AI offline (Fallback):** Ghi log cảnh báo, **vẫn lưu ảnh** để không gián đoạn.
+##### FR-01.2: Đăng Nhập Hệ Thống (Local BCrypt)
+- **Tác nhân:** Khách / Người dùng đã có tài khoản.
+- **Mục tiêu:** Xác thực danh tính và cấp quyền truy cập các tính năng tương ứng theo Role.
+- **Dữ liệu đầu vào & Ràng buộc:**
+  - `username`: [3, 50] ký tự, không rỗng.
+  - `password`: [8, 72] ký tự, không rỗng.
+- **Quy tắc nghiệp vụ & Bảng quyết định (Decision Table):**
+  - Mật khẩu đúng + `active == true` + `accountNonLocked == true` -> Đăng nhập thành công, reset `failedAttempts = 0`, phân quyền session (`ROLE_USER` chuyển về trang chủ, `ROLE_ADMIN` chuyển về Dashboard).
+  - Mật khẩu sai + `failedAttempts < 4` -> Đăng nhập thất bại, tăng `failedAttempts += 1`, báo lỗi "Tên đăng nhập hoặc mật khẩu không chính xác".
+  - Mật khẩu sai + `failedAttempts >= 4` (lần sai thứ 5) -> Đăng nhập thất bại, khóa tài khoản (`accountNonLocked = false`), ghi nhận thông báo "Tài khoản của bạn đã bị khóa do đăng nhập sai 5 lần liên tiếp".
+  - Tài khoản có `active == false` -> Báo lỗi "Tài khoản đã bị vô hiệu hóa bởi Quản trị viên".
+
+##### FR-01.3: Đăng Nhập Bằng Google OAuth2
+- **Tác nhân:** Khách / Người dùng có tài khoản Google.
+- **Luồng xử lý:** Chuyển hướng sang Google Authentication. Sau khi Google xác thực thành công:
+  - Nếu email đã tồn tại trong CSDL -> Tự động đăng nhập với tài khoản tương ứng.
+  - Nếu email chưa tồn tại -> Tự động khởi tạo tài khoản mới với role `ROLE_USER`, mật khẩu ngẫu nhiên băm BCrypt, trạng thái `active = true`.
+
+##### FR-01.4: Quên Mật Khẩu & Đặt Lại Mật Khẩu
+- **Tác nhân:** Người dùng quên mật khẩu.
+- **Đầu vào:** `email` đã đăng ký.
+- **Luồng xử lý:**
+  1. Người dùng nhập email yêu cầu reset mật khẩu.
+  2. Hệ thống kiểm tra: Nếu email tồn tại -> Sinh token reset mật khẩu ngẫu nhiên (UUID), có hiệu lực trong 15 phút, gửi link qua email.
+  3. Người dùng click link, nhập mật khẩu mới [8, 72] ký tự và xác nhận.
+  4. Hệ thống cập nhật mật khẩu mới băm BCrypt, hủy token, reset `failedAttempts = 0`, mở khóa tài khoản nếu đang bị khóa.
+
+##### FR-01.5: Đăng Xuất (Logout)
+- **Tác nhân:** Người dùng / Admin đang đăng nhập.
+- **Hành động:** Hủy phiên làm việc (`session.invalidate()`), xóa SecurityContext, xóa cookies ghi nhớ phiên, chuyển hướng về trang chủ hoặc màn hình đăng nhập.
+
+##### FR-01.6: Xem Thông Tin Tài Khoản & Dashboard
+- **Tác nhân:** Người dùng đã đăng nhập (`ROLE_USER` hoặc `ROLE_ADMIN`).
+- **Phân quyền Dashboard (`/admin/accountInfo` vs `/accountInfo`):**
+  - **ROLE_USER:** Xem thông tin cá nhân, tổng chi tiêu cá nhân, số lượng đơn hàng cá nhân, liên kết tới sổ địa chỉ và đơn mua.
+  - **ROLE_ADMIN:** Xem KPI toàn diện: tổng doanh thu shop, số lượng thành viên, số lượng đơn hàng theo trạng thái, tình trạng hoạt động của Microservice AI.
+
+##### FR-01.7: [Admin] Quản Lý Danh Sách Người Dùng
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `GET /api/v1/admin/users`.
+- **Chức năng:** Xem danh sách toàn bộ tài khoản; hỗ trợ phân trang (`page`, `size`), tìm kiếm theo từ khóa `keyword` (username, email) và lọc theo trạng thái `active`.
+
+##### FR-01.8: [Admin] Khóa / Mở Khóa Tài Khoản
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `PUT /api/v1/admin/users/{username}/status`.
+- **Đầu vào:** `active` (boolean).
+- **Ràng buộc nghiệp vụ:** Không cho phép Admin tự vô hiệu hóa tài khoản của chính mình (Self-lock protection).
+
+##### FR-01.9: [Admin] Đặt Lại Mật Khẩu Người Dùng
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `POST /api/v1/admin/users/{username}/reset-password`.
+- **Đầu vào:** `newPassword`: [8, 72] ký tự.
+- **Kết quả:** Cập nhật mật khẩu băm BCrypt mới cho user được chỉ định, reset cờ khóa tài khoản.
 
 ---
 
-### FR-04: Giỏ Hàng & Quy Trình Đặt Hàng
+#### Phân Hệ 2: Sổ Địa Chỉ Giao Hàng (User Address Book)
 
-**Ràng buộc biến thông tin giao hàng (nguồn: `CustomerFormValidator.java` & `Order.java`):**
+##### FR-02.1: Xem Danh Sách Địa Chỉ
+- **Tác nhân:** Người dùng (`ROLE_USER`).
+- **Endpoint:** `GET /api/v1/users/addresses`.
+- **Mô tả:** Trả về danh sách tất cả các địa chỉ nhận hàng thuộc quyền sở hữu của người dùng hiện tại (lọc theo `currentUser.username`).
 
-| Biến | Kiểu | Ràng buộc | Nguồn code |
-| :--- | :---: | :--- | :--- |
-| `customerName` | `String` | `[1, 255]`; chỉ `[\p{L}0-9\s\-'.]` | `NAME_PATTERN` |
-| `customerAddress` | `String` | `[1, 255]`; không chứa `<>{}~^$%*\` | `ADDRESS_PATTERN` |
-| `customerEmail` | `String` | `[6, 128]`; đúng cú pháp RFC | `emailValidator` |
-| `customerPhone` | `String` | `[1, 20]`; chỉ `[0-9+()\-\s.]` | `PHONE_PATTERN` |
-| `cartLines` | `List` | `size > 0`, mỗi dòng `quantity >= 1` | `validateAndRefreshCartLine` |
-| `voucherCode` | `String` | Tùy chọn; nếu có: active, còn hạn, đủ min order | `refreshVoucherDiscount` |
+##### FR-02.2: Xem Chi Tiết Một Địa Chỉ
+- **Tác nhân:** Người dùng (`ROLE_USER`).
+- **Endpoint:** `GET /api/v1/users/addresses/{id}`.
+- **Kiểm tra bảo mật:** Địa chỉ có `id` phải thuộc sở hữu của người dùng hiện tại. Nếu truy cập ID của người dùng khác -> Trả về `HTTP 403 Forbidden` hoặc `404 Not Found`.
 
-**Luồng 4 Bước:**
-1. **Step 1 — ShoppingCart:** Giỏ rỗng → Chặn, redirect `/shoppingCart`.
-2. **Step 2 — CustomerForm:** Form lỗi → Giữ lại bước 2, hiển thị lỗi.
-3. **Step 3 — Confirmation:** Người dùng xem lại; có thể quay lại sửa thông tin.
-4. **Step 4 — Finalize:** Tạo đơn + trừ kho + xóa giỏ + ghi voucher. Lỗi tồn kho / sản phẩm inactive / voucher hết hạn → Ném `IllegalStateException`.
+##### FR-02.3: Thêm Mới Địa Chỉ Giao Hàng
+- **Tác nhân:** Người dùng (`ROLE_USER`).
+- **Endpoint:** `POST /api/v1/users/addresses`.
+- **Bảng Ràng Buộc Dữ Liệu Kiểm Thử (BVA & EP):**
+  | Trường dữ liệu | Kiểu | Giới hạn độ dài | Mẫu định dạng (Regex) / Quy tắc | Lỗi vi phạm |
+  | :--- | :---: | :---: | :--- | :--- |
+  | `receiverName` | String | [1, 100] ký tự | `^[\p{L}0-9\s\-'.]+$` (Hỗ trợ tiếng Việt có dấu) | Rỗng, >100 kt, chứa ký tự đặc biệt |
+  | `phone` | String | [1, 20] ký tự | `^[0-9+()\-\s.]+$` | Rỗng, >20 kt, chứa chữ cái/ký tự lạ |
+  | `province` | String | [1, 100] ký tự | `^[\p{L}0-9\s\-'.]+$` | Rỗng, >100 kt, chứa ký tự cấm |
+  | `district` | String | [1, 100] ký tự | `^[\p{L}0-9\s\-'.]+$` | Rỗng, >100 kt, chứa ký tự cấm |
+  | `ward` | String | [1, 100] ký tự | `^[\p{L}0-9\s\-'.]+$` | Rỗng, >100 kt, chứa ký tự cấm |
+  | `streetAddress`| String | [1, 255] ký tự | Không chứa các ký tự XSS/Injection: `<>{}~^$%*\` | Rỗng, >255 kt, chứa ký tự nguy hiểm |
+  | `isDefault` | boolean| true / false | Mặc định false nếu đã có địa chỉ trước đó | Không hợp lệ kiểu |
+- **Quy tắc nghiệp vụ:**
+  1. Số lượng địa chỉ tối đa của 1 user là **10 địa chỉ**. Nếu người dùng đã có 10 địa chỉ mà tiếp tục tạo -> Trả về `HTTP 400 Bad Request` ("Số lượng địa chỉ tối đa là 10").
+  2. Nếu người dùng chưa có địa chỉ nào trong hệ thống -> Địa chỉ tạo mới **tự động trở thành địa chỉ mặc định** (`isDefault = true`), bất kể người dùng truyền gì.
+  3. Nếu `isDefault = true` -> Hệ thống tự động gỡ bỏ cờ `isDefault` của tất cả các địa chỉ cũ của người dùng này trong cùng transaction.
 
----
+##### FR-02.4: Cập Nhật Thông Tin Địa Chỉ
+- **Tác nhân:** Người dùng (`ROLE_USER`).
+- **Endpoint:** `PUT /api/v1/users/addresses/{id}`.
+- **Ràng buộc:** Kiểm tra quyền sở hữu (`address.username == currentUser.username`). Dữ liệu cập nhật phải tuân thủ toàn bộ bảng ràng buộc như tạo mới. Nếu cập nhật `isDefault = true`, toàn bộ địa chỉ khác của user bị bỏ mặc định.
 
-### FR-05: Hủy Đơn & Yêu Cầu Trả Hàng
+##### FR-02.5: Xóa Địa Chỉ Giao Hàng
+- **Tác nhân:** Người dùng (`ROLE_USER`).
+- **Endpoint:** `DELETE /api/v1/users/addresses/{id}`.
+- **Ràng buộc nghiệp vụ:**
+  1. Chỉ được xóa địa chỉ của chính mình.
+  2. Nếu xóa địa chỉ đang là mặc định (`isDefault = true`):
+     - Nếu user còn địa chỉ khác -> Tự động chuyển địa chỉ gần nhất còn lại làm mặc định.
+     - Nếu là địa chỉ duy nhất -> Xóa hoàn toàn.
 
-#### Hủy Đơn (`POST /api/v1/orders/{orderId}/cancel`)
-- Chỉ hủy khi đơn ở trạng thái `PENDING`.
-- Chỉ **chủ đơn** (`customerUsername`) hoặc `ROLE_ADMIN` được hủy.
-- Sau hủy: `status → CANCELLED`, **hoàn lại toàn bộ tồn kho** trong `@Transactional`.
-
-#### Yêu Cầu Trả Hàng (`POST /api/v1/orders/{orderId}/return`)
-
-| Biến | Kiểu | Ràng buộc |
-| :--- | :---: | :--- |
-| `reason` | `TEXT` | Bắt buộc, không rỗng |
-| `imageUrls` | `String(500)` | Tùy chọn; danh sách URL cách nhau bởi dấu phẩy |
-| `adminNote` | `String(255)` | Tùy chọn; Admin điền khi duyệt/từ chối |
-
-#### Admin Duyệt (`PUT /api/v1/admin/orders/{orderId}/return-status`)
-- `APPROVED` → Hoàn lại tồn kho trong `@Transactional`.
-- `REJECTED` → Ghi `adminNote`, không hoàn kho.
-
----
-
-### FR-06: Mã Giảm Giá (Voucher)
-
-| Biến | Kiểu | Ràng buộc |
-| :--- | :---: | :--- |
-| `code` | `String PK` | Duy nhất, bắt buộc |
-| `discountType` | `String` | `PERCENTAGE` (%) hoặc `FIXED` (VNĐ) |
-| `discountValue` | `double` | `> 0`. Nếu PERCENTAGE: `[1, 100]%` |
-| `maxDiscount` | `double` | Mức giảm tối đa (áp dụng khi `PERCENTAGE`) |
-| `minOrderValue` | `double` | Đơn hàng tối thiểu, `>= 0` |
-| `active` | `boolean` | Chỉ `active = true` mới được áp dụng |
-| `expiryDate` | `DateTime` | Nullable; voucher hết hạn sau ngày này |
+##### FR-02.6: Thiết Lập Địa Chỉ Nhận Hàng Mặc Định
+- **Tác nhân:** Người dùng (`ROLE_USER`).
+- **Endpoint:** `PUT /api/v1/users/addresses/{id}/default`.
+- **Hành động:** Chuyển địa chỉ chỉ định thành `isDefault = true`, toàn bộ địa chỉ khác của user thành `isDefault = false`.
 
 ---
 
-### FR-07: Đánh Giá & Nhận Xét (Review & Rating)
+#### Phân Hệ 3: Quản Lý Sản Phẩm & AI Quality Gate (Product Management)
 
-| Ràng buộc | Chi tiết |
-| :--- | :--- |
-| `ratingValue` | Bắt buộc nằm trong `[1, 5]` |
-| `comment` | Tùy chọn |
-| **Sửa đánh giá** | Chỉ trong **5 phút** sau khi đăng (`createdAt + 300 giây`) |
-| **Xóa đánh giá** | Chỉ chủ đánh giá (`username`) hoặc `ROLE_ADMIN` |
-| **Chặn Admin viết** | `ROLE_ADMIN` **không được** gửi đánh giá → `HTTP 403` |
+##### FR-03.1: Xem Danh Sách & Tìm Kiếm Sản Phẩm
+- **Tác nhân:** Khách vãng lai, Người dùng, Admin.
+- **Endpoint:** `GET /productList`, `GET /api/v1/products`.
+- **Tham số tìm kiếm & lọc:**
+  - `page`: Số trang, nguyên `>= 1` (mặc định 1).
+  - `like`: Từ khóa tìm kiếm theo tên sản phẩm hoặc mã code, không phân biệt hoa thường.
+  - `maxResult`: Số bản ghi mỗi trang (mặc định 5 hoặc 20).
+- **Kết quả:** Danh sách sản phẩm kèm thông tin phân trang, giá sau giảm giá, tồn kho thực tế, trạng thái.
+
+##### FR-03.2: Xem Chi Tiết Sản Phẩm
+- **Tác nhân:** Mọi tác nhân.
+- **Endpoint:** `GET /product?code={code}`, `GET /api/v1/products/{code}`.
+- **Kết quả:** Thông tin đầy đủ sản phẩm: mã code, tên, giá gốc, tỷ lệ giảm giá, giá khuyến mãi, số lượng trong kho, mô tả chi tiết, hình ảnh, điểm đánh giá trung bình và các nhận xét.
+
+##### FR-03.3: Thêm Mới Sản Phẩm (Admin)
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `POST /product`, `POST /api/v1/products`.
+- **Bảng Ràng Buộc Dữ Liệu Kiểm Thử (BVA & EP):**
+  | Trường dữ liệu | Kiểu | Ràng buộc giá trị / Định dạng | Nguồn Code / Validator | Lỗi vi phạm |
+  | :--- | :---: | :--- | :--- | :--- |
+  | `code` | String | [1, 20] ký tự, không rỗng, không chứa khoảng trắng, **duy nhất CSDL** | `MAX_CODE_LENGTH = 20` | Rỗng, >20 kt, trùng code |
+  | `name` | String | [1, 255] ký tự, không rỗng | `MAX_NAME_LENGTH = 255` | Rỗng, >255 kt |
+  | `price` | double | Số thực hữu hạn, **> 0** | `price <= 0` | `<= 0`, chuỗi không phải số |
+  | `stockQuantity`| int | Số nguyên, **>= 0**, mặc định 100 | `stockQuantity < 0` | `< 0`, số thập phân |
+  | `discountPercent`| int | Số nguyên, trong khoảng **[0, 100]%**, mặc định 0 | `< 0` hoặc `> 100` | `< 0` hoặc `> 100` |
+  | `status` | String | Một trong 3 giá trị: `ACTIVE`, `INACTIVE`, `DRAFT` | `@Column(length = 20)` | Giá trị khác enum |
+  | `fileData` | File | Tùy chọn. Nếu có: Định dạng ảnh (.jpg, .png, .jpeg), dung lượng `<= 10 MB` | `MultipartFile` | File không phải ảnh, dung lượng > 10MB |
+- **Quy trình xử lý:** Kiểm tra form validator -> Nếu có file ảnh, chuyển qua AI Quality Gate (xem FR-03.6) -> Lưu vào CSDL với trạng thái tương ứng.
+
+##### FR-03.4: Cập Nhật Thông Tin Sản Phẩm (Admin)
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `POST /api/v1/products` (Upsert mode: nếu `code` đã tồn tại trong CSDL -> Thực hiện Update).
+- **Ràng buộc:** Không cho phép sửa `code` đã tồn tại. Cho phép sửa `name`, `price`, `stockQuantity`, `discountPercent`, `status` và cập nhật ảnh mới. Toàn bộ validation áp dụng như FR-03.3.
+
+##### FR-03.5: Xóa / Ngừng Kinh Doanh Sản Phẩm (Admin)
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `DELETE /api/v1/products/{code}`.
+- **Ràng buộc toàn vẹn CSDL:**
+  - Nếu sản phẩm đã từng phát sinh trong bất kỳ đơn hàng nào (`OrderDetails`) -> Hệ thống chặn xóa vật lý để đảm bảo lịch sử giao dịch, chuyển trạng thái sản phẩm sang `status = INACTIVE`.
+  - Nếu sản phẩm chưa từng có trong đơn hàng -> Cho phép xóa bản ghi khỏi CSDL.
+
+##### FR-03.6: Kiểm Duyệt Chất Lượng Ảnh Tự Động Bằng AI Gate
+- **Tác nhân:** Hệ thống / Quản trị viên.
+- **Endpoint gọi nội bộ:** `POST http://ai-service:8000/api/v1/analyze`.
+- **Quy trình hoạt động:**
+  1. Khi Admin upload ảnh sản phẩm mới hoặc thay đổi ảnh, backend gửi stream bytes ảnh tới Microservice FastAPI (YOLOv8).
+  2. AI phân tích:
+     - Nếu nhận diện là giày dép hợp lệ (`is_shoe = true`) với độ tin cậy `confidence >= 0.5` -> Trả về `approved = true`. Backend lưu ảnh vào CSDL.
+     - Nếu ảnh bị mờ, ảnh rác hoặc không chứa sản phẩm giày dép -> Trả về `approved = false` kèm lý do vi phạm. Backend từ chối lưu và ném thông báo lỗi cho người dùng.
+  3. **Cơ chế Fallback (Khả năng chịu lỗi cao):** Nếu Microservice AI bị sự cố/offline/timeout -> Backend ghi nhận log cảnh báo mức `WARN` và **vẫn cho phép lưu ảnh** sản phẩm để không làm gián đoạn quy trình kinh doanh của cửa hàng.
+
+---
+
+#### Phân Hệ 4: Giỏ Hàng (Shopping Cart)
+
+##### FR-04.1: Xem Giỏ Hàng Hiện Tại
+- **Tác nhân:** Mọi tác nhân (Khách vãng lai dùng Session, User đăng nhập có thể đồng bộ).
+- **Endpoint:** `GET /shoppingCart`, `GET /api/v1/cart`.
+- **Thông tin trả về:** Danh sách sản phẩm đã chọn, đơn giá, tỷ lệ giảm giá, số lượng, thành tiền từng món (`lineTotal`), tổng tiền tạm tính (`orderTotal`), thông tin voucher đang áp dụng và số tiền được giảm.
+
+##### FR-04.2: Thêm Sản Phẩm Vào Giỏ Hàng
+- **Tác nhân:** Mọi tác nhân.
+- **Endpoint:** `GET /buyProduct?code={code}`, `POST /api/v1/cart/items`.
+- **Đầu vào:** `productCode` (String), `quantity` (int, mặc định 1 nếu không truyền).
+- **Ràng buộc & Quy tắc kiểm thử:**
+  - `productCode` phải tồn tại trong CSDL và có `status = ACTIVE`. Nếu không tồn tại -> Báo lỗi sản phẩm không khả dụng.
+  - Số lượng thêm vào `quantity` phải là số nguyên `> 0`.
+  - **Kiểm tra tồn kho:** Nếu sản phẩm đã có trong giỏ, tổng số lượng mới (`quantity_in_cart + new_quantity`) không được vượt quá số lượng hàng có sẵn trong kho (`stockQuantity`). Nếu vượt quá -> Giới hạn ở mức tồn kho tối đa hoặc báo lỗi không đủ số lượng.
+
+##### FR-04.3: Cập Nhật Số Lượng Sản Phẩm Trong Giỏ Hàng
+- **Tác nhân:** Mọi tác nhân.
+- **Endpoint:** `POST /shoppingCart`, `PUT /api/v1/cart/items/{productCode}`.
+- **Đầu vào:** `productCode` (String), `quantity` (int).
+- **Ràng buộc:**
+  - `quantity > stockQuantity`: Hệ thống thông báo lỗi số lượng vượt quá số hàng có sẵn trong kho.
+  - `quantity == 0`: Hệ thống tự động xóa sản phẩm ra khỏi giỏ hàng.
+  - `quantity < 0`: Vi phạm kiểm thử biên (BVA), hệ thống từ chối cập nhật, trả về `HTTP 400 Bad Request`.
+
+##### FR-04.4: Xóa Sản Phẩm Khỏi Giỏ Hàng
+- **Tác nhân:** Mọi tác nhân.
+- **Endpoint:** `GET /shoppingCartRemoveProduct?code={code}`, `DELETE /api/v1/cart/items/{productCode}`.
+- **Kết quả:** Xóa dòng sản phẩm tương ứng khỏi giỏ hàng, tự động tính lại tổng tiền `orderTotal`.
+
+##### FR-04.5: Xóa Toàn Bộ Giỏ Hàng (Clear Cart)
+- **Tác nhân:** Mọi tác nhân.
+- **Endpoint:** `DELETE /api/v1/cart/items`.
+- **Kết quả:** Làm trống giỏ hàng hoàn toàn, trả về giỏ rỗng với `cartLines = []` và `total = 0`.
+
+---
+
+#### Phân Hệ 5: Đặt Hàng & Thanh Toán (Checkout & Order Placement)
+
+##### FR-05.1: Nhập & Xác Thực Thông Tin Khách Hàng Giao Hàng
+- **Tác nhân:** Khách mua hàng / Người dùng đã đăng nhập.
+- **Endpoint:** `POST /shoppingCartCustomer`, `POST /api/v1/cart/customer`.
+- **Bảng Ràng Buộc Biến Giao Hàng (BVA & EP):**
+  | Trường thông tin | Kiểu dữ liệu | Giới hạn ký tự | Ràng buộc định dạng | Ghi chú kiểm thử |
+  | :--- | :---: | :---: | :--- | :--- |
+  | `customerName` | String | [1, 255] ký tự | `^[\p{L}0-9\s\-'.]+$` | Không rỗng, không chứa ký tự cấm |
+  | `customerAddress`| String | [1, 255] ký tự | Không chứa ký tự nguy hiểm: `<>{}~^$%*\` | Tránh tấn công XSS/Script |
+  | `customerEmail` | String | [6, 128] ký tự | Chuẩn RFC 5322 (vd: `user@example.com`) | Bắt buộc đúng cú pháp email |
+  | `customerPhone` | String | [1, 20] ký tự | `^[0-9+()\-\s.]+$` | Số điện thoại hợp lệ |
+- **Cơ chế tiện ích:** Nếu người dùng đã đăng nhập và đã có địa chỉ mặc định trong Sổ địa chỉ -> Hệ thống tự động điền sẵn các thông tin giao hàng này vào form.
+
+##### FR-05.2: Kiểm Tra & Áp Dụng Mã Giảm Giá (Voucher)
+- **Tác nhân:** Khách mua hàng / Người dùng đã đăng nhập.
+- **Endpoint:** `POST /api/v1/cart/voucher`.
+- **Đầu vào:** `voucherCode` (String).
+- **Quy tắc nghiệm thu & Bảng quyết định (Decision Table):**
+  - Voucher không tồn tại -> Báo lỗi "Mã giảm giá không tồn tại".
+  - Voucher có `active == false` -> Báo lỗi "Mã giảm giá đã bị vô hiệu hóa".
+  - `expiryDate < currentDate` -> Báo lỗi "Mã giảm giá đã hết hạn sử dụng".
+  - `cart.orderTotal < voucher.minOrderValue` -> Báo lỗi "Đơn hàng chưa đạt giá trị tối thiểu [minOrderValue] để sử dụng voucher".
+  - Hợp lệ toàn bộ -> Áp dụng mã:
+    - Nếu `discountType == PERCENTAGE`: `discount = orderTotal * discountValue / 100`, không vượt quá `maxDiscount` (nếu có cấu hình).
+    - Nếu `discountType == FIXED`: `discount = discountValue`.
+    - Cập nhật số tiền thanh toán cuối: `grandTotal = orderTotal - discount`.
+
+##### FR-05.3: Xác Nhận Thông Tin Đơn Hàng (Confirmation Summary)
+- **Tác nhân:** Khách mua hàng / Người dùng.
+- **Endpoint:** `GET /shoppingCartConfirmation`.
+- **Mô tả:** Màn hình tóm tắt trước khi chốt đơn. Hiển thị thông tin người nhận, địa chỉ giao hàng, phương thức thanh toán, chi tiết các món hàng và tổng số tiền phải trả.
+
+##### FR-05.4: Chốt Đơn Hàng & Trừ Tồn Kho (Finalize Checkout)
+- **Tác nhân:** Khách mua hàng / Người dùng.
+- **Endpoint:** `POST /shoppingCartConfirmation`, `POST /api/v1/cart/checkout`.
+- **Ràng buộc toàn vẹn Transaction (`@Transactional`):**
+  1. Kiểm tra giỏ hàng: Nếu giỏ hàng rỗng (`cartLines.isEmpty()`) -> Chặn đặt hàng, chuyển về `/shoppingCart`.
+  2. Kiểm tra tồn kho thời gian thực (Real-time stock check): Duyệt qua từng sản phẩm trong giỏ, nếu `product.stockQuantity < cartLine.quantity` -> Hủy toàn bộ giao dịch, ném `IllegalStateException` ("Sản phẩm [tên] không đủ số lượng trong kho").
+  3. Lưu thông tin đơn hàng `Order` (sinh mã `orderNum` duy nhất, gán `status = PENDING`, thời gian tạo).
+  4. Lưu từng chi tiết đơn hàng `OrderDetail` (lưu giá tại thời điểm mua để chống trượt giá).
+  5. **Trừ kho tự động:** Cập nhật `stockQuantity = stockQuantity - cartLine.quantity` cho từng sản phẩm.
+  6. Xóa dữ liệu giỏ hàng khỏi session sau khi đặt hàng thành công.
+
+---
+
+#### Phân Hệ 6: Quản Lý Đơn Hàng, Hủy Đơn & Trả Hàng (Order Management)
+
+##### FR-06.1: Xem Danh Sách Đơn Hàng
+- **Tác nhân:**
+  - Người dùng thường (`ROLE_USER`): Chỉ xem danh sách các đơn hàng do chính mình đặt (`customerUsername == currentUser.username`).
+  - Quản trị viên (`ROLE_ADMIN`): Xem toàn bộ danh sách đơn hàng của toàn hệ thống, hỗ trợ lọc theo trạng thái (`PENDING`, `CONFIRMED`, `SHIPPING`, `DELIVERED`, `CANCELLED`, `RETURN_REQUESTED`, `RETURNED`).
+- **Endpoint:** `GET /orderList`, `GET /api/v1/orders`.
+
+##### FR-06.2: Xem Chi Tiết Đơn Hàng
+- **Tác nhân:** Người dùng (chủ đơn hàng) hoặc Quản trị viên.
+- **Endpoint:** `GET /order?orderId={orderId}`, `GET /api/v1/orders/{orderId}`.
+- **Nội dung:** Thông tin người nhận, danh sách sản phẩm, giá bán, số lượng, tiền giảm giá, trạng thái đơn hàng và lịch sử cập nhật.
+
+##### FR-06.3: [Admin] Cập Nhật Trạng Thái Đơn Hàng
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `PUT /api/v1/admin/orders/{orderId}/status`.
+- **Biểu đồ chuyển trạng thái đơn hàng (State Transition):**
+  - Hợp lệ: `PENDING` -> `CONFIRMED` -> `SHIPPING` -> `DELIVERED`.
+  - Admin có thể chuyển sang `CANCELLED` từ trạng thái `PENDING` hoặc `CONFIRMED`.
+  - Không được phép chuyển ngược trạng thái (ví dụ từ `DELIVERED` quay về `PENDING`).
+
+##### FR-06.4: Hủy Đơn Hàng Đang Chờ Xử Lý
+- **Tác nhân:** Người dùng (chủ đơn) hoặc Quản trị viên.
+- **Endpoint:** `POST /api/v1/orders/{orderId}/cancel`.
+- **Quy tắc nghiệp vụ:**
+  1. Chỉ được phép hủy khi đơn hàng ở trạng thái **`PENDING`**. Nếu đơn đã sang `CONFIRMED`, `SHIPPING` hoặc `DELIVERED` -> Từ chối hủy đơn, thông báo "Đơn hàng đã được xác nhận hoặc đang giao, không thể hủy trực tiếp" (HTTP 400).
+  2. Người dùng chỉ được hủy đơn của chính mình. Admin có quyền hủy đơn của bất kỳ ai.
+  3. **Hoàn trả tồn kho tự động (`@Transactional`):** Khi hủy đơn thành công, hệ thống tự động cộng hoàn lại toàn bộ số lượng từng mặt hàng vào kho (`stockQuantity += line.quantity`). Trạng thái đơn chuyển thành `CANCELLED`.
+
+##### FR-06.5: Gửi Yêu Cầu Trả Hàng / Hoàn Tiền
+- **Tác nhân:** Người dùng (`ROLE_USER` - chủ đơn hàng).
+- **Endpoint:** `POST /api/v1/orders/{orderId}/return`.
+- **Tiền điều kiện:** Đơn hàng phải có trạng thái **`DELIVERED`** (Đã giao hàng thành công).
+- **Dữ liệu đầu vào & Ràng buộc:**
+  - `reason`: Chuỗi ký tự, bắt buộc, không được để trống (Mô tả lý do trả hàng).
+  - `imageUrls`: Chuỗi tối đa 500 ký tự, chứa các liên kết ảnh bằng chứng lỗi (tùy chọn).
+- **Kết quả:** Trạng thái đơn chuyển sang `RETURN_REQUESTED`, lưu thông tin lý do và ảnh minh chứng vào đơn hàng.
+
+##### FR-06.6: [Admin] Xét Duyệt Yêu Cầu Trả Hàng
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `PUT /api/v1/admin/orders/{orderId}/return-status`.
+- **Đầu vào:** `status` (`APPROVED` hoặc `REJECTED`), `adminNote` (String tối đa 255 ký tự).
+- **Quy tắc xử lý:**
+  - Nếu `APPROVED`: Chuyển trạng thái đơn thành `RETURNED`. Hệ thống **tự động hoàn lại số lượng tồn kho** của các sản phẩm trong đơn trong `@Transactional`.
+  - Nếu `REJECTED`: Chuyển trạng thái đơn về lại `DELIVERED`, lưu lý do từ chối vào `adminNote`, không hoàn lại kho.
+
+---
+
+#### Phân Hệ 7: Quản Lý Mã Giảm Giá (Voucher Management)
+
+##### FR-07.1: Xem Danh Sách Mã Giảm Giá
+- **Tác nhân:** Người dùng / Quản trị viên.
+- **Endpoint:** `GET /api/v1/vouchers`, `GET /admin/vouchers`.
+- **Nội dung:** Danh sách các voucher, bao gồm mã code, loại giảm giá (phần trăm / số tiền cố định), giá trị giảm, hạn mức tối đa, đơn hàng tối thiểu và ngày hết hạn.
+
+##### FR-07.2: [Admin] Tạo Mới Mã Giảm Giá
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `POST /api/v1/admin/vouchers`.
+- **Bảng Ràng Buộc Kiểm Thử (BVA & EP):**
+  | Trường dữ liệu | Kiểu | Giới hạn & Quy tắc | Lỗi vi phạm |
+  | :--- | :---: | :--- | :--- |
+  | `code` | String | [1, 50] ký tự, viết hoa/số, không khoảng trắng, **duy nhất** | Rỗng, trùng code, chứa ký tự lạ |
+  | `discountType` | String | Một trong hai: `PERCENTAGE` hoặc `FIXED` | Không đúng giá trị quy định |
+  | `discountValue`| double | Số thực > 0. Nếu PERCENTAGE: bắt buộc nằm trong **[1, 100]%** | `<= 0` hoặc `> 100` khi là % |
+  | `maxDiscount` | double | Số thực `>= 0` (Chỉ áp dụng khi là PERCENTAGE) | `< 0` |
+  | `minOrderValue`| double | Số thực `>= 0`, giá trị đơn tối thiểu để dùng | `< 0` |
+  | `active` | boolean| `true` hoặc `false` | Kiểu dữ liệu sai |
+  | `expiryDate` | DateTime| Thời gian hết hạn, phải lớn hơn ngày hiện tại | Thời gian trong quá khứ |
+
+##### FR-07.3: [Admin] Cập Nhật Mã Giảm Giá
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `PUT /api/v1/admin/vouchers/{id}`.
+- **Ràng buộc:** Cho phép sửa trạng thái `active`, gia hạn `expiryDate`, điều chỉnh `minOrderValue` và `maxDiscount`.
+
+##### FR-07.4: [Admin] Xóa Mã Giảm Giá
+- **Tác nhân:** Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `DELETE /api/v1/admin/vouchers/{id}`.
+- **Hành động:** Xóa mã voucher khỏi hệ thống hoặc vô hiệu hóa để không còn áp dụng trong các giao dịch tương lai.
+
+---
+
+#### Phân Hệ 8: Đánh Giá & Bình Luận Sản Phẩm (Review & Rating)
+
+##### FR-08.1: Xem Danh Sách Đánh Giá Sản Phẩm
+- **Tác nhân:** Mọi tác nhân.
+- **Endpoint:** `GET /api/v1/products/{productCode}/reviews`.
+- **Kết quả:** Danh sách các đánh giá của khách hàng về sản phẩm, điểm số trung bình (Rating Average) từ 1.0 đến 5.0 sao và tổng số lượt đánh giá.
+
+##### FR-08.2: Gửi Đánh Giá & Chấm Điểm Sản Phẩm
+- **Tác nhân:** Người dùng đã đăng nhập (`ROLE_USER`).
+- **Endpoint:** `POST /api/v1/products/{productCode}/reviews`.
+- **Quy tắc & Ràng buộc kiểm thử:**
+  - `ratingValue`: Số nguyên, bắt buộc nằm trong khoảng **[1, 5]** sao. Giá trị `< 1` hoặc `> 5` -> Báo lỗi `HTTP 400 Bad Request`.
+  - `comment`: Chuỗi văn bản tùy chọn (tối đa 1000 ký tự).
+  - **Chặn Admin viết đánh giá:** Người dùng có quyền `ROLE_ADMIN` **không được phép** đăng đánh giá sản phẩm nhằm tránh thiên vị dữ liệu -> Hệ thống chặn và trả về `HTTP 403 Forbidden`.
+
+##### FR-08.3: Chỉnh Sửa Đánh Giá
+- **Tác nhân:** Người dùng (`ROLE_USER` - tác giả của đánh giá).
+- **Endpoint:** `PUT /api/v1/products/{productCode}/reviews/{reviewId}`.
+- **Ràng buộc nghiệp vụ quan trọng:**
+  1. Chỉ người tạo đánh giá mới có quyền sửa đánh giá của mình.
+  2. **Quy tắc cửa sổ thời gian (Time-window Rule):** Người dùng chỉ được phép chỉnh sửa đánh giá trong vòng **5 phút (300 giây)** kể từ thời điểm tạo (`createdAt + 300s`). Sau 5 phút, hệ thống từ chối cập nhật và trả về `HTTP 400 Bad Request` ("Đã quá thời gian cho phép chỉnh sửa đánh giá").
+
+##### FR-08.4: Xóa Đánh Giá
+- **Tác nhân:** Người dùng (tác giả của review) hoặc Quản trị viên (`ROLE_ADMIN`).
+- **Endpoint:** `DELETE /api/v1/products/{productCode}/reviews/{reviewId}`.
+- **Quy tắc phân quyền:** Tác giả được phép xóa đánh giá của mình bất cứ lúc nào; Quản trị viên có quyền xóa đánh giá vi phạm tiêu chuẩn cộng đồng.
+
+---
+
+#### Phân Hệ 9: Danh Sách Sản Phẩm Yêu Thích (Wishlist)
+
+##### FR-09.1: Xem Danh Sách Yêu Thích
+- **Tác nhân:** Người dùng đã đăng nhập (`ROLE_USER`).
+- **Endpoint:** `GET /api/v1/wishlist`.
+- **Kết quả:** Danh sách các sản phẩm mà người dùng hiện tại đã lưu vào danh sách yêu thích.
+
+##### FR-09.2: Thêm Sản Phẩm Vào Yêu Thích
+- **Tác nhân:** Người dùng đã đăng nhập (`ROLE_USER`).
+- **Endpoint:** `POST /api/v1/wishlist/{productCode}`.
+- **Ràng buộc:** `productCode` phải tồn tại trong CSDL. Nếu sản phẩm đã có sẵn trong danh sách yêu thích của người dùng -> Giữ nguyên (idempotent, không tạo trùng lặp).
+
+##### FR-09.3: Xóa Sản Phẩm Khỏi Yêu Thích
+- **Tác nhân:** Người dùng đã đăng nhập (`ROLE_USER`).
+- **Endpoint:** `DELETE /api/v1/wishlist/{productCode}`.
+- **Kết quả:** Gỡ bỏ sản phẩm khỏi danh sách yêu thích của người dùng hiện tại.
 
 ---
 
