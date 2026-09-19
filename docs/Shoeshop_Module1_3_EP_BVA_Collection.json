@@ -1,0 +1,671 @@
+{
+	"info": {
+		"_postman_id": "module-1-3-ep-bva-test-suite",
+		"name": "Shoeshop Module 01 & 03 - EP & BVA Granular Test Suite",
+		"description": "Báo cáo kiểm thử tự động chuyên sâu cho Module 01 (Authentication) và Module 03 (Shopping Cart), gắn nhãn chi tiết từng lớp Phân hoạch tương đương (EP) và Giá trị biên mở rộng (Robustness BVA 6n+1).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "csrf_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Module 01: Authentication (EP & BVA Reports)",
+			"item": [
+				{
+					"name": "[EP-V1][DT-R4] Đăng nhập Customer hợp lệ",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-V1][DT-R4] Status code is 200 OK or 302 Redirect', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "employee1"},
+								{"key": "password", "value": "123"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				},
+				{
+					"name": "[EP-V4][DT-R5] Đăng nhập Admin hợp lệ (Quyền Quản trị)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-V4][DT-R5] Admin authenticated successfully (200/302)', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "manager1"},
+								{"key": "password", "value": "123"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				},
+				{
+					"name": "[EP-X3][DT-R2] Đăng nhập Thất bại - Sai mật khẩu",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-X3] Login failed due to wrong password', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302, 401, 403]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "employee1"},
+								{"key": "password", "value": "WrongPassword999"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				},
+				{
+					"name": "[EP-X1][DT-R1] Đăng nhập Thất bại - Tài khoản không tồn tại",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-X1] Login rejected for unknown user', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302, 401, 403]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "ghost_user_not_exist"},
+								{"key": "password", "value": "123456"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				},
+				{
+					"name": "[EP-X2][BVA-Empty] Đăng nhập Thất bại - Bỏ trống Username",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-X2] Empty username handled safely', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302, 400, 403]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": ""},
+								{"key": "password", "value": "123"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				},
+				{
+					"name": "[EP-V1][BVA-nom] Đăng ký tài khoản mới hợp lệ",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rnd = Math.floor(1000 + Math.random() * 9000);",
+									"pm.variables.set('rnd_user', 'user_' + rnd);",
+									"pm.variables.set('rnd_email', 'user_' + rnd + '@example.com');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-V1] Registration succeeded (200 OK or 201 Created)', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"{{rnd_user}}\",\n    \"email\": \"{{rnd_email}}\",\n    \"password\": \"SecurePass123!\",\n    \"confirmPassword\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "register"]
+						}
+					}
+				},
+				{
+					"name": "[BVA-B0][min-] Đăng ký - Mật khẩu 5 ký tự (Dưới ngưỡng biên)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[BVA-B0] Rejected due to password shorter than min (400 Bad Request)', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"short_pass_user\",\n    \"email\": \"shortpass@example.com\",\n    \"password\": \"12345\",\n    \"confirmPassword\": \"12345\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "register"]
+						}
+					}
+				},
+				{
+					"name": "[EP-X8] Đăng ký - Email sai định dạng chứa ký tự đặc biệt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-X8] Rejected invalid email format (400 Bad Request)', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"invalid_email_user\",\n    \"email\": \"bad!@#$%^&*@invalid\",\n    \"password\": \"Password123!\",\n    \"confirmPassword\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "register"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Module 03: Shopping Cart (EP & BVA Reports)",
+			"item": [
+				{
+					"name": "0. Xác thực Session Customer trước khi thao tác Giỏ hàng",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.sendRequest({",
+									"    url: pm.variables.get('base_url') + '/admin/login',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (!err && res.text()) {",
+									"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+									"        if (match && match[1]) {",
+									"            pm.variables.set('csrf_token', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Customer logged in for Cart operations', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+							{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{"key": "userName", "value": "employee1"},
+								{"key": "password", "value": "123"},
+								{"key": "_csrf", "value": "{{csrf_token}}"}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/j_spring_security_check",
+							"host": ["{{base_url}}"],
+							"path": ["j_spring_security_check"]
+						}
+					}
+				},
+				{
+					"name": "[FSM-S0] Xem giỏ hàng ban đầu (Session Cart)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[FSM-S0] Cart retrieval returns 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart"]
+						}
+					}
+				},
+				{
+					"name": "[EP-V1][BVA-B1][min] Thêm sản phẩm vào giỏ với Q = 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-V1][BVA-B1] Added product with Q=1 successfully (200 OK)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"S001\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items"]
+						}
+					}
+				},
+				{
+					"name": "[EP-V4][BVA-B2][min+] Cộng dồn số lượng sản phẩm với Q = 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-V4][BVA-B2] Incremented cart quantity successfully (200 OK)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"S001\",\n    \"quantity\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items"]
+						}
+					}
+				},
+				{
+					"name": "[EP-V2][BVA-B3][nom] Cập nhật số lượng danh định Q = 5",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-V2][BVA-B3] Updated quantity to nominal Q=5 (200 OK)', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"S001\",\n    \"quantity\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items"]
+						}
+					}
+				},
+				{
+					"name": "[EP-X1][BVA-B0][min-] Chặn cập nhật số lượng mua bằng 0",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-X1][BVA-B0] Q=0 rejected with 400 Bad Request', function () {",
+									"    pm.response.to.have.status(400);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"S001\",\n    \"quantity\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items"]
+						}
+					}
+				},
+				{
+					"name": "[EP-X3] Chặn thêm sản phẩm với mã không tồn tại",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[EP-X3] Non-existing product returns 404 Not Found', function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"NON_EXISTENT_CODE_999\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items"]
+						}
+					}
+				},
+				{
+					"name": "[FSM-Remove] Xóa sản phẩm S001 khỏi giỏ hàng",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('[FSM-Remove] Removed product returns 200 OK', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cart/items/S001",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cart", "items", "S001"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

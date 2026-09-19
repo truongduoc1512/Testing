@@ -1,0 +1,361 @@
+{
+  "project": "Shoeshop Testing Project",
+  "matrix_title": "TỔNG KẾT BẢNG MA TRẬN 11 CHỨC NĂNG KIỂM THỬ POSTMAN & BLACK-BOX",
+  "created_at": "2026-09-18T03:38:00+07:00",
+  "team_allocation": {
+    "Linh": [1, 3],
+    "Thinh": [2, 7],
+    "Phuong": [4, 5, 6],
+    "Duoc": [8, 9, 10, 11]
+  },
+  "modules": [
+    {
+      "stt": 1,
+      "module_name": "Đăng ký, Đăng nhập, Đổi mật khẩu (Authentication)",
+      "role": "Customer",
+      "assignee": "Lĩnh",
+      "representative_endpoints": [
+        "POST /api/v1/users/register",
+        "POST /login",
+        "POST /api/v1/users/change-password"
+      ],
+      "blackbox_techniques": ["Robustness BVA (6n+1)", "EP", "Decision Table", "State Transition (FSM)"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/controller/WebControllerCoverageTest.java",
+        "src/test/java/com/example/demo/validator/RegisterFormValidatorTest.java",
+        "src/test/java/com/example/demo/dao/AccountDAOTest.java",
+        "src/test/java/com/example/demo/service/UserDetailsServiceImplTest.java",
+        "src/test/java/com/example/demo/ui/AuthenticationUiTest.java"
+      ],
+      "postman_folder": "0. User Authentication (Customer Role) & 4. User Account REST API",
+      "robustness_bva_6n_plus_1": {
+        "variable": "Độ dài mật khẩu (Password Length: [6, 20])",
+        "n": 1,
+        "test_points": {
+          "min_minus": {"val": 5, "type": "Invalid", "tag": "B0", "expected": "Báo lỗi mật khẩu tối thiểu 6 ký tự"},
+          "min": {"val": 6, "type": "Valid", "tag": "B1", "expected": "Chấp nhận mật khẩu ngưỡng biên dưới"},
+          "min_plus": {"val": 7, "type": "Valid", "tag": "B2", "expected": "Chấp nhận mật khẩu trên biên dưới"},
+          "nom": {"val": 12, "type": "Valid", "tag": "B3", "expected": "Chấp nhận mật khẩu danh định"},
+          "max_minus": {"val": 19, "type": "Valid", "tag": "B4", "expected": "Chấp nhận mật khẩu dưới biên trên"},
+          "max": {"val": 20, "type": "Valid", "tag": "B5", "expected": "Chấp nhận mật khẩu ngưỡng biên trên"},
+          "max_plus": {"val": 21, "type": "Invalid", "tag": "B6", "expected": "Báo lỗi mật khẩu vượt quá 20 ký tự"}
+        }
+      },
+      "state_transition_fsm": {
+        "states": ["UNAUTHENTICATED", "AUTHENTICATED", "LOCKED", "PASSWORD_CHANGED", "LOGGED_OUT"],
+        "transitions": [
+          {"from": "UNAUTHENTICATED", "event": "Valid Login", "to": "AUTHENTICATED", "output": "Session / Token created"},
+          {"from": "UNAUTHENTICATED", "event": "Login 5 Failed Attempts", "to": "LOCKED", "output": "Account locked"},
+          {"from": "AUTHENTICATED", "event": "Change Password", "to": "PASSWORD_CHANGED", "output": "Password hashed in DB"},
+          {"from": "AUTHENTICATED", "event": "Logout", "to": "LOGGED_OUT", "output": "Session invalidated"}
+        ]
+      },
+      "test_cases": [
+        {"tc_id": "TC_AUTH_001", "name": "Đăng nhập Customer hợp lệ", "technique": "Decision Table (R4) / EP", "tags": "V1,V2,V3,V4,B3", "status": "PASS"},
+        {"tc_id": "TC_AUTH_002", "name": "Đăng nhập Admin hợp lệ", "technique": "Decision Table (R5) / EP", "tags": "V1,V2,V3,V4,B3", "status": "PASS"},
+        {"tc_id": "TC_AUTH_003", "name": "Đăng nhập sai mật khẩu", "technique": "Decision Table (R2) / EP", "tags": "V1,X3,V3", "status": "PASS"},
+        {"tc_id": "TC_AUTH_004", "name": "Đăng nhập tài khoản chưa đăng ký", "technique": "Decision Table (R1) / EP", "tags": "X1", "status": "PASS"},
+        {"tc_id": "TC_AUTH_005", "name": "Chặn đăng nhập tài khoản bị khóa", "technique": "Decision Table (R3) / EP", "tags": "V1,V2,X4", "status": "PASS"},
+        {"tc_id": "TC_AUTH_006", "name": "Mật khẩu 5 ký tự (min-)", "technique": "Robustness BVA (min-)", "tags": "X6,B0", "status": "PASS"},
+        {"tc_id": "TC_AUTH_007", "name": "Mật khẩu 21 ký tự (max+)", "technique": "Robustness BVA (max+)", "tags": "X7,B6", "status": "PASS"},
+        {"tc_id": "TC_AUTH_008", "name": "Đăng ký với username chứa ký tự đặc biệt (!@#$)", "technique": "EP / Special Character Boundary", "tags": "X_SPEC", "status": "VERIFIED"}
+      ]
+    },
+    {
+      "stt": 2,
+      "module_name": "Tra cứu, Bộ lọc & Phân trang Sản phẩm (Search & Pagination)",
+      "role": "Customer",
+      "assignee": "Thịnh",
+      "representative_endpoints": ["GET /api/v1/products"],
+      "blackbox_techniques": ["Robustness BVA", "EP", "Decision Table"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/dao/ProductDAOTest.java",
+        "src/test/java/com/example/demo/controller/api/ProductApiControllerTest.java",
+        "src/test/java/com/example/demo/pagination/PaginationResultTest.java",
+        "scripts/test_search_pagination_api.py"
+      ],
+      "postman_folder": "8. Product Catalog REST API",
+      "robustness_bva_6n_plus_1": {
+        "variable": "Số trang (Page Navigation: [1, TotalPages])",
+        "n": 1,
+        "test_points": {
+          "min_minus": {"val": 0, "type": "Invalid", "expected": "Hệ thống chuẩn hóa tự động về Page 1"},
+          "min": {"val": 1, "type": "Valid", "expected": "Hiển thị trang sản phẩm đầu tiên"},
+          "min_plus": {"val": 2, "type": "Valid", "expected": "Hiển thị trang sản phẩm số 2"},
+          "nom": {"val": 3, "type": "Valid", "expected": "Hiển thị trang sản phẩm giữa danh mục"},
+          "max_minus": {"val": 4, "type": "Valid", "expected": "Hiển thị trang kề cuối"},
+          "max": {"val": 5, "type": "Valid", "expected": "Hiển thị trang sản phẩm cuối cùng"},
+          "max_plus": {"val": 6, "type": "Invalid", "expected": "Trả về danh sách rỗng (empty collection)"}
+        }
+      },
+      "test_cases": [
+        {"tc_id": "TC_SRCH_001", "name": "Tìm kiếm theo từ khóa hợp lệ", "technique": "EP", "status": "PASS"},
+        {"tc_id": "TC_SRCH_002", "name": "Lọc theo khoảng giá [minPrice, maxPrice]", "technique": "BVA / EP", "status": "PASS"},
+        {"tc_id": "TC_SRCH_003", "name": "Phân trang page vượt quá max", "technique": "Robustness BVA (max+)", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 3,
+      "module_name": "Giỏ hàng (Thêm, Sửa số lượng, Xóa) (Shopping Cart)",
+      "role": "Customer",
+      "assignee": "Lĩnh",
+      "representative_endpoints": [
+        "GET /api/v1/cart",
+        "POST /api/v1/cart/add",
+        "PUT /api/v1/cart/update",
+        "DELETE /api/v1/cart/remove/{code}",
+        "DELETE /api/v1/cart/clear"
+      ],
+      "blackbox_techniques": ["Robustness BVA (6n+1)", "EP", "State Transition (FSM)"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/controller/CartControllerCoverageTest.java",
+        "src/test/java/com/example/demo/controller/api/CartApiControllerTest.java",
+        "src/test/java/com/example/demo/ui/CheckoutUiTest.java"
+      ],
+      "postman_folder": "3. Cart & Checkout REST API",
+      "robustness_bva_6n_plus_1": {
+        "variable": "Số lượng đặt mua Q (với Tồn kho Stock = 10)",
+        "n": 1,
+        "test_points": {
+          "min_minus": {"val": 0, "type": "Invalid", "tag": "B0", "expected": "Báo lỗi hoặc xác nhận xóa khỏi giỏ"},
+          "min": {"val": 1, "type": "Valid", "tag": "B1", "expected": "Thêm 1 sản phẩm vào giỏ thành công"},
+          "min_plus": {"val": 2, "type": "Valid", "tag": "B2", "expected": "Cộng dồn số lượng thành 2 thành công"},
+          "nom": {"val": 5, "type": "Valid", "tag": "B3", "expected": "Thêm 5 sản phẩm thành công"},
+          "max_minus": {"val": 9, "type": "Valid", "tag": "B4", "expected": "Cập nhật 9 sản phẩm thành công"},
+          "max": {"val": 10, "type": "Valid", "tag": "B5", "expected": "Đặt mua bằng đúng tồn kho Stock = 10"},
+          "max_plus": {"val": 11, "type": "Invalid", "tag": "B6", "expected": "Báo lỗi vượt quá số lượng tồn kho"}
+        }
+      },
+      "state_transition_fsm": {
+        "states": ["EMPTY_CART", "HAS_ITEMS", "QTY_UPDATED", "ITEM_REMOVED", "CART_CLEARED"],
+        "transitions": [
+          {"from": "EMPTY_CART", "event": "Add Item (Q >= 1)", "to": "HAS_ITEMS", "output": "Badge = 1, Cart contains item"},
+          {"from": "HAS_ITEMS", "event": "Update Quantity (Q <= Stock)", "to": "QTY_UPDATED", "output": "Subtotal recalculated"},
+          {"from": "HAS_ITEMS", "event": "Remove Line Item", "to": "ITEM_REMOVED", "output": "Item deleted, badge updated"},
+          {"from": "HAS_ITEMS", "event": "Clear Cart", "to": "CART_CLEARED", "output": "Cart becomes empty"}
+        ]
+      },
+      "test_cases": [
+        {"tc_id": "TC_CART_001", "name": "Thêm sản phẩm mới hợp lệ", "technique": "Decision Table (R4) / EP", "tags": "V1,V2,V3,V5,B1", "status": "PASS"},
+        {"tc_id": "TC_CART_002", "name": "Cập nhật tăng số lượng có sẵn", "technique": "Decision Table (R5) / EP", "tags": "V1,V2,V3,V4,B2", "status": "PASS"},
+        {"tc_id": "TC_CART_003", "name": "Chặn nhập số lượng Q = 0 (min-)", "technique": "Robustness BVA (min-)", "tags": "X1,B0", "status": "PASS"},
+        {"tc_id": "TC_CART_004", "name": "Chặn số lượng vượt tồn kho Q = 11 (max+)", "technique": "Robustness BVA (max+)", "tags": "X3,B6", "status": "PASS"},
+        {"tc_id": "TC_CART_005", "name": "Chặn thêm sản phẩm hết hàng (Stock=0)", "technique": "Decision Table (R1) / EP", "tags": "X4", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 4,
+      "module_name": "Áp dụng Mã giảm giá (Voucher)",
+      "role": "Customer",
+      "assignee": "Phương",
+      "representative_endpoints": ["POST /api/v1/vouchers/apply", "GET /api/v1/vouchers"],
+      "blackbox_techniques": ["BVA", "Decision Table"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/VoucherTests.java",
+        "src/test/java/com/example/demo/dao/VoucherDAOTest.java",
+        "src/test/java/com/example/demo/controller/api/VoucherApiControllerTest.java"
+      ],
+      "postman_folder": "9. Promotional Voucher REST API (User)",
+      "robustness_bva_6n_plus_1": {
+        "variable": "Giá trị đơn hàng tối thiểu áp voucher (Ngưỡng 500k VNĐ)",
+        "n": 1,
+        "test_points": {
+          "min_minus": {"val": 499999, "type": "Invalid", "expected": "Báo lỗi đơn hàng chưa đủ điều kiện áp dụng"},
+          "min": {"val": 500000, "type": "Valid", "expected": "Áp dụng thành công, trừ đúng giá trị giảm"},
+          "min_plus": {"val": 500001, "type": "Valid", "expected": "Áp dụng thành công"}
+        }
+      },
+      "test_cases": [
+        {"tc_id": "TC_VOUCHER_001", "name": "Áp dụng mã hợp lệ và đủ điều kiện", "technique": "Decision Table (R1)", "status": "PASS"},
+        {"tc_id": "TC_VOUCHER_002", "name": "Áp dụng mã hết hạn sử dụng", "technique": "Decision Table (R3)", "status": "PASS"},
+        {"tc_id": "TC_VOUCHER_003", "name": "Áp dụng mã không tồn tại", "technique": "Decision Table (R5)", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 5,
+      "module_name": "Đặt hàng (Checkout) & Tự hủy đơn",
+      "role": "Customer",
+      "assignee": "Phương",
+      "representative_endpoints": [
+        "POST /api/v1/cart/checkout",
+        "POST /api/v1/orders/{orderId}/cancel"
+      ],
+      "blackbox_techniques": ["Decision Table", "State Transition (FSM)"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/OrderCancelReturnTests.java",
+        "src/test/java/com/example/demo/controller/api/OrderApiControllerTest.java",
+        "src/test/java/com/example/demo/controller/api/OrderCancelReturnApiControllerTest.java",
+        "src/test/java/com/example/demo/dao/OrderDAOTest.java"
+      ],
+      "postman_folder": "3. Cart & Checkout REST API & 7. Order Cancel & Return REST API (User)",
+      "state_transition_fsm": {
+        "states": ["IN_CART", "CHECKOUT_PENDING", "ORDER_PLACED", "CANCELLED"],
+        "transitions": [
+          {"from": "IN_CART", "event": "Submit Checkout", "to": "ORDER_PLACED", "output": "Order ID generated, Stock reduced"},
+          {"from": "ORDER_PLACED", "event": "User Cancel (Before Shipping)", "to": "CANCELLED", "output": "Order cancelled, Stock restored"}
+        ]
+      },
+      "test_cases": [
+        {"tc_id": "TC_ORDER_001", "name": "Checkout thành công đơn hàng COD", "technique": "State Transition", "status": "PASS"},
+        {"tc_id": "TC_ORDER_002", "name": "Chặn checkout khi giỏ hàng rỗng", "technique": "Decision Table", "status": "PASS"},
+        {"tc_id": "TC_ORDER_003", "name": "Hủy đơn hàng đang ở trạng thái Pending", "technique": "State Transition", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 6,
+      "module_name": "Sổ địa chỉ người dùng (Shipping Address)",
+      "role": "Customer",
+      "assignee": "Phương",
+      "representative_endpoints": [
+        "GET /api/v1/user/addresses",
+        "POST /api/v1/user/addresses",
+        "PUT /api/v1/user/addresses/{id}",
+        "DELETE /api/v1/user/addresses/{id}",
+        "PUT /api/v1/user/addresses/{id}/default"
+      ],
+      "blackbox_techniques": ["Robustness BVA", "EP", "State Transition"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/AddressBookTests.java",
+        "src/test/java/com/example/demo/controller/api/UserAddressApiControllerTest.java",
+        "src/test/java/com/example/demo/dao/UserAddressDAOTest.java"
+      ],
+      "postman_folder": "2. Shipping Address REST API",
+      "test_cases": [
+        {"tc_id": "TC_ADDR_001", "name": "Thêm địa chỉ giao hàng mới", "technique": "EP", "status": "PASS"},
+        {"tc_id": "TC_ADDR_002", "name": "Thiết lập địa chỉ mặc định", "technique": "State Transition", "status": "PASS"},
+        {"tc_id": "TC_ADDR_003", "name": "Xóa địa chỉ giao hàng hợp lệ", "technique": "State Transition", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 7,
+      "module_name": "Đánh giá & Wishlist (Review & Wishlist)",
+      "role": "Customer",
+      "assignee": "Thịnh",
+      "representative_endpoints": [
+        "GET /api/v1/reviews/product/{code}",
+        "POST /api/v1/reviews",
+        "GET /api/v1/wishlist",
+        "POST /api/v1/wishlist/toggle"
+      ],
+      "blackbox_techniques": ["BVA", "Decision Table", "State Transition"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/WishlistTests.java",
+        "src/test/java/com/example/demo/controller/api/ReviewApiControllerTest.java",
+        "src/test/java/com/example/demo/controller/api/WishlistApiControllerTest.java",
+        "src/test/java/com/example/demo/dao/ProductReviewDAOTest.java",
+        "src/test/java/com/example/demo/dao/WishlistDAOTest.java"
+      ],
+      "postman_folder": "5. Wishlist REST API & 6. Product Reviews REST API",
+      "robustness_bva_6n_plus_1": {
+        "variable": "Số sao đánh giá (Rating: [1, 5])",
+        "n": 1,
+        "test_points": {
+          "min_minus": {"val": 0, "type": "Invalid", "expected": "Báo lỗi số sao tối thiểu 1"},
+          "min": {"val": 1, "type": "Valid", "expected": "Đánh giá 1 sao thành công"},
+          "max": {"val": 5, "type": "Valid", "expected": "Đánh giá 5 sao thành công"},
+          "max_plus": {"val": 6, "type": "Invalid", "expected": "Báo lỗi số sao vượt quá 5"}
+        }
+      },
+      "test_cases": [
+        {"tc_id": "TC_REV_001", "name": "Gửi đánh giá và rating 5 sao", "technique": "BVA / EP", "status": "PASS"},
+        {"tc_id": "TC_WSH_001", "name": "Thêm/Xóa sản phẩm khỏi danh sách yêu thích", "technique": "State Transition", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 8,
+      "module_name": "Quản lý Sản phẩm & Tồn kho (Admin Management)",
+      "role": "Admin",
+      "assignee": "Được (Nhóm trưởng)",
+      "representative_endpoints": [
+        "POST /api/v1/products",
+        "DELETE /api/v1/products/{code}",
+        "GET /admin/product",
+        "POST /admin/product"
+      ],
+      "blackbox_techniques": ["Robustness BVA", "EP", "State Transition"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/controller/ProductControllerCoverageTest.java",
+        "src/test/java/com/example/demo/controller/api/ProductApiControllerTest.java",
+        "src/test/java/com/example/demo/validator/ProductFormValidatorTest.java",
+        "src/test/java/com/example/demo/dao/ProductDAOTest.java"
+      ],
+      "postman_folder": "11. Administrative Management REST API",
+      "test_cases": [
+        {"tc_id": "TC_ADM_PROD_001", "name": "Thêm sản phẩm mới với giá và tồn kho hợp lệ", "technique": "BVA / EP", "status": "PASS"},
+        {"tc_id": "TC_ADM_PROD_002", "name": "Xóa sản phẩm theo mã Code", "technique": "State Transition", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 9,
+      "module_name": "Điều phối Vòng đời Đơn hàng (Order Lifecycle)",
+      "role": "Admin",
+      "assignee": "Được (Nhóm trưởng)",
+      "representative_endpoints": [
+        "PUT /api/v1/admin/orders/{orderId}/return-status",
+        "GET /admin/orderList"
+      ],
+      "blackbox_techniques": ["State Transition (FSM)", "Decision Table"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/OrderCancelReturnTests.java",
+        "src/test/java/com/example/demo/dao/OrderDAOTest.java",
+        "src/test/java/com/example/demo/dao/OrderReturnDAOTest.java"
+      ],
+      "postman_folder": "11. Administrative Management REST API & 7. Order Cancel & Return REST API (User)",
+      "state_transition_fsm": {
+        "states": ["PENDING", "CONFIRMED", "SHIPPING", "DELIVERED", "RETURN_REQUESTED", "RETURNED", "CANCELLED"],
+        "transitions": [
+          {"from": "PENDING", "event": "Admin Confirm", "to": "CONFIRMED", "output": "Status updated"},
+          {"from": "CONFIRMED", "event": "Ship Order", "to": "SHIPPING", "output": "Tracking added"},
+          {"from": "SHIPPING", "event": "Complete Delivery", "to": "DELIVERED", "output": "Payment captured"},
+          {"from": "DELIVERED", "event": "Customer Return Request", "to": "RETURN_REQUESTED", "output": "Return record created"},
+          {"from": "RETURN_REQUESTED", "event": "Admin Approve Return", "to": "RETURNED", "output": "Stock refunded"}
+        ]
+      },
+      "test_cases": [
+        {"tc_id": "TC_ORD_FSM_001", "name": "Duyệt yêu cầu trả hàng từ Customer", "technique": "State Transition (FSM)", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 10,
+      "module_name": "Quản lý & Phân quyền Tài khoản (User Administration)",
+      "role": "Admin",
+      "assignee": "Được (Nhóm trưởng)",
+      "representative_endpoints": [
+        "GET /admin/accountInfo",
+        "POST /j_spring_security_check"
+      ],
+      "blackbox_techniques": ["Decision Table", "State Transition"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/dao/AccountDAOTest.java",
+        "src/test/java/com/example/demo/controller/UserControllerCoverageTest.java",
+        "src/test/java/com/example/demo/service/UserDetailsServiceImplTest.java"
+      ],
+      "postman_folder": "10. Admin Authentication (Manager Role) & 11. Administrative Management REST API",
+      "test_cases": [
+        {"tc_id": "TC_ADM_USR_001", "name": "Truy cập Dashboard quyền Manager", "technique": "Decision Table", "status": "PASS"}
+      ]
+    },
+    {
+      "stt": 11,
+      "module_name": "Quản trị Khuyến mãi / Voucher (Admin Voucher Management)",
+      "role": "Admin",
+      "assignee": "Được (Nhóm trưởng)",
+      "representative_endpoints": [
+        "GET /api/v1/admin/vouchers",
+        "POST /api/v1/admin/vouchers",
+        "DELETE /api/v1/admin/vouchers/{code}"
+      ],
+      "blackbox_techniques": ["Robustness BVA", "EP", "State Transition"],
+      "code_test_files": [
+        "src/test/java/com/example/demo/VoucherTests.java",
+        "src/test/java/com/example/demo/dao/VoucherDAOTest.java",
+        "src/test/java/com/example/demo/controller/api/VoucherApiControllerTest.java"
+      ],
+      "postman_folder": "11. Administrative Management REST API",
+      "test_cases": [
+        {"tc_id": "TC_ADM_VOU_001", "name": "Admin tạo mới Voucher giảm giá", "technique": "Robustness BVA / EP", "status": "PASS"},
+        {"tc_id": "TC_ADM_VOU_002", "name": "Admin vô hiệu hóa / xóa Voucher", "technique": "State Transition", "status": "PASS"}
+      ]
+    }
+  ]
+}
