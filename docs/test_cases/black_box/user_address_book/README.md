@@ -1,7 +1,6 @@
 # THIẾT KẾ TEST CASE HỘP ĐEN: QUẢN LÝ SỔ ĐỊA CHỈ (ADDRESS BOOK MANAGEMENT)
 
 > **Chức năng:** Quản lý danh sách sổ địa chỉ giao hàng của người dùng (Thêm, Sửa, Xóa, Đặt làm địa chỉ mặc định) qua REST API `/api/v1/users/addresses`.  
-> **Người thực hiện:** Nguyễn Hoàng Phương (MSSV: `080205010954` / `NguyenHoangPhuong275`)
 
 ---
 
@@ -152,219 +151,76 @@ stateDiagram-v2
 
 ---
 
-## 6. Thiết Kế Bảng Test Cases Chi Tiết Đầy Đủ Theo 4 Kỹ Thuật Hộp Đen
 
-> **Phương pháp luận:** 4 kỹ thuật kiểm thử hộp đen (*State Transition*, *Decision Table*, *Boundary Value Analysis*, *Equivalence Partitioning*) đóng vai trò là các phương pháp luận cốt lõi để phân tích, xác định toàn bộ không gian kiểm thử và dẫn xuất ra tập test case đầy đủ. Dưới đây là bảng thiết kế chi tiết toàn bộ **60 Test Cases** được phân chia theo từng kỹ thuật, đồng bộ chính xác 100% với file `Testing.xlsx` (Sheet `10. Address Book`).
-
-### 6.1 Kỹ Thuật 1: Kiểm Thử Chuyển Đổi Trạng Thái (State Transition Testing - 5 Test Cases)
-
-| STT | Mã kiểm thử | Tiêu đề kiểm thử | Điều kiện tiên quyết & Các bước kiểm tra | Dữ liệu đầu vào (Input) | Kết quả mong đợi (Expected Output) | Tag | Trạng thái |
-| :-: | :--- | :--- | :--- | :--- | :--- | :-: | :-: |
-| **1** | **TC_ADR_ST_001** | Chuyển trạng thái: S0 (Chưa có địa chỉ) -> S1 (Có 1 địa chỉ mặc định) | <b>ĐK:</b> User đã đăng nhập, sổ địa chỉ rỗng.<br><b>Các bước:</b><br>1. Thêm địa chỉ mới (isDefault=false).<br>2. Kiểm tra danh sách. | isDefault=false | Lưu thành công, tự động gán isDefault=true (Trạng thái S1). | **ST1, V1, R5** | **PASS** |
-| **2** | **TC_ADR_ST_002** | Chuyển trạng thái: S1 (1 địa chỉ) -> S2 (Nhiều địa chỉ: 1 mặc định + 1 phụ) | <b>ĐK:</b> User đang ở trạng thái S1.<br><b>Các bước:</b><br>1. Thêm địa chỉ thứ 2 (isDefault=false).<br>2. Kiểm tra danh sách. | isDefault=false | Địa chỉ 2 lưu thành công với isDefault=false, địa chỉ 1 giữ mặc định (Trạng thái S2). | **ST2, V1, R4** | **PASS** |
-| **3** | **TC_ADR_ST_003** | Chuyển trạng thái: S2 -> S3 (Đổi địa chỉ phụ thành địa chỉ mặc định) | <b>ĐK:</b> User có 1 mặc định và 1 phụ.<br><b>Các bước:</b><br>1. Gọi PUT /{id2}/set-default.<br>2. Kiểm tra lại cờ. | Target ID của địa chỉ 2 | Địa chỉ 2 chuyển thành mặc định, địa chỉ 1 chuyển thành phụ (Trạng thái S3). | **ST3, V1, R7** | **PASS** |
-| **4** | **TC_ADR_ST_004** | Chuyển trạng thái: S3 -> S4 (Cập nhật thông tin chi tiết địa chỉ) | <b>ĐK:</b> User chọn 1 địa chỉ để cập nhật.<br><b>Các bước:</b><br>1. Gửi PUT /{id} với thông tin mới.<br>2. Kiểm tra dữ liệu. | Đ/c mới: 'Tòa nhà Landmark 81' | Cập nhật thành công 200 OK, giữ nguyên cờ mặc định (Trạng thái S4). | **ST4, V1** | **PASS** |
-| **5** | **TC_ADR_ST_005** | Chuyển trạng thái: S4 -> S0 (Xóa toàn bộ địa chỉ về rỗng) | <b>ĐK:</b> User có các địa chỉ trong sổ.<br><b>Các bước:</b><br>1. Gửi DELETE xóa tất cả địa chỉ.<br>2. Lấy lại danh sách. | DELETE tất cả ID | Xóa thành công, sổ địa chỉ quay về rỗng [] (Trạng thái S0). | **ST5, V3, R8** | **PASS** |
-
-### 6.2 Kỹ Thuật 2: Kiểm Thử Bảng Quyết Định (Decision Table Testing - 8 Test Cases)
-
-| STT | Mã kiểm thử | Tiêu đề kiểm thử | Điều kiện tiên quyết & Các bước kiểm tra | Dữ liệu đầu vào (Input) | Kết quả mong đợi (Expected Output) | Tag | Trạng thái |
-| :-: | :--- | :--- | :--- | :--- | :--- | :-: | :-: |
-| **1** | **TC_ADR_DT_001** | Rule 1: Thao tác khi chưa đăng nhập (Anonymous Access) | <b>ĐK:</b> Khách vãng lai chưa đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST /api/v1/users/addresses. | Anonymous Token | Trả về HTTP 401 Unauthorized. | **R1, X1** | **PASS** |
-| **2** | **TC_ADR_DT_002** | Rule 2: Thêm địa chỉ thiếu trường bắt buộc (Missing Fields) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST thiếu tên/SĐT/tỉnh/huyện/xã/đường. | Thiếu trường | Trả về HTTP 400 'Vui lòng điền đầy đủ thông tin'. | **R2, X2, B7** | **PASS** |
-| **3** | **TC_ADR_DT_003** | Rule 3: Thêm địa chỉ có trường vượt quá độ dài (Length Exceeded) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST với SĐT > 20 ký tự. | phone = 21 ký tự | Trả về HTTP 400 'Thông tin địa chỉ vượt quá độ dài'. | **R3, X2, B12** | **PASS** |
-| **4** | **TC_ADR_DT_004** | Rule 4: Thêm địa chỉ mới hợp lệ dạng phụ (isDefault = false) | <b>ĐK:</b> User đã đăng nhập, thông tin chuẩn.<br><b>Các bước:</b><br>1. Gửi POST với isDefault = false. | isDefault = false | Trả về HTTP 201 Created, lưu thành địa chỉ phụ. | **R4, V1, ST2** | **PASS** |
-| **5** | **TC_ADR_DT_005** | Rule 5: Thêm địa chỉ mới hợp lệ dạng mặc định (isDefault = true) | <b>ĐK:</b> User đã đăng nhập, chọn làm mặc định.<br><b>Các bước:</b><br>1. Gửi POST với isDefault = true. | isDefault = true | Trả về HTTP 201 Created, địa chỉ mới nhận cờ mặc định. | **R5, V1, ST1** | **PASS** |
-| **6** | **TC_ADR_DT_006** | Rule 6: Thao tác trên địa chỉ của tài khoản khác (IDOR Attack) | <b>ĐK:</b> User A đăng nhập, sửa/xóa địa chỉ của User B.<br><b>Các bước:</b><br>1. Gửi PUT/DELETE /{id_cua_B}. | Target ID thuộc User khác | Trả về HTTP 403 Forbidden 'Không tìm thấy hoặc không có quyền'. | **R6, X3** | **PASS** |
-| **7** | **TC_ADR_DT_007** | Rule 7: Đặt địa chỉ hợp lệ làm mặc định (Set Default) | <b>ĐK:</b> User sở hữu địa chỉ cần set default.<br><b>Các bước:</b><br>1. Gửi PUT /{id}/set-default. | Target ID hợp lệ | Trả về HTTP 200 OK 'Đã đặt làm địa chỉ mặc định!'. | **R7, V1, ST3** | **PASS** |
-| **8** | **TC_ADR_DT_008** | Rule 8: Xóa địa chỉ hợp lệ khỏi sổ địa chỉ (Delete Address) | <b>ĐK:</b> User sở hữu địa chỉ cần xóa.<br><b>Các bước:</b><br>1. Gửi DELETE /{id}. | Target ID hợp lệ | Trả về HTTP 200 OK 'Đã xóa địa chỉ giao hàng thành công!'. | **R8, V3, ST5** | **PASS** |
-
-### 6.3 Kỹ Thuật 3: Phân Tích Giá Trị Biên (Robustness BVA 6n+1 - 37 Test Cases)
-
-| STT | Mã kiểm thử | Tiêu đề kiểm thử | Điều kiện tiên quyết & Các bước kiểm tra | Dữ liệu đầu vào (Input) | Kết quả mong đợi (Expected Output) | Tag | Trạng thái |
-| :-: | :--- | :--- | :--- | :--- | :--- | :-: | :-: |
-| **1** | **TC_ADR_BVA_001** | Nominal: 6 trường ở giá trị danh định chuẩn | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập 6 trường ở giá trị danh định.<br>2. Bấm Lưu. | Tên: 50, Phone: 15, Tỉnh: 20, Quận: 20, Xã: 20, Đ/c: 50 chars | Lưu thành công HTTP 201 Created. | **B0, V1** | **PASS** |
-| **2** | **TC_ADR_ROB_001** | receiverName tại biên ngoài min-1 = 0 ký tự (Rỗng) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Để trống receiverName.<br>2. Bấm Lưu. | receiverName = '' (0 chars) | Trả về HTTP 400 Bad Request 'Vui lòng điền đầy đủ thông tin'. | **B1, R2** | **PASS** |
-| **3** | **TC_ADR_BVA_002** | receiverName tại biên min = 1 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập receiverName = 1 ký tự.<br>2. Bấm Lưu. | receiverName = 'Đ' (1 ký tự) | Lưu thành công HTTP 201 Created. | **B2** | **PASS** |
-| **4** | **TC_ADR_BVA_003** | receiverName tại biên min+1 = 2 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập receiverName = 2 ký tự.<br>2. Bấm Lưu. | receiverName = 'Lê' (2 ký tự) | Lưu thành công HTTP 201 Created. | **B3** | **PASS** |
-| **5** | **TC_ADR_BVA_004** | receiverName tại biên max-1 = 99 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập receiverName = 99 ký tự.<br>2. Bấm Lưu. | receiverName = 99 ký tự | Lưu thành công HTTP 201 Created. | **B4** | **PASS** |
-| **6** | **TC_ADR_BVA_005** | receiverName tại biên max = 100 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập receiverName = 100 ký tự.<br>2. Bấm Lưu. | receiverName = 100 ký tự | Lưu thành công HTTP 201 Created. | **B5** | **PASS** |
-| **7** | **TC_ADR_ROB_002** | receiverName tại biên ngoài max+1 = 101 ký tự (Vượt biên) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập receiverName = 101 ký tự.<br>2. Bấm Lưu. | receiverName = 101 ký tự | Trả về HTTP 400 Bad Request 'Thông tin vượt quá độ dài'. | **B6, R3** | **PASS** |
-| **8** | **TC_ADR_ROB_003** | phone tại biên ngoài min-1 = 0 ký tự (Rỗng) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Để trống phone.<br>2. Bấm Lưu. | phone = '' (0 chars) | Trả về HTTP 400 Bad Request 'Vui lòng điền đầy đủ thông tin'. | **B7, R2** | **PASS** |
-| **9** | **TC_ADR_BVA_006** | phone tại biên min = 1 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập phone = 1 ký tự.<br>2. Bấm Lưu. | phone = '9' (1 ký tự) | Lưu thành công HTTP 201 Created. | **B8** | **PASS** |
-| **10** | **TC_ADR_BVA_007** | phone tại biên min+1 = 2 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập phone = 2 ký tự.<br>2. Bấm Lưu. | phone = '09' (2 ký tự) | Lưu thành công HTTP 201 Created. | **B9** | **PASS** |
-| **11** | **TC_ADR_BVA_008** | phone tại biên max-1 = 19 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập phone = 19 ký tự.<br>2. Bấm Lưu. | phone = 19 ký tự | Lưu thành công HTTP 201 Created. | **B10** | **PASS** |
-| **12** | **TC_ADR_BVA_009** | phone tại biên max = 20 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập phone = 20 ký tự.<br>2. Bấm Lưu. | phone = 20 ký tự | Lưu thành công HTTP 201 Created. | **B11** | **PASS** |
-| **13** | **TC_ADR_ROB_004** | phone tại biên ngoài max+1 = 21 ký tự (Vượt biên) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập phone = 21 ký tự.<br>2. Bấm Lưu. | phone = 21 ký tự | Trả về HTTP 400 Bad Request 'Thông tin vượt quá độ dài'. | **B12, R3** | **PASS** |
-| **14** | **TC_ADR_ROB_005** | province tại biên ngoài min-1 = 0 ký tự (Rỗng) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Để trống province.<br>2. Bấm Lưu. | province = '' (0 chars) | Trả về HTTP 400 Bad Request 'Vui lòng điền đầy đủ thông tin'. | **B13, R2** | **PASS** |
-| **15** | **TC_ADR_BVA_010** | province tại biên min = 1 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập province = 1 ký tự.<br>2. Bấm Lưu. | province = 'A' | Lưu thành công HTTP 201 Created. | **B14** | **PASS** |
-| **16** | **TC_ADR_BVA_011** | province tại biên min+1 = 2 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập province = 2 ký tự.<br>2. Bấm Lưu. | province = 'HN' | Lưu thành công HTTP 201 Created. | **B15** | **PASS** |
-| **17** | **TC_ADR_BVA_012** | province tại biên max-1 = 99 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập province = 99 ký tự.<br>2. Bấm Lưu. | province = 99 ký tự | Lưu thành công HTTP 201 Created. | **B16** | **PASS** |
-| **18** | **TC_ADR_BVA_013** | province tại biên max = 100 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập province = 100 ký tự.<br>2. Bấm Lưu. | province = 100 ký tự | Lưu thành công HTTP 201 Created. | **B17** | **PASS** |
-| **19** | **TC_ADR_ROB_006** | province tại biên ngoài max+1 = 101 ký tự (Vượt biên) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập province = 101 ký tự.<br>2. Bấm Lưu. | province = 101 ký tự | Trả về HTTP 400 Bad Request 'Thông tin vượt quá độ dài'. | **B18, R3** | **PASS** |
-| **20** | **TC_ADR_ROB_007** | district tại biên ngoài min-1 = 0 ký tự (Rỗng) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Để trống district.<br>2. Bấm Lưu. | district = '' (0 chars) | Trả về HTTP 400 Bad Request 'Vui lòng điền đầy đủ thông tin'. | **B19, R2** | **PASS** |
-| **21** | **TC_ADR_BVA_014** | district tại biên min = 1 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập district = 1 ký tự.<br>2. Bấm Lưu. | district = '1' | Lưu thành công HTTP 201 Created. | **B20** | **PASS** |
-| **22** | **TC_ADR_BVA_015** | district tại biên min+1 = 2 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập district = 2 ký tự.<br>2. Bấm Lưu. | district = 'Q1' | Lưu thành công HTTP 201 Created. | **B21** | **PASS** |
-| **23** | **TC_ADR_BVA_016** | district tại biên max-1 = 99 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập district = 99 ký tự.<br>2. Bấm Lưu. | district = 99 ký tự | Lưu thành công HTTP 201 Created. | **B22** | **PASS** |
-| **24** | **TC_ADR_BVA_017** | district tại biên max = 100 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập district = 100 ký tự.<br>2. Bấm Lưu. | district = 100 ký tự | Lưu thành công HTTP 201 Created. | **B23** | **PASS** |
-| **25** | **TC_ADR_ROB_008** | district tại biên ngoài max+1 = 101 ký tự (Vượt biên) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập district = 101 ký tự.<br>2. Bấm Lưu. | district = 101 ký tự | Trả về HTTP 400 Bad Request 'Thông tin vượt quá độ dài'. | **B24, R3** | **PASS** |
-| **26** | **TC_ADR_ROB_009** | ward tại biên ngoài min-1 = 0 ký tự (Rỗng) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Để trống ward.<br>2. Bấm Lưu. | ward = '' (0 chars) | Trả về HTTP 400 Bad Request 'Vui lòng điền đầy đủ thông tin'. | **B25, R2** | **PASS** |
-| **27** | **TC_ADR_BVA_018** | ward tại biên min = 1 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập ward = 1 ký tự.<br>2. Bấm Lưu. | ward = 'P' | Lưu thành công HTTP 201 Created. | **B26** | **PASS** |
-| **28** | **TC_ADR_BVA_019** | ward tại biên min+1 = 2 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập ward = 2 ký tự.<br>2. Bấm Lưu. | ward = 'P1' | Lưu thành công HTTP 201 Created. | **B27** | **PASS** |
-| **29** | **TC_ADR_BVA_020** | ward tại biên max-1 = 99 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập ward = 99 ký tự.<br>2. Bấm Lưu. | ward = 99 ký tự | Lưu thành công HTTP 201 Created. | **B28** | **PASS** |
-| **30** | **TC_ADR_BVA_021** | ward tại biên max = 100 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập ward = 100 ký tự.<br>2. Bấm Lưu. | ward = 100 ký tự | Lưu thành công HTTP 201 Created. | **B29** | **PASS** |
-| **31** | **TC_ADR_ROB_010** | ward tại biên ngoài max+1 = 101 ký tự (Vượt biên) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập ward = 101 ký tự.<br>2. Bấm Lưu. | ward = 101 ký tự | Trả về HTTP 400 Bad Request 'Thông tin vượt quá độ dài'. | **B30, R3** | **PASS** |
-| **32** | **TC_ADR_ROB_011** | streetAddress tại biên ngoài min-1 = 0 ký tự (Rỗng) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Để trống streetAddress.<br>2. Bấm Lưu. | streetAddress = '' (0 chars) | Trả về HTTP 400 Bad Request 'Vui lòng điền đầy đủ thông tin'. | **B31, R2** | **PASS** |
-| **33** | **TC_ADR_BVA_022** | streetAddress tại biên min = 1 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập streetAddress = 1 ký tự.<br>2. Bấm Lưu. | streetAddress = '1' (1 ký tự) | Lưu thành công HTTP 201 Created. | **B32** | **PASS** |
-| **34** | **TC_ADR_BVA_023** | streetAddress tại biên min+1 = 2 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập streetAddress = 2 ký tự.<br>2. Bấm Lưu. | streetAddress = '1A' (2 ký tự) | Lưu thành công HTTP 201 Created. | **B33** | **PASS** |
-| **35** | **TC_ADR_BVA_024** | streetAddress tại biên max-1 = 254 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập streetAddress = 254 ký tự.<br>2. Bấm Lưu. | streetAddress = 254 ký tự | Lưu thành công HTTP 201 Created. | **B34** | **PASS** |
-| **36** | **TC_ADR_BVA_025** | streetAddress tại biên max = 255 ký tự | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập streetAddress = 255 ký tự.<br>2. Bấm Lưu. | streetAddress = 255 ký tự | Lưu thành công HTTP 201 Created. | **B35** | **PASS** |
-| **37** | **TC_ADR_ROB_012** | streetAddress tại biên ngoài max+1 = 256 ký tự (Vượt biên) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập streetAddress = 256 ký tự.<br>2. Bấm Lưu. | streetAddress = 256 ký tự | Trả về HTTP 400 Bad Request 'Thông tin vượt quá độ dài'. | **B36, R3** | **PASS** |
-
-### 6.4 Kỹ Thuật 4: Phân Hoạch Lớp Tương Đương (Equivalence Partitioning - 10 Test Cases)
-
-| STT | Mã kiểm thử | Tiêu đề kiểm thử | Điều kiện tiên quyết & Các bước kiểm tra | Dữ liệu đầu vào (Input) | Kết quả mong đợi (Expected Output) | Tag | Trạng thái |
-| :-: | :--- | :--- | :--- | :--- | :--- | :-: | :-: |
-| **1** | **EP_ADR_VAL_01** | Người dùng đã đăng nhập thực hiện xem/thêm/sửa/xóa địa chỉ thành công | <b>ĐK:</b> User đã đăng nhập hợp lệ.<br><b>Các bước:</b><br>1. Thao tác CRUD địa chỉ.<br>2. Kiểm tra phản hồi API. | Payload hợp lệ | Thao tác thành công HTTP 200/201. | **V1, R4** | **PASS** |
-| **2** | **EP_ADR_VAL_02** | Lưu trữ toàn vẹn địa chỉ có dấu tiếng Việt, số nhà xuyệt, gạch ngang | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Nhập địa chỉ tiếng Việt có dấu, số nhà /, -.<br>2. Kiểm tra lưu trữ. | Đ/c: 'Số 123/45-A Lê Lợi, P. Bến Nghé, Quận 1, TP. HCM' | Lưu thành công HTTP 201 Created, hiển thị nguyên vẹn. | **V2** | **PASS** |
-| **3** | **EP_ADR_VAL_03** | Tự động thăng cấp địa chỉ phụ lên làm mặc định khi xóa địa chỉ mặc định cũ | <b>ĐK:</b> User có địa chỉ mặc định và địa chỉ phụ.<br><b>Các bước:</b><br>1. Xóa địa chỉ mặc định.<br>2. Kiểm tra địa chỉ phụ còn lại. | DELETE ID mặc định | Địa chỉ phụ còn lại tự động nhận isDefault = true. | **V3, ST5** | **PASS** |
-| **4** | **EP_ADR_INV_01** | Chặn khách vãng lai (Anonymous) thao tác Sổ địa chỉ | <b>ĐK:</b> Khách vãng lai chưa đăng nhập.<br><b>Các bước:</b><br>1. Bấm Lưu trên Modal địa chỉ.<br>2. Quan sát phản hồi. | Anonymous Client | Backend trả về HTTP 401 Unauthorized (Client hiển thị alert). | **X1, R1** | **PASS** |
-| **5** | **EP_ADR_INV_02** | Từ chối thêm địa chỉ khi thiếu trường hoặc vượt độ dài | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi form thiếu trường hoặc SĐT > 20 chars. | Payload lỗi | Trả về HTTP 400 Bad Request. | **X2, R2** | **PASS** |
-| **6** | **EP_ADR_INV_03** | Chặn User A sửa hoặc xóa địa chỉ thuộc tài khoản User B | <b>ĐK:</b> User A đăng nhập, thao tác trên ID của User B.<br><b>Các bước:</b><br>1. Gửi PUT/DELETE /{id_cua_B}. | Target ID thuộc User khác | Trả về HTTP 403 Forbidden. | **X3, R6** | **PASS** |
-| **7** | **EP_ADR_INV_04** | Từ chối receiverName chứa ký tự đặc biệt cấm (@, #, $, %, ^, &, *, <, >, ?, ~, {}, []) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST /api/v1/users/addresses với receiverName chứa ký tự cấm.<br>2. Quan sát phản hồi API. | receiverName = 'Admin#VIP@123' | Backend trả về HTTP 400 Bad Request 'Tên người nhận không được chứa ký tự đặc biệt'. | **X4** | **PASS** |
-| **8** | **EP_ADR_INV_05** | Từ chối phone chứa chữ cái hoặc ký tự đặc biệt sai định dạng | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST /api/v1/users/addresses với phone chứa ký tự sai.<br>2. Quan sát phản hồi API. | phone = '0988@123#456' | Backend trả về HTTP 400 Bad Request 'Số điện thoại chứa ký tự không hợp lệ'. | **X5** | **PASS** |
-| **9** | **EP_ADR_INV_06** | Từ chối province, district, ward chứa ký tự đặc biệt nguy hiểm | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST /api/v1/users/addresses với province/district/ward chứa ký tự cấm.<br>2. Quan sát phản hồi API. | province = 'Hà Nội @1#', district = 'Quận <script>', ward = 'Phường %*' | Backend trả về HTTP 400 Bad Request 'Địa chỉ hành chính chứa ký tự không hợp lệ'. | **X6** | **PASS** |
-| **10** | **EP_ADR_INV_07** | Từ chối streetAddress chứa ký tự mã độc hoặc thẻ script (<, >, {}, ~, ^, $, %, *) | <b>ĐK:</b> User đã đăng nhập.<br><b>Các bước:</b><br>1. Gửi POST /api/v1/users/addresses với streetAddress chứa mã script / thẻ HTML.<br>2. Quan sát phản hồi API. | streetAddress = '123 Đường <script>alert(1)</script>' | Backend trả về HTTP 400 Bad Request 'Địa chỉ chi tiết không được chứa ký tự nguy hiểm'. | **X7** | **PASS** |
-
-### 6.5 Bộ Test Cases Tự Động Hóa Triển Khai Trên Postman & Newman (Automated Integration Suite - 20 Test Cases)
-
-> Bộ 20 test cases này được tổng hợp và đóng gói trực tiếp vào file Collection [`User_Address_Book_Postman_Collection.json`](./User_Address_Book_Postman_Collection.json) để thực thi tự động qua Newman / Postman, bảo đảm nguyên tắc cô lập đơn lỗi (single-fault isolation) và đạt tỷ lệ kiểm thử 100% Pass.
+## 6. Thiết Kế Bảng Test Cases Chi Tiết Triển Khai (Đầy Đủ Không Rút Gọn - 68 Ca Kiểm Thử)
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
-| **1** | **TC_ADR_01** | Thêm địa chỉ đầu tiên thành công với dữ liệu danh định | • `currentUser`: `employee1`<br>• `receiverName`: `"Nguyễn Hoàng Phương"`<br>• `phone`: `"0912345678"`<br>• `streetAddress`: `"Số 123/45 Lê Lợi, P. Bến Nghé, Q1"`<br>• `isDefault`: `false` (gửi lên) | **HTTP 201 Created:** Lưu thành công, hệ thống tự động thăng cấp `isDefault = true` do sổ đang rỗng. | **V1, V2, V3, V4, V5, V6, V7, B1, D5, D6, ST1** |
-| **2** | **TC_ADR_02** | Thêm địa chỉ thứ 2 làm địa chỉ phụ | • User đang có 1 địa chỉ mặc định<br>• Payload địa chỉ 2 với `isDefault: false` | **HTTP 201 Created:** Địa chỉ 2 lưu thành công với `isDefault = false`, địa chỉ 1 giữ nguyên mặc định. | **V1, V5, V7, B27, D5, D6, ST2** |
-| **3** | **TC_ADR_03** | Thêm địa chỉ hợp lệ tại các cận dưới ($min$) | • `receiverName`: `"A"` (1 ký tự)<br>• `phone`: `"1"` (1 số)<br>• `streetAddress`: `"1"` (1 ký tự)<br>• `province/district/ward`: `"A"` | **HTTP 201 Created:** Lưu thành công bản ghi tại các cận dưới tối thiểu. | **V2, V3, V4, V5, B3, B9, B15, B21, B22, B27, B28, D5, D6** |
-| **4** | **TC_ADR_04** | Thêm địa chỉ hợp lệ tại các cận trên ($max$) | • `receiverName`: Chuỗi 100 ký tự<br>• `phone`: Chuỗi 20 ký tự<br>• `streetAddress`: Chuỗi 255 ký tự<br>• `province/district/ward`: Chuỗi 100 ký tự | **HTTP 201 Created:** Lưu thành công bản ghi tại các cận trên tối đa. | **V2, V3, V4, V5, B4, B6, B10, B12, B16, B18, B24, D5, D6** |
-| **5** | **TC_ADR_05** | Đổi địa chỉ phụ thành địa chỉ mặc định mới | • Gọi `PUT /api/v1/users/addresses/{id2}/set-default` | **HTTP 200 OK:** Địa chỉ 2 nhận cờ `isDefault = true`, địa chỉ 1 chuyển về `isDefault = false`. | **V1, V6, D7, ST3** |
-| **6** | **TC_ADR_06** | Cập nhật thông tin chi tiết địa chỉ | • Gọi `PUT /api/v1/users/addresses/{id}`<br>• `streetAddress`: `"Tòa nhà Landmark 81, 720A Điện Biên Phủ"` | **HTTP 200 OK:** CSDL được cập nhật chính xác, giữ nguyên cờ mặc định hiện tại. | **V1, V5, V6, ST4** |
-| **7** | **TC_ADR_07** | Xóa địa chỉ mặc định cũ và tự động thăng cấp địa chỉ phụ | • User có 1 địa chỉ mặc định (ID 1) và 1 địa chỉ phụ (ID 2)<br>• Gọi `DELETE /{id1}` | **HTTP 200 OK:** Xóa ID 1 thành công, địa chỉ ID 2 tự động được thăng cấp thành địa chỉ mặc định mới. | **V1, V6, D8, ST6** |
-| **8** | **TC_ADR_08** | Xóa địa chỉ duy nhất đưa sổ về trạng thái rỗng | • User có đúng 1 địa chỉ duy nhất<br>• Gọi `DELETE /{id}` | **HTTP 200 OK:** Xóa thành công, sổ địa chỉ quay về trạng thái rỗng `S0_Empty`. | **V1, V6, ST7** |
-| **9** | **TC_ADR_09** | Chặn thao tác khi chưa đăng nhập (Anonymous) | • Gửi request không kèm JSESSIONID | **HTTP 401 Unauthorized:** Chặn truy cập an toàn. | **X1, D1** |
-| **10**| **TC_ADR_10** | Báo lỗi khi để trống họ tên người nhận ($min^-$) | • `receiverName`: `""` (Rỗng) | **HTTP 400 Bad Request:** *"Họ và tên người nhận không được để trống!"*. | **X2, X8, B2, D2** |
-| **11**| **TC_ADR_11** | Báo lỗi khi họ tên người nhận dài 101 ký tự ($max^+$) | • `receiverName`: Chuỗi 101 ký tự | **HTTP 400 Bad Request:** *"Họ và tên người nhận tối đa 100 ký tự!"*. | **X3, X9, B7, D3** |
-| **12**| **TC_ADR_12** | Từ chối họ tên chứa ký tự đặc biệt cấm | • `receiverName`: `"Phương @#$% VIP"` | **HTTP 400 Bad Request:** *"Tên chứa ký tự không hợp lệ!"*. | **X4, D2** |
-| **13**| **TC_ADR_13** | Báo lỗi khi số điện thoại để trống ($min^-$) | • `phone`: `""` (Rỗng) | **HTTP 400 Bad Request:** *"Số điện thoại không được để trống!"*. | **X5, B8, D2** |
-| **14**| **TC_ADR_14** | Báo lỗi khi số điện thoại dài 21 ký tự ($max^+$) | • `phone`: Chuỗi 21 số | **HTTP 400 Bad Request:** *"Số điện thoại tối đa 20 ký tự!"*. | **X6, B13, D3** |
-| **15**| **TC_ADR_15** | Từ chối số điện thoại chứa chữ cái hoặc ký tự cấm | • `phone`: `"0912abc888@"` | **HTTP 400 Bad Request:** *"Số điện thoại chứa ký tự không hợp lệ!"*. | **X7, D2** |
-| **16**| **TC_ADR_16** | Báo lỗi khi để trống địa chỉ đường phố ($min^-$) | • `streetAddress`: `""` (Rỗng) | **HTTP 400 Bad Request:** *"Địa chỉ đường phố không được để trống!"*. | **X11, B14, D2** |
-| **17**| **TC_ADR_17** | Báo lỗi khi địa chỉ đường phố dài 256 ký tự ($max^+$) | • `streetAddress`: Chuỗi 256 ký tự | **HTTP 400 Bad Request:** *"Thông tin địa chỉ vượt quá độ dài cho phép!"*. | **X12, B19, D3** |
-| **18**| **TC_ADR_18** | Từ chối địa chỉ đường phố chứa mã độc XSS Script | • `streetAddress`: `"123 Đường <script>alert(1)</script>"` | **HTTP 400 Bad Request:** *"Địa chỉ đường phố chứa ký tự không hợp lệ!"*. | **X10, X13, D3** |
-| **19**| **TC_ADR_19** | Chặn User A sửa hoặc xóa địa chỉ thuộc User B | • User A đăng nhập nhưng gửi `PUT` hoặc `DELETE` ID của User B | **HTTP 403 Forbidden:** *"Không tìm thấy địa chỉ hoặc bạn không có quyền chỉnh sửa!"*. | **X14, D4** |
-| **20**| **TC_ADR_20** | Chặn thêm mới khi đã đạt giới hạn 10 địa chỉ ($max^+$) | • Tài khoản đã có sẵn 10 địa chỉ trong sổ<br>• Gửi yêu cầu thêm địa chỉ thứ 11 | **HTTP 400 Bad Request:** *"Bạn đã đạt giới hạn tối đa 10 địa chỉ lưu trữ!"*. | **X15, B31** |
-
----
-
-## 7. Ma Trận Truy Vết & Độ Bao Phủ Kiểm Thử (Traceability Matrix)
-
-### 7.1 Bảng tổng hợp tỷ lệ bao phủ theo kỹ thuật
-
-| Nhóm Kỹ Thuật | Tổng Số Thẻ (Tags) | Danh Sách Thẻ Định Danh | Tỷ Lệ Bao Phủ |
-| :--- | :---: | :--- | :---: |
-| **Phân hoạch tương đương (EP)** | **22 Tags** | Hợp lệ: `V1` $	o$ `V7` (7 tags)<br>Không hợp lệ: `X1` $	o$ `X15` (15 tags) | **100% (22/22)** |
-| **Phân tích giá trị biên (BVA)** | **37 Tags** | Robustness BVA 6n+1: `B1` $	o$ `B37` (37 tags) | **100% (37/37)** |
-| **Bảng quyết định (Decision Table)**| **8 Rules** | `D1, D2, D3, D4, D5, D6, D7, D8` | **100% (8/8)** |
-| **Chuyển đổi trạng thái (State Transition)**| **7 Steps** | `ST1, ST2, ST3, ST4, ST5, ST6, ST7` | **100% (7/7)** |
-
-### 7.2 Bảng đối chiếu chéo Thẻ kiểm thử $\leftrightarrow$ 60 Test Cases Thiết Kế Theo 4 Kỹ Thuật (Testing.xlsx)
-
-| Kỹ thuật hộp đen | Nhóm kiểm thử / Biến | Thẻ định danh | Mã Test Case thiết kế tương ứng | Kết quả mong đợi theo đặc tả |
-| :--- | :--- | :---: | :--- | :--- |
-| **State Transition** | S0 -> S1 (Thêm đ/c đầu tiên) | `ST1, V1, R5` | **TC_ADR_ST_001** | Lưu thành công, tự động gán `isDefault = true` (S1) |
-| | S1 -> S2 (Thêm đ/c phụ) | `ST2, V1, R4` | **TC_ADR_ST_002** | Lưu đ/c thứ 2 với `isDefault = false`, đ/c 1 giữ mặc định (S2) |
-| | S2 -> S3 (Đổi mặc định) | `ST3, V1, R7` | **TC_ADR_ST_003** | Đ/c 2 thành mặc định, đ/c 1 thành phụ (S3) |
-| | S3 -> S4 (Cập nhật đ/c) | `ST4, V1` | **TC_ADR_ST_004** | Cập nhật thông tin thành công, giữ nguyên cờ mặc định (S4) |
-| | S4 -> S0 (Xóa về rỗng) | `ST5, V1, R8` | **TC_ADR_ST_005** | Xóa địa chỉ duy nhất, sổ quay về rỗng (S0) |
-| **Decision Table** | Rule 1: Chưa đăng nhập | `R1, X1` | **TC_ADR_DT_001** | Báo lỗi HTTP 401 Unauthorized |
-| | Rule 2: Thiếu trường | `R2, X2, B7` | **TC_ADR_DT_002** | Báo lỗi HTTP 400: Không được để trống trường bắt buộc |
-| | Rule 3: Quá độ dài | `R3, X2, B12` | **TC_ADR_DT_003** | Báo lỗi HTTP 400: Độ dài vượt quá giới hạn cho phép |
-| | Rule 4: Ký tự cấm / XSS | `R4, X2` | **TC_ADR_DT_004** | Báo lỗi HTTP 400: Chứa ký tự không hợp lệ hoặc mã script |
-| | Rule 5: User khác can thiệp | `R5, X3` | **TC_ADR_DT_005** | Báo lỗi HTTP 403 Forbidden: Không có quyền truy cập |
-| | Rule 6: Sổ rỗng -> Auto Default | `R6, V1, ST1` | **TC_ADR_DT_006** | Lưu thành công, tự động đặt `isDefault = true` |
-| | Rule 7: Sổ có sẵn -> Giữ mặc định | `R7, V1, ST2` | **TC_ADR_DT_007** | Lưu đ/c phụ với `isDefault = false` |
-| | Rule 8: Sổ có sẵn + set default | `R8, V1, ST3` | **TC_ADR_DT_008** | Hoán đổi địa chỉ mặc định mới thành công |
-| **Robustness BVA** | Giá trị danh định chuẩn | `B0, V1` | **TC_ADR_BVA_001** | Lưu thành công toàn bộ 6 trường ở mốc danh định |
-| | receiverName 6 mốc biên | `B1` $	o$ `B6` | **TC_ADR_ROB_001, BVA_002, BVA_003, BVA_004, BVA_005, ROB_002** | Bắt lỗi 0 ký tự (`B1`), chấp nhận 1, 2, 99, 100 ký tự (`B2`-`B5`), chặn 101 ký tự (`B6`) |
-| | phone 6 mốc biên | `B7` $	o$ `B12` | **TC_ADR_ROB_003, BVA_006, BVA_007, BVA_008, BVA_009, ROB_004** | Bắt lỗi rỗng (`B7`), chấp nhận 1, 2, 19, 20 số (`B8`-`B11`), chặn 21 số (`B12`) |
-| | streetAddress 6 mốc biên | `B13` $	o$ `B18` | **TC_ADR_ROB_005, BVA_010, BVA_011, BVA_012, BVA_013, ROB_006** | Bắt lỗi rỗng (`B13`), chấp nhận 1, 2, 254, 255 ký tự (`B14`-`B17`), chặn 256 ký tự (`B18`) |
-| | ward 6 mốc biên | `B19` $	o$ `B24` | **TC_ADR_ROB_007, BVA_014, BVA_015, BVA_016, BVA_017, ROB_008** | Bắt lỗi rỗng (`B19`), chấp nhận 1, 2, 99, 100 ký tự (`B20`-`B23`), chặn 101 ký tự (`B24`) |
-| | district 6 mốc biên | `B25` $	o$ `B30` | **TC_ADR_ROB_009, BVA_018, BVA_019, BVA_020, BVA_021, ROB_010** | Bắt lỗi rỗng (`B25`), chấp nhận 1, 2, 99, 100 ký tự (`B26`-`B29`), chặn 101 ký tự (`B30`) |
-| | province 6 mốc biên | `B31` $	o$ `B36` | **TC_ADR_ROB_011, BVA_022, BVA_023, BVA_024, BVA_025, ROB_012** | Bắt lỗi rỗng (`B31`), chấp nhận 1, 2, 99, 100 ký tự (`B32`-`B35`), chặn 101 ký tự (`B36`) |
-| **Equivalence Partitioning** | Valid: Thao tác hợp lệ | `V1, R4` | **EP_ADR_VAL_01** | Người dùng xem/thêm/sửa/xóa địa chỉ thành công |
-| | Valid: Tiếng Việt, số nhà | `V2` | **EP_ADR_VAL_02** | Lưu trữ toàn vẹn địa chỉ tiếng Việt, xuyệt, gạch ngang |
-| | Valid: Tự động thăng cấp | `V3, ST5` | **EP_ADR_VAL_03** | Tự động thăng cấp địa chỉ phụ khi xóa địa chỉ mặc định cũ |
-| | Invalid: Chưa đăng nhập | `X1, R1` | **EP_ADR_INV_01** | Chặn thao tác khi chưa đăng nhập (HTTP 401) |
-| | Invalid: Dữ liệu rỗng | `X2, R2` | **EP_ADR_INV_02** | Từ chối thêm/sửa khi trường bắt buộc rỗng (HTTP 400) |
-| | Invalid: Quá độ dài | `X2, R3` | **EP_ADR_INV_03** | Từ chối khi trường vượt độ dài tối đa (HTTP 400) |
-| | Invalid: Tên chứa ký tự cấm | `X2, R4` | **EP_ADR_INV_04** | Từ chối tên chứa ký tự đặc biệt cấm `@#$%^&*` |
-| | Invalid: SĐT chứa chữ | `X2, R4` | **EP_ADR_INV_05** | Từ chối SĐT chứa chữ cái hoặc ký tự không hợp lệ |
-| | Invalid: Địa chỉ XSS Script | `X2, R4` | **EP_ADR_INV_06** | Từ chối địa chỉ chứa thẻ HTML / script injection `<script>` |
-| | Invalid: Can thiệp người khác | `X3, R5` | **EP_ADR_INV_07** | Chặn người dùng này sửa/xóa địa chỉ người dùng khác (HTTP 403) |
-
-### 7.3 Bảng đối chiếu chéo Thẻ kiểm thử $\leftrightarrow$ 20 Test Cases Tự Động Hóa Triển Khai
-
-| Kỹ thuật | Thẻ định danh (Tag) | Ý nghĩa nghiệp vụ | Mã Test Case tự động hóa phụ trách |
-| :--- | :---: | :--- | :--- |
-| **EP (Hợp lệ)** | `V1` | Thao tác CRUD địa chỉ hợp lệ | `TC_ADR_01`, `TC_ADR_02`, `TC_ADR_05`, `TC_ADR_06`, `TC_ADR_07`, `TC_ADR_08` |
-| | `V2` | Họ tên người nhận hợp lệ | `TC_ADR_01`, `TC_ADR_03`, `TC_ADR_04` |
-| | `V3` | Số điện thoại hợp lệ $[1, 20]$ ký tự | `TC_ADR_01`, `TC_ADR_03`, `TC_ADR_04` |
-| | `V4` | Địa chỉ đường phố hợp lệ $[1, 255]$ ký tự | `TC_ADR_01`, `TC_ADR_03`, `TC_ADR_04` |
-| | `V5` | Tỉnh/Thành, Quận/Huyện, Phường/Xã hợp lệ | `TC_ADR_01`, `TC_ADR_03`, `TC_ADR_04` |
-| | `V6` | Thiết lập và thăng cấp địa chỉ mặc định | `TC_ADR_01`, `TC_ADR_05`, `TC_ADR_07` |
-| | `V7` | Thêm địa chỉ phụ thành công | `TC_ADR_02` |
-| **EP (Không hợp lệ)** | `X1` | Chưa xác thực tài khoản (Anonymous) | `TC_ADR_09` |
-| | `X2` | Họ tên để trống | `TC_ADR_10` |
-| | `X8` | Để trống địa danh (tỉnh/huyện/xã) | `TC_ADR_10` |
-| | `X9` | Địa danh vượt quá 100 ký tự | `TC_ADR_11` |
-| | `X10` | Địa danh chứa script độc hại | `TC_ADR_18` |
-| | `X3` | Họ tên vượt quá 100 ký tự | `TC_ADR_11` |
-| | `X4` | Họ tên chứa ký tự đặc biệt cấm | `TC_ADR_12` |
-| | `X5` | Số điện thoại để trống | `TC_ADR_13` |
-| | `X6` | Số điện thoại vượt quá 20 ký tự | `TC_ADR_14` |
-| | `X7` | Số điện thoại chứa chữ cái | `TC_ADR_15` |
-| | `X11` | Địa chỉ đường phố để trống | `TC_ADR_16` |
-| | `X12` | Địa chỉ đường phố vượt quá 255 ký tự | `TC_ADR_17` |
-| | `X13` | Địa chỉ đường phố chứa script XSS | `TC_ADR_18` |
-| | `X14` | Sửa/Xóa địa chỉ của người khác | `TC_ADR_19` |
-| | `X15` | Vượt giới hạn 10 địa chỉ | `TC_ADR_20` |
-| **Robustness BVA** | `B1` | Tất cả 6 trường ở nominal | `TC_ADR_01` |
-| | `B2`, `B3`, `B4`, `B6`, `B7` | Cận độ dài `receiverName` | `TC_ADR_10` ($min^-$), `TC_ADR_03` ($min$), `TC_ADR_04` ($max^-, max$), `TC_ADR_11` ($max^+$) |
-| | `B8`, `B9`, `B10`, `B12`, `B13` | Cận độ dài `phone` | `TC_ADR_13` ($min^-$), `TC_ADR_03` ($min$), `TC_ADR_04` ($max^-, max$), `TC_ADR_14` ($max^+$) |
-| | `B14`, `B15`, `B16`, `B18`, `B19` | Cận độ dài `streetAddress` | `TC_ADR_16` ($min^-$), `TC_ADR_03` ($min$), `TC_ADR_04` ($max^-, max$), `TC_ADR_17` ($max^+$) |
-| | `B21`, `B22`, `B27`, `B28` | Cận địa danh ward/district | `TC_ADR_03` ($min, min^+$), `TC_ADR_04` ($max$) |
-| | `B31` | Cận số lượng địa chỉ ($max^+$ = 11) | `TC_ADR_20` ($max^+$) |
-| **Decision Table** | `D1` $	o$ `D8` | 8 Quy tắc bảng quyết định | `TC_ADR_09` (D1), `TC_ADR_10` (D2), `TC_ADR_11` (D3), `TC_ADR_19` (D4), `TC_ADR_01` (D5), `TC_ADR_02` (D6), `TC_ADR_05` (D7), `TC_ADR_07` (D8) |
-| **State Transition** | `ST1` $	o$ `ST7` | 7 Bước chuyển đổi trạng thái | `TC_ADR_01` (ST1), `TC_ADR_02` (ST2), `TC_ADR_05` (ST3), `TC_ADR_06` (ST4), `TC_ADR_07` (ST6), `TC_ADR_08` (ST7) |
-
----
-
-## 8. Hướng Dẫn Thực Thi Với Postman & Newman (Execution Guide)
-
-### 8.1 Chạy trực tiếp trên ứng dụng Postman (Desktop App)
-1. Khởi động ứng dụng **Postman**.
-2. Chọn **Import** $\to$ Chọn 2 tệp kịch bản kiểm thử:
-   - Collection: [`User_Address_Book_Postman_Collection.json`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/user_address_book/User_Address_Book_Postman_Collection.json)
-   - Environment: [`User_Address_Book_Postman_Environment.json`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/user_address_book/User_Address_Book_Postman_Environment.json)
-3. Chọn môi trường `Shoeshop User Address Book Env`.
-4. Nhấn vào Collection $\to$ Chọn **Run Collection** để thực thi tự động toàn bộ 20 test cases (`TC_ADR_01` $\to$ `TC_ADR_20`).
-
-### 8.2 Chạy tự động qua dòng lệnh (CLI) bằng Newman
-Thực thi lệnh sau tại thư mục gốc dự án:
-```powershell
-npx --yes newman run docs/test_cases/black_box/user_address_book/User_Address_Book_Postman_Collection.json `
-  -e docs/test_cases/black_box/user_address_book/User_Address_Book_Postman_Environment.json `
-  -r 'cli,htmlextra' `
-  --reporter-htmlextra-export target/newman-user-address-report.html `
-  --insecure
-```
-
+| **1** | **TC_ADR_01** | Người dùng đã đăng nhập thực hiện thêm địa chỉ thành công | • `currentUser`: `employee1` (Đã xác thực)<br>• 6 trường hợp lệ danh định | **HTTP 201 Created:** Tạo mới bản ghi địa chỉ thành công. | **V1** |
+| **2** | **TC_ADR_02** | Thêm địa chỉ với tên người nhận hợp lệ | • `receiverName`: `"Nguyễn Hoàng Phương"` (20 ký tự chữ) | **HTTP 201 Created:** Họ tên người nhận được tiếp nhận chính xác. | **V2** |
+| **3** | **TC_ADR_03** | Thêm địa chỉ với số điện thoại hợp lệ | • `phone`: `"0912345678"` (10 chữ số) | **HTTP 201 Created:** Số điện thoại được lưu vào sổ địa chỉ. | **V3** |
+| **4** | **TC_ADR_04** | Thêm địa chỉ với địa danh tỉnh/huyện/xã hợp lệ | • `province`: `"Hồ Chí Minh"`, `district`: `"Quận 1"`, `ward`: `"Bến Nghé"` | **HTTP 201 Created:** Tiếp nhận bộ ba địa danh hành chính chuẩn. | **V4** |
+| **5** | **TC_ADR_05** | Thêm địa chỉ với chi tiết đường phố có dấu tiếng Việt và số nhà | • `streetAddress`: `"Số 123/45 Lê Lợi, P. Bến Nghé"` | **HTTP 201 Created:** Lưu trữ nguyên vẹn địa chỉ tiếng Việt và ký tự `/`, `-`. | **V5** |
+| **6** | **TC_ADR_06** | Thao tác trên địa chỉ thuộc quyền sở hữu của chính mình | • User A thao tác cập nhật/đổi mặc định/xóa địa chỉ do chính User A tạo | **HTTP 200 OK:** Quyền sở hữu hợp lệ (`isOwner = true`), thực thi thành công. | **V6** |
+| **7** | **TC_ADR_07** | Thêm địa chỉ mới khi sổ địa chỉ chưa đạt trần tối đa | • Số địa chỉ hiện có = 3 ($count < 10$ địa chỉ tối đa) | **HTTP 201 Created:** Cho phép thêm địa chỉ mới vào sổ. | **V7** |
+| **8** | **TC_ADR_08** | Chặn khách vãng lai (chưa đăng nhập) thao tác sổ địa chỉ | • Request không kèm session xác thực (`Anonymous`) | **HTTP 401 Unauthorized:** Chặn truy cập người dùng chưa đăng nhập. | **X1** |
+| **9** | **TC_ADR_09** | Báo lỗi khi để trống tên người nhận | • `receiverName`: `""` (rỗng) | **HTTP 400 Bad Request:** *"Họ và tên người nhận không được để trống!"*. | **X2** |
+| **10** | **TC_ADR_10** | Báo lỗi khi tên người nhận vượt quá 100 ký tự | • `receiverName`: Chuỗi dài 101 ký tự | **HTTP 400 Bad Request:** *"Họ và tên người nhận tối đa 100 ký tự!"*. | **X3** |
+| **11** | **TC_ADR_11** | Từ chối tên người nhận chứa ký tự đặc biệt cấm | • `receiverName`: `"Phương @#$% VIP"` | **HTTP 400 Bad Request:** *"Tên chứa ký tự không hợp lệ!"*. | **X4** |
+| **12** | **TC_ADR_12** | Báo lỗi khi để trống số điện thoại | • `phone`: `""` (rỗng) | **HTTP 400 Bad Request:** *"Số điện thoại không được để trống!"*. | **X5** |
+| **13** | **TC_ADR_13** | Báo lỗi khi số điện thoại vượt quá 20 ký tự | • `phone`: Chuỗi 21 số | **HTTP 400 Bad Request:** *"Số điện thoại tối đa 20 ký tự!"*. | **X6** |
+| **14** | **TC_ADR_14** | Từ chối số điện thoại chứa chữ cái hoặc ký tự cấm | • `phone`: `"0912abc888@"` | **HTTP 400 Bad Request:** *"Số điện thoại chứa ký tự không hợp lệ!"*. | **X7** |
+| **15** | **TC_ADR_15** | Báo lỗi khi để trống 1 trong 3 trường địa danh hành chính | • `province`: `""` (hoặc `district`/`ward` rỗng) | **HTTP 400 Bad Request:** *"Tỉnh thành, quận huyện, phường xã không được để trống!"*. | **X8** |
+| **16** | **TC_ADR_16** | Báo lỗi khi địa danh hành chính vượt quá 100 ký tự | • `province`: Chuỗi dài 101 ký tự | **HTTP 400 Bad Request:** *"Tỉnh/Thành phố tối đa 100 ký tự!"*. | **X9** |
+| **17** | **TC_ADR_17** | Từ chối địa danh chứa mã script độc hại | • `province`: `"Hà Nội <script>alert(1)</script>"` | **HTTP 400 Bad Request:** *"Địa danh chứa ký tự không hợp lệ!"*. | **X10** |
+| **18** | **TC_ADR_18** | Báo lỗi khi để trống địa chỉ đường phố chi tiết | • `streetAddress`: `""` (rỗng) | **HTTP 400 Bad Request:** *"Địa chỉ đường phố không được để trống!"*. | **X11** |
+| **19** | **TC_ADR_19** | Báo lỗi khi địa chỉ đường phố vượt quá 255 ký tự | • `streetAddress`: Chuỗi dài 256 ký tự | **HTTP 400 Bad Request:** *"Địa chỉ đường phố tối đa 255 ký tự!"*. | **X12** |
+| **20** | **TC_ADR_20** | Từ chối địa chỉ đường phố chứa mã độc XSS Script | • `streetAddress`: `"123 Đường <script>alert(1)</script>"` | **HTTP 400 Bad Request:** *"Địa chỉ đường phố chứa ký tự không hợp lệ!"*. | **X13** |
+| **21** | **TC_ADR_21** | Chặn người dùng thao tác trên địa chỉ của tài khoản khác (IDOR) | • User A gửi `PUT` hoặc `DELETE` mã địa chỉ thuộc User B | **HTTP 403 Forbidden:** *"Không tìm thấy địa chỉ hoặc bạn không có quyền chỉnh sửa!"*. | **X14** |
+| **22** | **TC_ADR_22** | Chặn thêm mới khi đã đạt giới hạn tối đa 10 địa chỉ | • Sổ địa chỉ đã có 10 bản ghi, gửi thêm địa chỉ thứ 11 | **HTTP 400 Bad Request:** *"Bạn đã đạt giới hạn tối đa 10 địa chỉ lưu trữ!"*. | **X15** |
+| **23** | **TC_ADR_23** | Robustness BVA: Tất cả 6 trường ở giá trị danh định chuẩn | • `receiverName` (20 ký tự), `phone` (10 số), `street` (20 ký tự), `province` (11 ký tự), `count` = 3 | **HTTP 201 Created:** Lưu thành công bản ghi tại giá trị danh định. | **B1** |
+| **24** | **TC_ADR_24** | Robustness BVA: Độ dài tên người nhận tại ngoại biên dưới min- | • `receiverName`: `""` (0 ký tự, rỗng) | **HTTP 400 Bad Request:** Họ tên người nhận không được để trống. | **B2** |
+| **25** | **TC_ADR_25** | Robustness BVA: Độ dài tên người nhận tại cận dưới min | • `receiverName`: `"A"` (1 ký tự) | **HTTP 201 Created:** Tiếp nhận tên 1 ký tự thành công. | **B3** |
+| **26** | **TC_ADR_26** | Robustness BVA: Độ dài tên người nhận tại kề cận dưới min+ | • `receiverName`: `"An"` (2 ký tự) | **HTTP 201 Created:** Tiếp nhận tên 2 ký tự thành công. | **B4** |
+| **27** | **TC_ADR_27** | Robustness BVA: Độ dài tên người nhận tại kề cận trên max- | • `receiverName`: Chuỗi dài 99 ký tự | **HTTP 201 Created:** Tiếp nhận tên 99 ký tự thành công. | **B5** |
+| **28** | **TC_ADR_28** | Robustness BVA: Độ dài tên người nhận tại cận trên max | • `receiverName`: Chuỗi dài 100 ký tự | **HTTP 201 Created:** Tiếp nhận tên 100 ký tự thành công. | **B6** |
+| **29** | **TC_ADR_29** | Robustness BVA: Độ dài tên người nhận tại ngoại biên trên max+ | • `receiverName`: Chuỗi dài 101 ký tự | **HTTP 400 Bad Request:** Họ tên người nhận tối đa 100 ký tự. | **B7** |
+| **30** | **TC_ADR_30** | Robustness BVA: Độ dài số điện thoại tại ngoại biên dưới min- | • `phone`: `""` (0 số, rỗng) | **HTTP 400 Bad Request:** Số điện thoại không được để trống. | **B8** |
+| **31** | **TC_ADR_31** | Robustness BVA: Độ dài số điện thoại tại cận dưới min | • `phone`: `"1"` (1 chữ số) | **HTTP 201 Created:** Tiếp nhận SĐT 1 ký tự thành công. | **B9** |
+| **32** | **TC_ADR_32** | Robustness BVA: Độ dài số điện thoại tại kề cận dưới min+ | • `phone`: `"12"` (2 chữ số) | **HTTP 201 Created:** Tiếp nhận SĐT 2 ký tự thành công. | **B10** |
+| **33** | **TC_ADR_33** | Robustness BVA: Độ dài số điện thoại tại kề cận trên max- | • `phone`: Chuỗi 19 chữ số | **HTTP 201 Created:** Tiếp nhận SĐT 19 chữ số thành công. | **B11** |
+| **34** | **TC_ADR_34** | Robustness BVA: Độ dài số điện thoại tại cận trên max | • `phone`: Chuỗi 20 chữ số | **HTTP 201 Created:** Tiếp nhận SĐT 20 chữ số thành công. | **B12** |
+| **35** | **TC_ADR_35** | Robustness BVA: Độ dài số điện thoại tại ngoại biên trên max+ | • `phone`: Chuỗi 21 chữ số | **HTTP 400 Bad Request:** Số điện thoại tối đa 20 ký tự. | **B13** |
+| **36** | **TC_ADR_36** | Robustness BVA: Độ dài địa chỉ đường phố tại ngoại biên dưới min- | • `streetAddress`: `""` (0 ký tự, rỗng) | **HTTP 400 Bad Request:** Địa chỉ đường phố không được để trống. | **B14** |
+| **37** | **TC_ADR_37** | Robustness BVA: Độ dài địa chỉ đường phố tại cận dưới min | • `streetAddress`: `"1"` (1 ký tự) | **HTTP 201 Created:** Tiếp nhận địa chỉ đường phố 1 ký tự thành công. | **B15** |
+| **38** | **TC_ADR_38** | Robustness BVA: Độ dài địa chỉ đường phố tại kề cận dưới min+ | • `streetAddress`: `"12"` (2 ký tự) | **HTTP 201 Created:** Tiếp nhận địa chỉ đường phố 2 ký tự thành công. | **B16** |
+| **39** | **TC_ADR_39** | Robustness BVA: Độ dài địa chỉ đường phố tại kề cận trên max- | • `streetAddress`: Chuỗi dài 254 ký tự | **HTTP 201 Created:** Tiếp nhận địa chỉ đường phố 254 ký tự thành công. | **B17** |
+| **40** | **TC_ADR_40** | Robustness BVA: Độ dài địa chỉ đường phố tại cận trên max | • `streetAddress`: Chuỗi dài 255 ký tự | **HTTP 201 Created:** Tiếp nhận địa chỉ đường phố 255 ký tự thành công. | **B18** |
+| **41** | **TC_ADR_41** | Robustness BVA: Độ dài địa chỉ đường phố tại ngoại biên trên max+ | • `streetAddress`: Chuỗi dài 256 ký tự | **HTTP 400 Bad Request:** Địa chỉ đường phố tối đa 255 ký tự. | **B19** |
+| **42** | **TC_ADR_42** | Robustness BVA: Độ dài địa danh tỉnh/thành tại ngoại biên dưới min- | • `province`: `""` (0 ký tự, rỗng) | **HTTP 400 Bad Request:** Tỉnh/Thành phố không được để trống. | **B20** |
+| **43** | **TC_ADR_43** | Robustness BVA: Độ dài địa danh tỉnh/thành tại cận dưới min | • `province`: `"A"` (1 ký tự) | **HTTP 201 Created:** Tiếp nhận tỉnh thành 1 ký tự thành công. | **B21** |
+| **44** | **TC_ADR_44** | Robustness BVA: Độ dài địa danh tỉnh/thành tại kề cận dưới min+ | • `province`: `"HN"` (2 ký tự) | **HTTP 201 Created:** Tiếp nhận tỉnh thành 2 ký tự thành công. | **B22** |
+| **45** | **TC_ADR_45** | Robustness BVA: Độ dài địa danh tỉnh/thành tại kề cận trên max- | • `province`: Chuỗi dài 99 ký tự | **HTTP 201 Created:** Tiếp nhận tỉnh thành 99 ký tự thành công. | **B23** |
+| **46** | **TC_ADR_46** | Robustness BVA: Độ dài địa danh tỉnh/thành tại cận trên max | • `province`: Chuỗi dài 100 ký tự | **HTTP 201 Created:** Tiếp nhận tỉnh thành 100 ký tự thành công. | **B24** |
+| **47** | **TC_ADR_47** | Robustness BVA: Độ dài địa danh tỉnh/thành tại ngoại biên trên max+ | • `province`: Chuỗi dài 101 ký tự | **HTTP 400 Bad Request:** Tỉnh/Thành phố tối đa 100 ký tự. | **B25** |
+| **48** | **TC_ADR_48** | Robustness BVA: Số lượng địa chỉ đã lưu tại cận dưới min | • Sổ địa chỉ rỗng ($count = 0$), thêm địa chỉ đầu tiên | **HTTP 201 Created:** Lưu thành công, tự động thăng cấp `isDefault = true`. | **B26** |
+| **49** | **TC_ADR_49** | Robustness BVA: Số lượng địa chỉ đã lưu tại kề cận dưới min+ | • Sổ địa chỉ đang có 1 bản ghi ($count = 1$), thêm địa chỉ thứ 2 | **HTTP 201 Created:** Lưu thành công địa chỉ thứ 2 dạng phụ (`isDefault = false`). | **B27** |
+| **50** | **TC_ADR_50** | Robustness BVA: Số lượng địa chỉ đã lưu tại mốc danh định nom | • Sổ địa chỉ đang có 3 bản ghi ($count = 3$), thêm địa chỉ thứ 4 | **HTTP 201 Created:** Lưu thành công địa chỉ thứ 4 dạng phụ. | **B28** |
+| **51** | **TC_ADR_51** | Robustness BVA: Số lượng địa chỉ đã lưu tại kề cận trên max- | • Sổ địa chỉ đang có 8 bản ghi ($count = 8$), thêm địa chỉ thứ 9 | **HTTP 201 Created:** Lưu thành công địa chỉ thứ 9 dạng phụ. | **B29** |
+| **52** | **TC_ADR_52** | Robustness BVA: Số lượng địa chỉ đã lưu tại cận trên max | • Sổ địa chỉ đang có 9 bản ghi ($count = 9$), thêm địa chỉ thứ 10 | **HTTP 201 Created:** Lưu thành công địa chỉ thứ 10, chạm trần tối đa. | **B30** |
+| **53** | **TC_ADR_53** | Robustness BVA: Số lượng địa chỉ đã lưu tại ngoại biên trên max+ | • Sổ địa chỉ đã có đủ 10 bản ghi ($count = 10$), cố tình thêm thứ 11 | **HTTP 400 Bad Request:** Báo lỗi đạt giới hạn tối đa 10 địa chỉ lưu trữ. | **B31** |
+| **54** | **TC_ADR_54** | Decision Table: Rule 1 - Khách vãng lai thao tác sổ địa chỉ | • Chưa đăng nhập, gửi request quản lý địa chỉ | **HTTP 401 Unauthorized:** Từ chối truy cập người dùng chưa xác thực. | **D1** |
+| **55** | **TC_ADR_55** | Decision Table: Rule 2 - Thêm địa chỉ thiếu trường bắt buộc | • Form thiếu 1 trong các trường bắt buộc | **HTTP 400 Bad Request:** Báo lỗi không được để trống trường bắt buộc. | **D2** |
+| **56** | **TC_ADR_56** | Decision Table: Rule 3 - Dữ liệu trường vượt quá độ dài cho phép | • 1 trường có độ dài vượt trần quy định | **HTTP 400 Bad Request:** Báo lỗi độ dài trường vượt quá giới hạn. | **D3** |
+| **57** | **TC_ADR_57** | Decision Table: Rule 4 - Người dùng thao tác trên địa chỉ của User khác | • User A cố tình gửi ID địa chỉ của User B | **HTTP 403 Forbidden:** Báo lỗi không có quyền thao tác trên bản ghi. | **D4** |
+| **58** | **TC_ADR_58** | Decision Table: Rule 5 - Thêm địa chỉ đầu tiên vào sổ rỗng | • Sổ rỗng ($count = 0$), thêm địa chỉ hợp lệ | **HTTP 201 Created:** Lưu thành công, tự động đặt làm mặc định (`isDefault = true`). | **D5** |
+| **59** | **TC_ADR_59** | Decision Table: Rule 6 - Thêm địa chỉ mới vào sổ đã có địa chỉ | • Sổ đã có địa chỉ, thêm địa chỉ mới hợp lệ | **HTTP 201 Created:** Lưu thành công địa chỉ phụ (`isDefault = false`). | **D6** |
+| **60** | **TC_ADR_60** | Decision Table: Rule 7 - Đặt địa chỉ phụ làm mặc định | • Gọi API `set-default` trên địa chỉ phụ | **HTTP 200 OK:** Đổi địa chỉ này thành mặc định, hạ mặc định cũ thành phụ. | **D7** |
+| **61** | **TC_ADR_61** | Decision Table: Rule 8 - Xóa địa chỉ hợp lệ khỏi sổ địa chỉ | • Gọi API `DELETE` trên địa chỉ hợp lệ | **HTTP 200 OK:** Xóa thành công bản ghi khỏi CSDL. | **D8** |
+| **62** | **TC_ADR_62** | State Transition: ST1 - Chuyển S0 sang S1 (Thêm địa chỉ đầu tiên) | • Sổ rỗng (`S0_Empty`) thêm địa chỉ đầu tiên | **Chuyển trạng thái:** Sang `S1_SingleDefault`, tự động gán mặc định. | **ST1** |
+| **63** | **TC_ADR_63** | State Transition: ST2 - Chuyển S1 sang S2 (Thêm địa chỉ thứ hai) | • Đang có 1 địa chỉ (`S1_SingleDefault`) thêm địa chỉ thứ 2 | **Chuyển trạng thái:** Sang `S2_MultiAddress`, lưu địa chỉ phụ. | **ST2** |
+| **64** | **TC_ADR_64** | State Transition: ST3 - Chuyển S2 sang S3 (Đổi địa chỉ mặc định) | • Đang có nhiều địa chỉ (`S2_MultiAddress`) đổi mặc định | **Chuyển trạng thái:** Sang `S3_SwappedDefault`, hoán đổi cờ mặc định. | **ST3** |
+| **65** | **TC_ADR_65** | State Transition: ST4 - Chuyển S3 sang S4 (Cập nhật thông tin chi tiết) | • Đang ở `S3_SwappedDefault` gửi cập nhật thông tin | **Chuyển trạng thái:** Sang `S4_Updated`, cập nhật thành công dữ liệu. | **ST4** |
+| **66** | **TC_ADR_66** | State Transition: ST5 - Chuyển S4 sang S2 (Xóa 1 địa chỉ phụ) | • Từ `S4_Updated` gửi xóa 1 địa chỉ phụ | **Chuyển trạng thái:** Quay về `S2_MultiAddress`, giữ nguyên mặc định. | **ST5** |
+| **67** | **TC_ADR_67** | State Transition: ST6 - Chuyển S2 sang S1 (Xóa địa chỉ đang mặc định) | • Có 2 địa chỉ, xóa địa chỉ đang mặc định | **Chuyển trạng thái:** Tự động thăng cấp địa chỉ phụ còn lại làm mặc định (`S1_SingleDefault`). | **ST6** |
+| **68** | **TC_ADR_68** | State Transition: ST7 - Chuyển S1 sang S0 (Xóa địa chỉ duy nhất còn lại) | • Có đúng 1 địa chỉ, gửi lệnh xóa | **Chuyển trạng thái:** Xóa thành công, sổ trở về rỗng `S0_Empty`. | **ST7** |
