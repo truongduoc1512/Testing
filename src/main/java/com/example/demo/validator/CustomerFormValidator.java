@@ -16,10 +16,10 @@ public class CustomerFormValidator implements Validator {
    private static final int MAX_NAME_LENGTH = 255;
    private static final int MAX_ADDRESS_LENGTH = 255;
    private static final int MAX_EMAIL_LENGTH = 128;
-   private static final int MAX_PHONE_LENGTH = 128;
+   private static final int MAX_PHONE_LENGTH = 20;
 
    private static final java.util.regex.Pattern NAME_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}0-9\\s\\-'.]+$");
-   private static final java.util.regex.Pattern PHONE_PATTERN = java.util.regex.Pattern.compile("^[0-9+()\\-\\s.]{1,128}$");
+   private static final java.util.regex.Pattern PHONE_PATTERN = java.util.regex.Pattern.compile("^[0-9+()\\-\\s.]{1,20}$");
    private static final java.util.regex.Pattern ADDRESS_PATTERN = java.util.regex.Pattern.compile("^[^<>{}~^$%*\\\\]+$");
 
    private final EmailValidator emailValidator = EmailValidator.getInstance();

@@ -195,7 +195,7 @@ class CustomerFormValidatorTest {
     @Test
     void validate_phoneAtMaximumLength_hasNoPhoneError() {
         CustomerForm form = validForm();
-        form.setPhone(repeat('1', 128));
+        form.setPhone(repeat('1', 20));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
@@ -206,7 +206,7 @@ class CustomerFormValidatorTest {
     @Test
     void validate_phoneOverMaximumLength_rejectsLengthCode() {
         CustomerForm form = validForm();
-        form.setPhone(repeat('1', 129));
+        form.setPhone(repeat('1', 21));
         BeanPropertyBindingResult errors = errorsFor(form);
 
         validator.validate(form, errors);
