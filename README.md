@@ -578,52 +578,118 @@ erDiagram
 
 ## 8. Phụ Lục C — Danh Mục API Chi Tiết
 
-| Nhóm | Method | Endpoint | Quyền | HTTP OK | Mô tả |
-| :--- | :---: | :--- | :---: | :---: | :--- |
-| **Web MVC** | `GET` | `/` | Public | 200 | Trang chủ sản phẩm nổi bật |
-| | `GET` | `/productList` | Public | 200 | Danh sách & bộ lọc sản phẩm |
-| | `GET` | `/productDetail` | Public | 200 | Chi tiết sản phẩm & đánh giá |
-| | `GET/POST` | `/shoppingCart` | Public | 200 | Giỏ hàng session |
-| | `GET/POST` | `/shoppingCartCustomer` | Public | 200/302 | Form thông tin nhận hàng |
-| | `POST` | `/shoppingCartConfirmation` | Public | 302 | Xác nhận & chốt đơn |
-| | `GET` | `/admin/accountInfo` | ROLE_USER+ | 200 | Dashboard phân biệt role |
-| | `GET/POST` | `/admin/product` | ROLE_ADMIN | 200/302 | Form đăng bán sản phẩm |
-| **Sổ Địa Chỉ** | `GET` | `/api/v1/users/addresses` | ROLE_USER | 200 | Lấy danh sách địa chỉ |
-| | `POST` | `/api/v1/users/addresses` | ROLE_USER | 201 | Thêm địa chỉ mới |
-| | `PUT` | `/api/v1/users/addresses/{id}` | ROLE_USER | 200 | Cập nhật địa chỉ |
-| | `PUT` | `/api/v1/users/addresses/{id}/set-default` | ROLE_USER | 200 | Đặt làm địa chỉ mặc định |
-| | `DELETE` | `/api/v1/users/addresses/{id}` | ROLE_USER | 200 | Xóa địa chỉ |
-| **Hủy & Trả Hàng** | `POST` | `/api/v1/orders/{orderId}/cancel` | ROLE_USER | 200 | Hủy đơn PENDING & hoàn kho |
-| | `POST` | `/api/v1/orders/{orderId}/return` | ROLE_USER | 201 | Gửi yêu cầu trả hàng |
-| | `GET` | `/api/v1/orders/{orderId}/return` | ROLE_USER | 200 | Chi tiết yêu cầu trả hàng |
-| | `PUT` | `/api/v1/admin/orders/{orderId}/return-status` | ROLE_ADMIN | 200 | Admin duyệt/từ chối |
-| **Sản Phẩm** | `GET` | `/api/v1/products` | Public | 200 | Danh sách phân trang (JSON) |
-| | `GET` | `/api/v1/products/{code}` | Public | 200 | Chi tiết sản phẩm |
-| | `POST` | `/api/v1/products` | ROLE_ADMIN | 201 | Tạo mới sản phẩm |
-| | `PUT` | `/api/v1/products/{code}` | ROLE_ADMIN | 200 | Cập nhật sản phẩm |
-| | `DELETE` | `/api/v1/products/{code}` | ROLE_ADMIN | 200 | Xóa sản phẩm |
-| **Đơn Hàng** | `GET` | `/api/v1/orders` | ROLE_USER+ | 200 | Danh sách đơn hàng |
-| | `GET` | `/api/v1/orders/{orderId}` | ROLE_USER+ | 200 | Chi tiết đơn hàng |
-| | `PUT` | `/api/v1/orders/{orderId}/status` | ROLE_ADMIN | 200 | Cập nhật trạng thái đơn |
-| **Giỏ Hàng** | `GET` | `/api/v1/cart` | Public | 200 | Thông tin giỏ hàng |
-| | `POST` | `/api/v1/cart/items` | Public | 200 | Thêm sản phẩm vào giỏ |
-| | `POST` | `/api/v1/cart/checkout` | Public | 201 | Chốt đơn từ giỏ session |
-| **Tài Khoản** | `POST` | `/api/v1/users/register` | Public | 201 | Đăng ký tài khoản |
-| | `GET` | `/api/v1/users/profile` | ROLE_USER | 200 | Lấy thông tin hồ sơ |
-| | `PUT` | `/api/v1/users/profile` | ROLE_USER | 200 | Cập nhật hồ sơ |
-| | `POST` | `/api/v1/users/change-password` | ROLE_USER | 200 | Đổi mật khẩu |
-| **Wishlist** | `GET` | `/api/v1/wishlist` | ROLE_USER | 200 | Danh sách yêu thích |
-| | `POST` | `/api/v1/wishlist/toggle` | ROLE_USER | 200 | Thêm/xóa khỏi Wishlist |
-| **Voucher** | `GET` | `/api/v1/vouchers/active` | Public | 200 | Voucher đang áp dụng |
-| | `POST` | `/api/v1/vouchers/apply` | Public | 200 | Áp dụng Voucher |
-| | `GET` | `/api/v1/admin/vouchers` | ROLE_ADMIN | 200 | Admin: toàn bộ Voucher |
-| | `POST` | `/api/v1/admin/vouchers` | ROLE_ADMIN | 201 | Admin: tạo Voucher mới |
-| | `DELETE` | `/api/v1/admin/vouchers/{code}` | ROLE_ADMIN | 200 | Admin: vô hiệu hóa Voucher |
-| **Đánh Giá** | `GET` | `/api/v1/reviews/product/{code}` | Public | 200 | Lấy đánh giá sản phẩm |
-| | `POST` | `/api/v1/reviews` | ROLE_USER | 201 | Gửi đánh giá mới |
-| | `PUT` | `/api/v1/reviews/{id}` | ROLE_USER | 200 | Sửa đánh giá (trong 5 phút) |
-| | `DELETE` | `/api/v1/reviews/{id}` | ROLE_USER+ | 200 | Xóa đánh giá |
-| **AI Service** | `POST` | `/api/v1/analyze` | Internal | 200 | YOLOv8 phân tích chất lượng ảnh |
+> **Lưu ý cho Tester (Postman):** Tất cả endpoint bên dưới đã được xác minh khớp với code thực tế trong `src/main/java/com/example/demo/controller/api/`. Dùng đúng path này khi tạo request trong Postman.
+
+### C.1 Giao Diện Web MVC (SSR — Trả về HTML)
+
+| Method | Endpoint | Quyền | Mô tả |
+| :---: | :--- | :---: | :--- |
+| `GET` | `/` | Public | Trang chủ sản phẩm nổi bật |
+| `GET` | `/productList` | Public | Danh sách & bộ lọc sản phẩm |
+| `GET` | `/productDetail` | Public | Chi tiết sản phẩm & đánh giá |
+| `GET/POST` | `/shoppingCart` | Public | Giỏ hàng session |
+| `GET/POST` | `/shoppingCartCustomer` | Public | Form thông tin nhận hàng |
+| `POST` | `/shoppingCartConfirmation` | Public | Xác nhận & chốt đơn |
+| `GET` | `/admin/accountInfo` | ROLE_USER+ | Dashboard phân biệt role |
+| `GET/POST` | `/admin/product` | ROLE_ADMIN | Form đăng bán sản phẩm |
+
+### C.2 REST API — Sản Phẩm (`ProductApiController`)
+
+> **Lưu ý:** `POST /api/v1/products` xử lý cả **tạo mới** (code chưa tồn tại → HTTP 201) và **cập nhật** (code đã tồn tại → HTTP 200) trong cùng một endpoint.
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/products` | Public | 200 | Lấy danh sách sản phẩm phân trang. Query params: `name`, `page`, `sort`, `minPrice`, `maxPrice`, `location`, `brand`, `isMall`, `category`, `rating` |
+| `GET` | `/api/v1/products/{code}` | Public | 200 | Lấy chi tiết 1 sản phẩm theo mã Code |
+| `POST` | `/api/v1/products` | ROLE_ADMIN | 201/200 | **Tạo mới** sản phẩm (nếu `code` chưa tồn tại → 201) hoặc **cập nhật** (nếu `code` đã có → 200) |
+| `DELETE` | `/api/v1/products/{code}` | ROLE_ADMIN | 200 | Vô hiệu hóa sản phẩm (set `status=INACTIVE`) |
+
+### C.3 REST API — Giỏ Hàng (`CartApiController`)
+
+> **Luồng chuẩn để test Postman:** `POST /items` → `PUT /items` → `POST /customer` → `POST /checkout`
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/cart` | Public | 200 | Xem thông tin giỏ hàng session hiện tại |
+| `POST` | `/api/v1/cart/items` | Public | 200 | Thêm sản phẩm vào giỏ. Body: `{"code": "SP001", "quantity": 2}` |
+| `PUT` | `/api/v1/cart/items` | Public | 200 | Cập nhật số lượng sản phẩm trong giỏ. Body: `{"code": "SP001", "quantity": 5}` |
+| `DELETE` | `/api/v1/cart/items/{code}` | Public | 200 | Xóa 1 sản phẩm khỏi giỏ theo mã Code |
+| `POST` | `/api/v1/cart/customer` | Public | 200 | Lưu thông tin người nhận hàng (name, email, phone, address) vào session |
+| `POST` | `/api/v1/cart/checkout` | Public | 201 | Chốt đơn hàng từ giỏ session (yêu cầu phải có CustomerInfo trước) |
+
+### C.4 REST API — Đơn Hàng (`OrderApiController`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/orders` | ROLE_USER+ | 200 | Danh sách đơn hàng phân trang |
+| `GET` | `/api/v1/orders/{orderId}` | ROLE_USER+ | 200 | Chi tiết đơn hàng và các sản phẩm |
+| `PUT` | `/api/v1/orders/{orderId}/status` | ROLE_ADMIN | 200 | Admin cập nhật trạng thái đơn |
+
+### C.5 REST API — Hủy & Trả Hàng (`OrderCancelReturnApiController`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `POST` | `/api/v1/orders/{orderId}/cancel` | ROLE_USER | 200 | Hủy đơn hàng `PENDING` & hoàn lại tồn kho |
+| `POST` | `/api/v1/orders/{orderId}/return` | ROLE_USER | 201 | Gửi yêu cầu trả hàng (kèm reason & imageUrls) |
+| `GET` | `/api/v1/orders/{orderId}/return` | ROLE_USER | 200 | Lấy chi tiết yêu cầu trả hàng |
+| `PUT` | `/api/v1/admin/orders/{orderId}/return-status` | ROLE_ADMIN | 200 | Admin duyệt (`APPROVED`) hoặc từ chối (`REJECTED`) |
+
+### C.6 REST API — Sổ Địa Chỉ (`UserAddressApiController`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/users/addresses` | ROLE_USER | 200 | Lấy danh sách địa chỉ của người dùng hiện tại |
+| `POST` | `/api/v1/users/addresses` | ROLE_USER | 201 | Thêm địa chỉ giao hàng mới |
+| `PUT` | `/api/v1/users/addresses/{id}` | ROLE_USER | 200 | Cập nhật địa chỉ theo ID |
+| `PUT` | `/api/v1/users/addresses/{id}/set-default` | ROLE_USER | 200 | Đặt địa chỉ làm mặc định |
+| `DELETE` | `/api/v1/users/addresses/{id}` | ROLE_USER | 200 | Xóa địa chỉ theo ID |
+
+### C.7 REST API — Tài Khoản Người Dùng (`UserApiController`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/users` | ROLE_ADMIN | 200 | Lấy danh sách tất cả người dùng (phân trang) |
+| `GET` | `/api/v1/users/{userName}` | ROLE_ADMIN | 200 | Lấy thông tin tài khoản theo username |
+| `POST` | `/api/v1/users/register` | Public | 201 | Đăng ký tài khoản mới |
+| `GET` | `/api/v1/users/profile` | ROLE_USER | 200 | Lấy thông tin hồ sơ người dùng hiện tại |
+| `PUT` | `/api/v1/users/profile` | ROLE_USER | 200 | Cập nhật hồ sơ cá nhân |
+| `POST` | `/api/v1/users/change-password` | ROLE_USER | 200 | Đổi mật khẩu tài khoản |
+
+### C.8 REST API — Wishlist (`WishlistApiController`)
+
+> **Lưu ý:** Không có endpoint `toggle`. Thêm và xóa là 2 endpoint riêng biệt.
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/wishlist` | ROLE_USER | 200 | Lấy danh sách sản phẩm yêu thích |
+| `GET` | `/api/v1/wishlist/check/{productCode}` | ROLE_USER | 200 | Kiểm tra sản phẩm có trong wishlist không |
+| `POST` | `/api/v1/wishlist/{productCode}` | ROLE_USER | 201 | Thêm sản phẩm vào wishlist |
+| `DELETE` | `/api/v1/wishlist/{productCode}` | ROLE_USER | 200 | Xóa sản phẩm khỏi wishlist |
+
+### C.9 REST API — Voucher (`VoucherApiController`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/vouchers` | Public | 200 | Lấy danh sách Voucher đang có hiệu lực |
+| `POST` | `/api/v1/vouchers/apply` | Public | 200 | Áp dụng mã Voucher vào giỏ hàng session |
+| `GET` | `/api/v1/admin/vouchers` | ROLE_ADMIN | 200 | Admin: lấy toàn bộ danh sách Voucher |
+| `POST` | `/api/v1/admin/vouchers` | ROLE_ADMIN | 201 | Admin: tạo mã Voucher mới |
+| `DELETE` | `/api/v1/admin/vouchers/{code}` | ROLE_ADMIN | 200 | Admin: vô hiệu hóa mã Voucher |
+
+### C.10 REST API — Đánh Giá Sản Phẩm (`ReviewApiController`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `GET` | `/api/v1/reviews/product/{productCode}` | Public | 200 | Lấy tất cả đánh giá của một sản phẩm |
+| `POST` | `/api/v1/reviews` | ROLE_USER | 201 | Gửi đánh giá & xếp hạng sao mới |
+| `PUT` | `/api/v1/reviews/{reviewId}` | ROLE_USER | 200 | Sửa đánh giá (chỉ trong vòng 5 phút) |
+| `DELETE` | `/api/v1/reviews/{reviewId}` | ROLE_USER+ | 200 | Xóa đánh giá (chủ đánh giá hoặc Admin) |
+
+### C.11 AI Service (`Python FastAPI`)
+
+| Method | Endpoint | Quyền | HTTP | Mô tả |
+| :---: | :--- | :---: | :---: | :--- |
+| `POST` | `/api/v1/analyze` | Internal | 200 | YOLOv8 phân tích chất lượng ảnh giày |
 
 ---
 
