@@ -39,6 +39,37 @@
 	],
 	"item": [
 		{
+			"name": "TC_CART_12 - [EP-X8][DT-D2] Chặn khách vãng lai gọi Cart API khi chưa đăng nhập (401 Unauthorized)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Unauthenticated request rejected (401 Unauthorized)', function () {",
+							"    pm.response.to.have.status(401);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
 			"name": "TC_CART_00 - [EP-V5][DT-D1] Khởi tạo phiên xác thực User hợp lệ (ROLE_USER)",
 			"event": [
 				{
@@ -428,38 +459,6 @@
 				"body": {
 					"mode": "raw",
 					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 11\n}"
-				},
-				"url": {
-					"raw": "{{base_url}}/api/v1/cart/items",
-					"host": ["{{base_url}}"],
-					"path": ["api", "v1", "cart", "items"]
-				}
-			}
-		},
-		{
-			"name": "TC_CART_12 - [EP-X8][DT-D2] Chặn khách vãng lai gọi Cart API khi chưa đăng nhập (401 Unauthorized)",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							"pm.test('Unauthenticated request rejected (401 Unauthorized)', function () {",
-							"    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
-							"});"
-						]
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{"key": "Content-Type", "value": "application/json"},
-					{"key": "Cookie", "value": "JSESSIONID=INVALID_UNAUTH_GUEST_SESSION"}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 1\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/v1/cart/items",

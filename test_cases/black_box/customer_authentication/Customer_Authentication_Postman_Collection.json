@@ -400,7 +400,9 @@
 						"exec": [
 							"const rnd = Math.floor(1000 + Math.random() * 9000);",
 							"pm.environment.set('rnd_reg_user', 'user_' + rnd);",
-							"pm.environment.set('rnd_reg_email', 'user_' + rnd + '@example.com');"
+							"pm.collectionVariables.set('rnd_reg_user', 'user_' + rnd);",
+							"pm.environment.set('rnd_reg_email', 'user_' + rnd + '@example.com');",
+							"pm.collectionVariables.set('rnd_reg_email', 'user_' + rnd + '@example.com');"
 						]
 					}
 				},
@@ -560,6 +562,44 @@
 			"name": "TC_AUTH_12 - [ST-4] Đổi mật khẩu tài khoản đang đăng nhập",
 			"event": [
 				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        const csrfToken = (match && match[1]) ? match[1] : '';",
+							"        const loginUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/j_spring_security_check';",
+							"        const regUser = pm.environment.get('rnd_reg_user') || pm.collectionVariables.get('rnd_reg_user') || 'user_test';",
+							"        pm.sendRequest({",
+							"            url: loginUrl,",
+							"            method: 'POST',",
+							"            header: {",
+							"                'Content-Type': 'application/x-www-form-urlencoded',",
+							"                'X-CSRF-TOKEN': csrfToken",
+							"            },",
+							"            body: {",
+							"                mode: 'urlencoded',",
+							"                urlencoded: [",
+							"                    {key: 'userName', value: regUser},",
+							"                    {key: 'password', value: 'SecurePass123!'},",
+							"                    {key: '_csrf', value: csrfToken}",
+							"                ]",
+							"            }",
+							"        }, function (loginErr, loginRes) {",
+							"            // Logged in as rnd_reg_user for change-password test",
+							"        });",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
 					"listen": "test",
 					"script": {
 						"type": "text/javascript",
@@ -578,38 +618,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"oldPassword\": \"{{customer_pass}}\",\n    \"newPassword\": \"12345678\",\n    \"confirmPassword\": \"12345678\"\n}"
-				},
-				"url": {
-					"raw": "{{base_url}}/api/v1/users/change-password",
-					"host": ["{{base_url}}"],
-					"path": ["api", "v1", "users", "change-password"]
-				}
-			}
-		},
-		{
-			"name": "TC_AUTH_12_revert - Hoàn trả mật khẩu gốc cho tài khoản test",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							"pm.test('Reverted password safely', function () {",
-							"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
-							"});"
-						]
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{"key": "Content-Type", "value": "application/json"}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"oldPassword\": \"12345678\",\n    \"newPassword\": \"{{customer_pass}}\",\n    \"confirmPassword\": \"{{customer_pass}}\"\n}"
+					"raw": "{\n    \"oldPassword\": \"SecurePass123!\",\n    \"newPassword\": \"BrandNewPass123!\",\n    \"confirmPassword\": \"BrandNewPass123!\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/v1/users/change-password",
