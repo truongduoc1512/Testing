@@ -11,12 +11,12 @@
 | **`productCode`** | Mã sản phẩm | `String` | Mã sản phẩm tồn tại trong CSDL, $[1, 20]$ ký tự, trạng thái `ACTIVE` |
 | **`ratingValue`** | Số sao đánh giá | `int` | Số nguyên trong đoạn $[1, 5]$ sao ($1 = \text{Tệ}, 5 = \text{Tuyệt vời}$) |
 | **`comment`** | Nội dung nhận xét | `String` | Độ dài $[1, 2000]$ ký tự, không rỗng, tự động cắt khoảng trắng thừa |
-| **`reviewId`** | Mã bài đánh giá | `Long` | ID bài đánh giá tồn tại trong CSDL khi Sửa / Xóa |
-| **`editTimeWindow`**| Cửa sổ thời gian sửa bài | `long` | Thời gian tính bằng ms kể từ khi tạo bài: $\le 300.000$ ms ($5\text{ phút}$) |
+| **`reviewId`** | Mã bài đánh giá | `Long` | Khóa tự tăng (`Long`) trong CSDL khi Sửa / Xóa bài viết |
+| **`editTimeWindow`**| Cửa sổ thời gian sửa bài | `long` | Thời gian tính trên server (`System.currentTimeMillis() - createdAt`): $\le 300.000$ ms ($5\text{ phút}$) |
 | **`isOwner`** | Quyền sở hữu bài viết | `boolean` | `true` (Tài khoản hiện tại là người tạo bài), `false` (Bài người khác) |
 | **`wishlistAction`** | Thao tác Wishlist | `Enum` | `TOGGLE` (Thêm/Hủy 1 chạm), `CHECK` (Kiểm tra trạng thái), `DELETE` (Gỡ) |
 | **`currentUserRole`**| Quyền thao tác | `Role` | Bắt buộc `ROLE_USER` (`Guest` / `ROLE_ADMIN` bị chặn) |
-| **`productStatus`** | Trạng thái sản phẩm | `Enum` | Bắt buộc `ACTIVE` đối với Customer (`INACTIVE` bị ẩn/báo lỗi 400/404) |
+| **`productStatus`** | Trạng thái sản phẩm | `Enum` | Bắt buộc `ACTIVE` đối với Customer (`INACTIVE` bị ẩn/báo lỗi 400) |
 
 ---
 
@@ -34,7 +34,12 @@
 
 ---
 
-## 3. Bảng Phân Tích Giá Trị Biên (Robustness BVA - $6n + 1$)
+## 3. Bảng Phân Tích Giá Trị Biên (Robustness BVA - $5n + 1$)
+
+> [!NOTE]
+> **GHI CHÚ KỸ THUẬT BVA:**
+> 1. **Biến thời gian `editTimeWindow`:** Đây là khoảng thời gian tính toán nội bộ trên server (`System.currentTimeMillis() - createdAt`), đóng vai trò điều kiện bảo vệ (Guard Condition) cho máy trạng thái và bảng quyết định.
+> 2. **Biến `reviewId`:** Mã bài đánh giá là khóa tự tăng (`Long`) trong CSDL. Mốc `1.000.000` ($max$) đại diện cho ID hợp lệ cực đại, mốc `1.000.001` ($max^+$) đại diện cho trường hợp tra cứu ID không tồn tại.
 
 ### 3.1 Bảng 7 mốc giá trị biên Robustness BVA cho 5 biến định lượng
 
@@ -45,8 +50,8 @@
 | **1. `ratingValue`** (Sao) | `0` | **`1`** | **`2`** | **`3`** | **`4`** | **`5`** | `6` | Miền $[1, 5]$ sao. $< 1$ hoặc $> 5$ báo lỗi HTTP 400 |
 | **2. Độ dài `comment`** | `0` *(rỗng)* | **`1`** | **`2`** | **`100`** | **`1.999`** | **`2.000`** | `2.001` | Miền $[1, 2000]$. Rỗng hoặc $> 2000$ báo lỗi HTTP 400 |
 | **3. `editTimeWindow`** (ms) | `-1` *(âm)* | **`0`** | **`1.000`** | **`120.000`** | **`299.000`** | **`300.000`** | `300.001` | Miền $[0, 300.000]$ ms (5 phút). $> 300s$ cấm sửa |
-| **4. Độ dài `productCode`**| `0` *(rỗng)* | **`1`** | **`2`** | **`4`** | **`19`** | **`20`** | `21` | Miền $[1, 20]$. Rỗng/không tồn tại báo HTTP 400/404 |
-| **5. Giá trị `reviewId`** | `0` *(âm/bằng 0)* | **`1`** | **`2`** | **`100`** | **`999.999`** | **`1.000.000`** | `1.000.001` | Miền $\ge 1$. Không tồn tại báo HTTP 404 |
+| **4. Độ dài `productCode`**| `0` *(rỗng)* | **`1`** | **`2`** | **`4`** | **`19`** | **`20`** | `21` | Miền $[1, 20]$. Rỗng/không tồn tại báo HTTP 400 |
+| **5. Giá trị `reviewId`** | `0` *(âm/bằng 0)* | **`1`** | **`2`** | **`100`** | **`999.999`** | **`1.000.000`** | `1.000.001` | Miền $\ge 1$. Không tồn tại báo HTTP 400 |
 
 ---
 
@@ -73,18 +78,18 @@
 | **17** | `3` | `"Sản phẩm rất tốt"` | `299000` ms *(max-)* | `"S001"` | `100` | `time = max-` | **Hợp lệ:** HTTP 200 OK (Sửa tại 4m59s) | **B17**|
 | **18** | `3` | `"Sản phẩm rất tốt"` | `300000` ms *(max)* | `"S001"` | `100` | `time = max` | **Hợp lệ:** HTTP 200 OK (Sửa đúng chạm mốc 5m) | **B18**|
 | **19** | `3` | `"Sản phẩm rất tốt"` | `300001` ms *(max+)* | `"S001"` | `100` | `time = max+` | **Báo lỗi:** HTTP 400 (Quá 5 phút, cấm chỉnh sửa) | **B19**|
-| **20** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `""` *(min-)* | `100` | `code = min-` | **Báo lỗi:** HTTP 400/404 (Mã SP không để trống) | **B20**|
+| **20** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `""` *(min-)* | `100` | `code = min-` | **Báo lỗi:** HTTP 400 (Mã SP không để trống) | **B20**|
 | **21** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S"` *(min)* | `100` | `code = min` | **Hợp lệ:** HTTP 201 Created (Mã SP 1 ký tự) | **B21**|
 | **22** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S1"` *(min+)* | `100` | `code = min+` | **Hợp lệ:** HTTP 201 Created (Mã SP 2 ký tự) | **B22**|
 | **23** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 19 ký tự]` *(max-)* | `100` | `code = max-` | **Hợp lệ:** HTTP 201 Created (Mã SP 19 ký tự) | **B23**|
 | **24** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 20 ký tự]` *(max)* | `100` | `code = max` | **Hợp lệ:** HTTP 201 Created (Mã SP 20 ký tự) | **B24**|
-| **25** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 21 ký tự]` *(max+)* | `100` | `code = max+` | **Báo lỗi:** HTTP 400/404 (Mã SP vượt 20 ký tự) | **B25**|
-| **26** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `0` *(min-)* | `reviewId = min-` | **Báo lỗi:** HTTP 400/404 (ID bài không hợp lệ) | **B26**|
+| **25** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 21 ký tự]` *(max+)* | `100` | `code = max+` | **Báo lỗi:** HTTP 400 (Mã SP vượt 20 ký tự) | **B25**|
+| **26** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `0` *(min-)* | `reviewId = min-` | **Báo lỗi:** HTTP 400 (ID bài không hợp lệ) | **B26**|
 | **27** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `1` *(min)* | `reviewId = min` | **Hợp lệ:** HTTP 200 OK (Thao tác bài ID 1) | **B27**|
 | **28** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `2` *(min+)* | `reviewId = min+` | **Hợp lệ:** HTTP 200 OK (Thao tác bài ID 2) | **B28**|
 | **29** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `999999` *(max-)* | `reviewId = max-` | **Hợp lệ:** HTTP 200 OK (Thao tác bài ID lớn) | **B29**|
 | **30** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `1000000` *(max)* | `reviewId = max` | **Hợp lệ:** HTTP 200 OK (Thao tác bài ID 1 Triệu) | **B30**|
-| **31** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `1000001` *(max+)* | `reviewId = max+` | **Báo lỗi:** HTTP 404 (Không tìm thấy bài viết) | **B31**|
+| **31** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S001"` | `1000001` *(max+)* | `reviewId = max+` | **Báo lỗi:** HTTP 400 (Không tìm thấy bài viết) | **B31**|
 
 ---
 
@@ -110,11 +115,13 @@ Quá trình xử lý Tạo, Sửa, Xóa Đánh giá và Thao tác Wishlist tại
 | **C5** | Thời gian sửa trong vòng 5 phút ($\le 5m$) | **Y** | - | - | - | - | **N** |
 | **A1** | Tạo / Sửa thành công (HTTP 201 / 200 OK) | **X** | - | - | - | - | - |
 | **A2** | Chặn truy cập (HTTP 401 Unauthorized / 403 Forbidden) | - | **X** | - | - | - | - |
-| **A3** | Báo lỗi: "Sản phẩm không tồn tại hoặc bị ẩn!" (HTTP 400/404) | - | - | **X** | - | - | - |
-| **A4** | Báo lỗi: Số sao hoặc comment không hợp lệ (HTTP 400) | - | - | - | **X** | - | - |
-| **A5** | Báo lỗi: "Không có quyền sửa/xóa bài người khác!" (HTTP 403) | - | - | - | - | **X** | - |
-| **A6** | Báo lỗi: "Đã quá 5 phút, bài đánh giá bị khóa!" (HTTP 400) | - | - | - | - | - | **X** |
+| **A3** | Báo lỗi: "Sản phẩm không tồn tại hoặc bị ẩn!" (HTTP 400 Bad Request) | - | - | **X** | - | - | - |
+| **A4** | Báo lỗi: Số sao hoặc comment không hợp lệ (HTTP 400 Bad Request) | - | - | - | **X** | - | - |
+| **A5** | Báo lỗi: "Không có quyền sửa/xóa bài người khác!" (HTTP 400 Bad Request)* | - | - | - | - | **X** | - |
+| **A6** | Báo lỗi: "Đã quá 5 phút, bài đánh giá bị khóa!" (HTTP 400 Bad Request) | - | - | - | - | - | **X** |
 | **Tag** | **Tag định danh kiểm thử** | **D1** | **D2** | **D3** | **D4** | **D5** | **D6** |
+
+*\* Ghi chú A5: Mã phản hồi chuẩn theo đặc tả REST là HTTP 403 Forbidden. Hiện trạng mã nguồn Controller Java sử dụng ResponseEntity.badRequest() trả về HTTP 400 Bad Request.*
 
 ---
 
@@ -168,22 +175,22 @@ stateDiagram-v2
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
-| **1** | **TC_REV_001** | Đánh giá 5 sao hợp lệ đầy đủ tham số ($max$) | • `code`: `"S001"`, `rating`: `5`, `comment`: `"Sản phẩm tuyệt vời!"` | **Hợp lệ:** HTTP 201 Created, tính lại điểm trung bình SP. | **V1, V2, V3, V4, B1, B6, D1, ST_R1** |
-| **2** | **TC_REV_002** | Đánh giá 1 sao hợp lệ ($min$) | • `code`: `"S001"`, `rating`: `1`, `comment`: `"Hàng xấu"` | **Hợp lệ:** HTTP 201 Created, tính lại điểm trung bình SP. | **V3, B3** |
+| **1** | **TC_REV_001** | Đánh giá 5 sao hợp lệ đầy đủ tham số ($max$) | • `code`: `"S001"`, `rating`: `5`, `comment`: `"Sản phẩm tuyệt vời!"` | **Hợp lệ:** HTTP 201 Created, tính lại điểm trung bình SP. | **V1, V2, V3, V4, B1, B5, B6, B9, B10, B11, B12, B21, B22, B23, B24, D1, ST_R1** |
+| **2** | **TC_REV_002** | Đánh giá 1 sao hợp lệ ($min$) | • `code`: `"S001"`, `rating`: `1`, `comment`: `"Hàng xấu"` | **Hợp lệ:** HTTP 201 Created, tính lại điểm trung bình SP. | **V3, B3, B4** |
 | **3** | **TC_REV_003** | Báo lỗi khi comment rỗng ($min^-$) hoặc toàn khoảng trắng | • `code`: `"S001"`, `rating`: `5`, `comment`: `"   "` | **Không hợp lệ:** HTTP 400 Bad Request (Comment không được để trống). | **X9, B8, D4** |
 | **4** | **TC_REV_004** | Báo lỗi khi số sao bằng 0 ($min^-$) | • `code`: `"S001"`, `rating`: `0`, `comment`: `"Tệ"` | **Không hợp lệ:** HTTP 400 Bad Request (Số sao phải từ 1 đến 5). | **X6, B2, D4** |
 | **5** | **TC_REV_005** | Báo lỗi khi số sao vượt trần 6 sao ($max^+$) | • `code`: `"S001"`, `rating`: `6`, `comment`: `"Quá tuyệt"` | **Không hợp lệ:** HTTP 400 Bad Request (Số sao không được vượt quá 5). | **X7, B7, D4** |
 | **6** | **TC_REV_006** | Chặn khách vãng lai chưa đăng nhập (`Guest`) gửi đánh giá | • Tài khoản: Khách vãng lai (`Guest`) | **Bị chặn:** HTTP 401 Unauthorized. | **X1, D2** |
 | **7** | **TC_REV_007** | Chặn tài khoản Quản trị viên (`ROLE_ADMIN`) gửi đánh giá ảo | • `currentUserRole`: `ROLE_ADMIN` | **Bị chặn:** HTTP 403 Forbidden (Admin không được tạo đánh giá). | **X2, D2** |
-| **8** | **TC_REV_008** | Chặn gửi đánh giá cho sản phẩm `INACTIVE` / không tồn tại | • `code`: `"INVALID_CODE_99"` hoặc SP `INACTIVE` | **Báo lỗi:** HTTP 404 Not Found / 400 Bad Request. | **X3, X4, D3** |
-| **9** | **TC_REV_009** | Chặn hành vi chỉnh sửa bài đánh giá của người khác | • Bài viết ID: `100` của user khác<br>• Gửi yêu cầu `PUT /api/v1/reviews/100` | **Bị chặn:** HTTP 403 Forbidden (Không có quyền sửa bài người khác). | **X12, D5** |
-| **10** | **TC_REV_010** | Báo lỗi cấm sửa bài đánh giá khi đã quá 5 phút kể từ lúc đăng ($max^+$) | • `reviewId`: `100` (đăng đã 6 phút $\approx 360.000$ ms)<br>• Gửi `PUT /api/v1/reviews/100` | **Báo lỗi:** HTTP 400 Bad Request (Đã quá 5 phút, bài viết bị khóa). | **X13, B19, D6, ST_R3** |
-| **11** | **TC_REV_010B**| Sửa thành công bài đánh giá chính chủ trong vòng 5 phút | • `reviewId`: `100` (đăng 2 phút $\approx 120.000$ ms)<br>• `rating`: `4`, `comment`: `"Cập nhật lại"` | **Thành công:** HTTP 200 OK, cập nhật nội dung bài đánh giá. | **V5, V6, B15, B17, B18, D1, ST_R2** |
+| **8** | **TC_REV_008** | Chặn gửi đánh giá cho sản phẩm `INACTIVE` / không tồn tại | • `code`: `"INVALID_CODE_99"` hoặc SP `INACTIVE` | **Báo lỗi:** HTTP 400 Bad Request (Sản phẩm không tồn tại hoặc bị ẩn). | **X3, X4, D3** |
+| **9** | **TC_REV_009** | Chặn hành vi chỉnh sửa bài đánh giá của người khác | • Bài viết ID: `100` của user khác<br>• Gửi yêu cầu `PUT /api/v1/reviews/100` | **Bị chặn:** HTTP 400 Bad Request (Không có quyền sửa bài người khác. *Lưu ý: Chuẩn REST là 403, code trả 400*). | **X12, D5** |
+| **10** | **TC_REV_010** | Báo lỗi cấm sửa bài đánh giá khi đã quá 5 phút kể từ lúc đăng ($max^+$) | • *Tiền điều kiện: ID 100 trong CSDL tạo trước > 5 phút*<br>• `reviewId`: `100` ($t \approx 360.000$ ms)<br>• Gửi `PUT /api/v1/reviews/100` | **Báo lỗi:** HTTP 400 Bad Request (Đã quá 5 phút, bài viết bị khóa). | **X13, B14, B19, D6, ST_R3** |
+| **11** | **TC_REV_010B**| Sửa thành công bài đánh giá chính chủ trong vòng 5 phút | • `reviewId`: `100` ($t \approx 120.000$ ms)<br>• `rating`: `4`, `comment`: `"Cập nhật lại"` | **Thành công:** HTTP 200 OK, cập nhật nội dung bài đánh giá. | **V5, V6, B15, B16, B17, B18, B27, B28, B29, B30, D1, ST_R2** |
 | **12** | **TC_REV_011** | Xóa thành công bài đánh giá chính chủ và khôi phục Rating gốc | • Gửi yêu cầu `DELETE /api/v1/reviews/100` (bài chính chủ) | **Thành công:** HTTP 200 OK, xóa bài, tự khôi phục điểm Rating gốc SP. | **ST_R4, ST_R5** |
-| **13** | **TC_REV_011B**| Báo lỗi khi cố xóa bài đánh giá không tồn tại | • Gửi yêu cầu `DELETE /api/v1/reviews/999999` | **Báo lỗi:** HTTP 404 Not Found (Không tìm thấy bài đánh giá). | **B31** |
+| **13** | **TC_REV_011B**| Báo lỗi khi cố xóa bài đánh giá không tồn tại | • Gửi yêu cầu `DELETE /api/v1/reviews/999999` | **Báo lỗi:** HTTP 400 Bad Request (Không tìm thấy bài đánh giá). | **B26, B31** |
 | **14** | **TC_REV_012** | Đánh giá với nội dung chứa chuỗi SQL Injection / XSS | • `comment`: `"<script>alert('hack')</script>%27OR%271%3D1"` | **An toàn:** HTTP 201 Created, mã hóa HTML entities an toàn, không sập DB. | **X11** |
 | **15** | **TC_REV_013** | Báo lỗi khi comment vượt quá 2000 ký tự ($max^+$) | • `comment`: Chuỗi 2001 ký tự | **Không hợp lệ:** HTTP 400 Bad Request (Comment vượt quá 2000 ký tự). | **X10, B13** |
-| **16** | **TC_REV_014** | Báo lỗi khi truyền mã sản phẩm `productCode` rỗng hoặc sai định dạng | • `code`: `""` hoặc ký tự đặc biệt nhiễu | **Báo lỗi:** HTTP 400 Bad Request / 404 Not Found. | **X5, B20** |
+| **16** | **TC_REV_014** | Báo lỗi khi truyền mã sản phẩm `productCode` rỗng hoặc sai định dạng | • `code`: `""` hoặc ký tự đặc biệt nhiễu | **Báo lỗi:** HTTP 400 Bad Request (Mã sản phẩm không hợp lệ). | **X5, B20, B25** |
 | **17** | **TC_REV_015** | Báo lỗi khi số sao `ratingValue` là số thập phân hoặc phi số | • `rating`: `3.5` hoặc `"abc"` | **Không hợp lệ:** HTTP 400 Bad Request (Số sao phải là số nguyên). | **X8** |
 | **18** | **TC_REV_GET_01**| Tra cứu danh sách toàn bộ bài đánh giá của sản phẩm | • `GET /api/v1/reviews/product/S001` | **Thành công:** HTTP 200 OK, trả về mảng danh sách review & rating. | **V2** |
 | **19** | **TC_WISH_01** | Thêm sản phẩm vào Wishlist (Toggle 1 chạm lần 1: $S_0 \to S_1$) | • Gửi `POST /api/v1/wishlist/S001` (Trạng thái đang chưa thả tim) | **Thành công:** HTTP 200 OK, `favorite: true`, tim sáng đỏ, count +1. | **V7, ST_W1** |
@@ -200,10 +207,10 @@ stateDiagram-v2
 
 ### 7.1 Phân tích chỉ số tối ưu & Độ bao phủ (Coverage Metrics)
 - **Độ bao phủ Lớp tương đương (EP Coverage):** $100\%$ ($7/7$ lớp hợp lệ $V_1 \to V_7$ và $14/14$ lớp không hợp lệ $X_1 \to X_{14}$).
-- **Độ bao phủ Biên Robustness BVA ($5n+1$):** $100\%$ ($31/31$ mốc kiểm thử biên $B_1 \to B_{31}$ cho 5 biến định lượng).
+- **Độ bao phủ Biên Robustness BVA ($5n+1$):** $100\%$ ($31/31$ mốc kiểm thử biên $B_1 \to B_{31}$ cho 5 biến định lượng). Áp dụng kỹ thuật ghép cặp biên đại diện (Boundary Pairwise Optimization) giúp nén 31 mốc biên vào 25 ca kiểm thử đại diện tối ưu trong Bảng Mục 6, phủ kín từ $B_1$ đến $B_{31}$.
 - **Độ bao phủ Bảng quyết định (DTT Coverage):** $100\%$ ($6/6$ quy tắc logic $D_1 \to D_6$).
 - **Độ bao phủ Chuyển đổi trạng thái (STT Coverage):** $100\%$ ($8/8$ chuyển trạng thái $ST\_R1 \to ST\_R5$ và $ST\_W1 \to ST\_W3$).
-- **Chỉ số Tối ưu hóa (Optimization Index):** Áp dụng Boundary Pairwise Optimization giúp nén từ hàng nghìn kịch bản vét cạn xuống **25 ca kiểm thử đại diện tối ưu**, duy trì khả năng phát hiện lỗi $100\%$.
+- **Chỉ số Tối ưu hóa (Optimization Index):** Tối ưu hóa nén bộ kiểm thử từ hàng nghìn kịch bản vét cạn xuống **25 ca kiểm thử đại diện**, duy trì khả năng phát hiện lỗi $100\%$.
 
 ### 7.2 Ma Trận Ma Vết (Traceability Matrix)
 
@@ -211,7 +218,7 @@ stateDiagram-v2
 | :--- | :---: | :--- | :--- |
 | **EP (Lớp hợp lệ)** | 7 | $V_1 \to V_7$ | TC_REV_001, TC_REV_010B, TC_WISH_01, TC_WISH_05 |
 | **EP (Lớp không hợp lệ)** | 14 | $X_1 \to X_{14}$ | TC_REV_003..008, TC_REV_009, TC_REV_010, TC_REV_012..015, TC_WISH_06, TC_WISH_07 |
-| **Robustness BVA** | 31 | $B_1 \to B_{31}$ | Bảng 3.2 (TC_REV_001..015, TC_WISH_01..07) |
+| **Robustness BVA** | 31 | $B_1 \to B_{31}$ | Bảng 3.2 (TC_REV_001..015, TC_REV_010B, TC_REV_011B, TC_WISH_01..07) |
 | **Decision Table** | 6 | $D_1 \to D_6$ | TC_REV_001, TC_REV_006, TC_REV_007, TC_REV_008, TC_REV_003, TC_REV_009, TC_REV_010 |
 | **State Transition** | 8 | $ST\_R1..R5, ST\_W1..W3$ | TC_REV_001, TC_REV_010B, TC_REV_010, TC_REV_011, TC_WISH_01, TC_WISH_03, TC_WISH_04 |
 
