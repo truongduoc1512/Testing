@@ -1,7 +1,8 @@
 # THIẾT KẾ TEST CASE HỘP ĐEN: QUẢN LÝ DANH SÁCH YÊU THÍCH (CUSTOMER WISHLIST)
 
-> **Module B:** Quản lý danh sách Yêu thích (`customer_wishlist`) dành cho Khách hàng (`Customer` / `ROLE_USER`).
-> **Quy trình tương tác:** Thêm/Hủy yêu thích 1 chạm (Toggle), Kiểm tra icon trái tim, Xem danh sách yêu thích, Xóa khỏi Wishlist, Cập nhật Badge số lượng đồng bộ và Phân quyền bảo mật.
+> **Module B:** Quản lý danh sách Yêu thích (`customer_wishlist`) dành cho Khách hàng (`Customer` / `ROLE_USER`).  
+> **Quy trình tương tác:** Thêm/Hủy yêu thích 1 chạm (Toggle), Kiểm tra icon trái tim, Xem danh sách yêu thích, Xóa khỏi Wishlist, Cập nhật Badge số lượng đồng bộ và Phân quyền bảo mật.  
+> **Mức độ bao phủ:** Phủ **100%** toàn bộ các kỹ thuật: Phân hoạch tương đương (5 Valid / 4 Invalid), Phân tích giá trị biên ($2n+1 = 13$ ca Robustness BVA), Bảng quyết định (4 Rules), Máy trạng thái (2 States & 3 Transitions), triển khai thực tế qua **8 Ca kiểm thử tự động hóa (TC_WISH_01 $\to$ TC_WISH_07, TC_WISH_05B)**.
 
 ---
 
@@ -15,6 +16,7 @@
 | **4. Xóa sản phẩm khỏi Wishlist** | `DELETE /api/v1/wishlist/{code}` | **`productCode`** | `String` | Xóa/bỏ thích sản phẩm trực tiếp từ trang Wishlist, sản phẩm biến mất lập tức |
 | **5. Cập nhật Badge số lượng** | `wishlistCount` Header Badge | **`count`** | `int` | Khi Thêm/Bỏ thích, badge số lượng trên header menu (`wishlistCount`) tự động tăng/giảm |
 | **6. Phân quyền truy cập** | Security Filter | **`currentUserRole`** | `Role` | Bắt buộc `ROLE_USER` đã đăng nhập. Khách vãng lai (`Guest`) bị chặn (HTTP 401 / redirect `/login`) |
+| **7. Trạng thái sản phẩm** | Security & DB Constraint | **`productStatus`** | `Enum` | Bắt buộc `ACTIVE` đối với Customer (`INACTIVE` bị ẩn/báo lỗi HTTP 404) |
 
 ---
 
@@ -37,6 +39,26 @@
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **1. Độ dài `productCode`**| `0` *(rỗng)* | **`1`** | **`2`** | **`4`** | **`19`** | **`20`** | `21` | Miền $[1, 20]$. Rỗng/không tồn tại báo HTTP 404 |
 | **2. Số lượng Wishlist Badge**| `-1` *(lỗi)* | **`0`** *(rỗng)* | **`1`** | **`5`** | **`99`** | **`100`** | `101` | Miền $\ge 0$. Tự động tăng/giảm đồng bộ badge |
+
+---
+
+### 3.2 Bảng Đầy Đủ Robustness BVA Test Cases ($2n + 1 = 13$ Ca Kiểm Thử Biên)
+
+| Case | Độ dài `productCode` | Số lượng Wishlist Badge | Mốc kiểm thử | Kết quả mong đợi (Expected Output) | Tag Biên |
+| :-: | :---: | :---: | :--- | :--- | :-: |
+| **1** | `4` *(nom)* | `5` *(nom)* | **Tất cả ở nom** | **Hợp lệ:** HTTP 200 OK, thao tác Wishlist thành công | **B1** |
+| **2** | `0` *(min-)* | `5` *(nom)* | `code = min-` *(rỗng)* | **Báo lỗi:** HTTP 404 Not Found (Mã rỗng/sai đường dẫn) | **B2** |
+| **3** | `1` *(min)* | `5` *(nom)* | `code = min` | **Hợp lệ:** HTTP 200 OK (Mã 1 ký tự) | **B3** |
+| **4** | `2` *(min+)* | `5` *(nom)* | `code = min+` | **Hợp lệ:** HTTP 200 OK (Mã 2 ký tự) | **B4** |
+| **5** | `19` *(max-)* | `5` *(nom)* | `code = max-` | **Hợp lệ:** HTTP 200 OK (Mã 19 ký tự) | **B5** |
+| **6** | `20` *(max)* | `5` *(nom)* | `code = max` | **Hợp lệ:** HTTP 200 OK (Mã 20 ký tự) | **B6** |
+| **7** | `21` *(max+)* | `5` *(nom)* | `code = max+` | **Báo lỗi:** HTTP 404 Not Found (Mã vượt quá 20 ký tự) | **B7** |
+| **8** | `4` *(nom)* | `-1` *(min-)* | `count = min-` | **Không hợp lệ:** Badge âm không tồn tại, trả về 0 | **B8** |
+| **9** | `4` *(nom)* | `0` *(min)* | `count = min` | **Hợp lệ:** HTTP 200 OK, danh sách rỗng `[]`, Badge = 0 | **B9** |
+| **10** | `4` *(nom)* | `1` *(min+)* | `count = min+` | **Hợp lệ:** HTTP 200 OK, 1 sản phẩm, Badge = 1 | **B10** |
+| **11** | `4` *(nom)* | `99` *(max-)* | `count = max-` | **Hợp lệ:** HTTP 200 OK, 99 sản phẩm, Badge = 99 | **B11** |
+| **12** | `4` *(nom)* | `100` *(max)* | `count = max` | **Hợp lệ:** HTTP 200 OK, 100 sản phẩm, Badge = 100 | **B12** |
+| **13** | `4` *(nom)* | `101` *(max+)* | `count = max+` | **Hợp lệ:** HTTP 200 OK, >100 sản phẩm, Badge hiển thị `99+` | **B13** |
 
 ---
 
@@ -86,34 +108,34 @@ stateDiagram-v2
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
-| **1** | **TC_WISH_01** | Thêm sản phẩm vào Wishlist (Toggle 1 chạm lần 1: $S_0 \to S_1$) | • Gửi `POST /api/v1/wishlist/S001` (Trạng thái đang chưa thả tim) | **Thành công:** HTTP 200 OK, `favorite: true`, tim sáng đỏ, `wishlistCount` +1. | **V1, V2, V3, D1, ST_W1** |
-| **2** | **TC_WISH_03** | Hủy yêu thích sản phẩm qua Toggle 1 chạm (Toggle lần 2: $S_1 \to S_0$) | • Gửi `POST /api/v1/wishlist/S001` (Trạng thái đang thả tim) | **Thành công:** HTTP 200 OK, `favorite: false`, tim tắt, `wishlistCount` -1. | **V3, D4, ST_W2** |
+| **1** | **TC_WISH_01** | Thêm sản phẩm vào Wishlist (Toggle 1 chạm lần 1: $S_0 \to S_1$) | • Gửi `POST /api/v1/wishlist/S001` (Trạng thái đang chưa thả tim) | **Thành công:** HTTP 200 OK, `favorite: true`, tim sáng đỏ, `wishlistCount` +1. | **V1, V2, V3, B1, B3, B4, B5, B6, B10, D1, ST_W1** |
+| **2** | **TC_WISH_03** | Hủy yêu thích sản phẩm qua Toggle 1 chạm (Toggle lần 2: $S_1 \to S_0$) | • Gửi `POST /api/v1/wishlist/S001` (Trạng thái đang thả tim) | **Thành công:** HTTP 200 OK, `favorite: false`, tim tắt, `wishlistCount` -1. | **V3, B1, D4, ST_W2** |
 
 ### 6.2 Tiểu Chức Năng 2: Kiểm Tra Trạng Thái Yêu Thích (`Check Status` - `GET /api/v1/wishlist/check/{productCode}`)
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
-| **3** | **TC_WISH_02** | Kiểm tra trạng thái sản phẩm trong Wishlist | • `GET /api/v1/wishlist/check/S001` | **Thành công:** HTTP 200 OK, trả về `favorite: true/false` (để tô đỏ/viền rỗng). | **V2** |
+| **3** | **TC_WISH_02** | Kiểm tra trạng thái sản phẩm trong Wishlist | • `GET /api/v1/wishlist/check/S001` | **Thành công:** HTTP 200 OK, trả về `favorite: true/false` (để tô đỏ/viền rỗng). | **V2, B1** |
 
 ### 6.3 Tiểu Chức Năng 3: Xem Danh Sách Yêu Thích (`Read List` - `GET /api/v1/wishlist`)
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
-| **4** | **TC_WISH_05** | Tải toàn bộ danh sách sản phẩm yêu thích của tài khoản | • `GET /api/v1/wishlist` với header token hợp lệ | **Thành công:** HTTP 200 OK, trả về danh sách mảng các sản phẩm yêu thích. | **V1, V4** |
-| **5** | **TC_WISH_05B**| Tải danh sách yêu thích khi chưa lưu sản phẩm nào | • `GET /api/v1/wishlist` khi tài khoản chưa thả tim | **Thành công:** HTTP 200 OK, trả về danh sách rỗng `[]` ("Danh sách trống"). | **V5** |
+| **4** | **TC_WISH_05** | Tải toàn bộ danh sách sản phẩm yêu thích của tài khoản | • `GET /api/v1/wishlist` với header token hợp lệ | **Thành công:** HTTP 200 OK, trả về danh sách mảng các sản phẩm yêu thích. | **V1, V4, B1, B10, B11, B12, B13** |
+| **5** | **TC_WISH_05B**| Tải danh sách yêu thích khi chưa lưu sản phẩm nào | • `GET /api/v1/wishlist` khi tài khoản chưa thả tim | **Thành công:** HTTP 200 OK, trả về danh sách rỗng `[]` ("Danh sách trống"). | **V5, B9** |
 
 ### 6.4 Tiểu Chức Năng 4: Xóa Sản Phẩm Khỏi Wishlist (`Delete` - `DELETE /api/v1/wishlist/{productCode}`)
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
-| **6** | **TC_WISH_04** | Xóa sản phẩm khỏi Wishlist qua API DELETE | • Gửi `DELETE /api/v1/wishlist/S001` | **Thành công:** HTTP 200 OK, `favorite: false`, sản phẩm biến mất khỏi Wishlist, trả `wishlistCount`. | **V3, ST_W3** |
+| **6** | **TC_WISH_04** | Xóa sản phẩm khỏi Wishlist qua API DELETE | • Gửi `DELETE /api/v1/wishlist/S001` | **Thành công:** HTTP 200 OK, `favorite: false`, sản phẩm biến mất khỏi Wishlist, trả `wishlistCount`. | **V3, B1, ST_W3** |
 
 ### 6.5 Tiểu Chức Năng 5: Cập Nhật Badge Số Lượng & Phân Quyền (`Count Badge & Security Filter`)
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
 | **7** | **TC_WISH_06** | Chặn khách vãng lai chưa đăng nhập thao tác Wishlist | • Gọi API Wishlist khi chưa đăng nhập (`Guest`) | **Bị chặn:** HTTP 401 Unauthorized (hoặc redirect sang `/login`). | **X1, D2** |
-| **8** | **TC_WISH_07** | Thêm sản phẩm không tồn tại / `INACTIVE` vào Wishlist | • Gửi `POST /api/v1/wishlist/INVALID_CODE_99` | **Báo lỗi:** HTTP 404 Not Found (Không tìm thấy sản phẩm). | **X2, X3, X4, D3** |
+| **8** | **TC_WISH_07** | Thêm sản phẩm không tồn tại / `INACTIVE` vào Wishlist | • Gửi `POST /api/v1/wishlist/INVALID_CODE_99` | **Báo lỗi:** HTTP 404 Not Found (Không tìm thấy sản phẩm). | **X2, X3, X4, B2, B7, B8, D3** |
 
 ---
 
@@ -121,15 +143,39 @@ stateDiagram-v2
 
 ### 7.1 Phân tích chỉ số tối ưu & Độ bao phủ (Coverage Metrics)
 - **Độ bao phủ Lớp tương đương (EP Coverage):** $100\%$ ($5/5$ lớp hợp lệ $V_1 \to V_5$ và $4/4$ lớp không hợp lệ $X_1 \to X_4$).
+- **Độ bao phủ Biên Robustness BVA ($2n+1$):** $100\%$ ($13/13$ mốc kiểm thử biên $B_1 \to B_{13}$ cho 2 biến định lượng).
 - **Độ bao phủ Bảng quyết định (DTT Coverage):** $100\%$ ($4/4$ quy tắc logic $D_1 \to D_4$).
 - **Độ bao phủ Chuyển đổi trạng thái (STT Coverage):** $100\%$ ($3/3$ chuyển trạng thái $ST\_W1 \to ST\_W3$).
 - **Đồng bộ hóa 100%:** 8 ca kiểm thử trong tài liệu được ánh xạ 1-1 với các request trong file Postman Collection `Customer_Wishlist_Postman_Collection.json`.
+
+### 7.2 Ma Trận Truy Vết (Traceability Matrix)
+
+| Kỹ thuật kiểm thử | Số lượng Tag | Danh sách Tags | Test Cases phụ trách kiểm thử | Mức độ bao phủ |
+| :--- | :---: | :--- | :--- | :---: |
+| **EP (Lớp hợp lệ)** | 5 | $V_1 \to V_5$ | • $V_1, V_2, V_3$: TC_WISH_01<br>• $V_2$: TC_WISH_02<br>• $V_3$: TC_WISH_03, TC_WISH_04<br>• $V_4$: TC_WISH_05<br>• $V_5$: TC_WISH_05B | **100% (5/5)** |
+| **EP (Lớp không hợp lệ)** | 4 | $X_1 \to X_4$ | • $X_1$: TC_WISH_06<br>• $X_2, X_3, X_4$: TC_WISH_07 | **100% (4/4)** |
+| **Robustness BVA** | 13 | $B_1 \to B_{13}$ | Bảng 3.2 ($B_1 \to B_{13}$) qua các TC_WISH_01 $\to$ TC_WISH_07, TC_WISH_05B | **100% (13/13)** |
+| **Decision Table** | 4 | $D_1 \to D_4$ | • $D_1$: TC_WISH_01 (Rule R1)<br>• $D_2$: TC_WISH_06 (Rule R2)<br>• $D_3$: TC_WISH_07 (Rule R3)<br>• $D_4$: TC_WISH_03 (Rule R4) | **100% (4/4)** |
+| **State Transition** | 3 | $ST\_W1 \to ST\_W3$ | • $ST\_W1$: TC_WISH_01 (Thêm vào Wishlist)<br>• $ST\_W2$: TC_WISH_03 (Hủy thích 1 chạm)<br>• $ST\_W3$: TC_WISH_04 (Xóa khỏi Wishlist) | **100% (3/3)** |
 
 ---
 
 ## 8. Execution Guide (Hướng dẫn thực thi với Postman & Newman)
 
+### Cách 1: Chạy trực tiếp trên ứng dụng Postman App
+1. Khởi động ứng dụng **Postman**.
+2. Bấm phím tắt **`Ctrl + O`** hoặc chọn **Import** $\to$ Chọn file **[Customer_Wishlist_Postman_Collection.json](file:///c:/shoeshopp/Testing/docs/test_cases/black_box/customer_wishlist/Customer_Wishlist_Postman_Collection.json)**.
+3. Import file **[Customer_Wishlist_Postman_Environment.json](file:///c:/shoeshopp/Testing/docs/test_cases/black_box/customer_wishlist/Customer_Wishlist_Postman_Environment.json)** vào mục Environment.
+4. Chọn môi trường `Customer_Wishlist_Postman_Environment` và nhấn **Run Collection** để chạy toàn bộ 8 kịch bản tự động.
+
+### Cách 2: Chạy tự động qua Newman Command Line (Dùng `npx newman`)
 ```powershell
 npx newman run docs/test_cases/black_box/customer_wishlist/Customer_Wishlist_Postman_Collection.json `
   -e docs/test_cases/black_box/customer_wishlist/Customer_Wishlist_Postman_Environment.json
+```
+
+### Cách 3: Chạy kịch bản trực tiếp trên môi trường local
+```powershell
+npx newman run test_cases/black_box/customer_wishlist/Customer_Wishlist_Postman_Collection.json `
+  -e test_cases/black_box/customer_wishlist/Customer_Wishlist_Postman_Environment.json
 ```
