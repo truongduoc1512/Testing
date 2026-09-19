@@ -8,7 +8,7 @@
 
 | Tên Biến | Ý Nghĩa | Kiểu | Ràng Buộc & Miền Giá Trị Hợp Lệ |
 | :--- | :--- | :---: | :--- |
-| **`productCode`** | Mã sản phẩm | `String` | Độ dài $[1, 50]$, tồn tại trong CSDL và đang mở bán |
+| **`code`** | Mã sản phẩm | `String` | Độ dài $[1, 50]$, không rỗng, tồn tại trong CSDL và đang mở bán |
 | **`quantity`** | Số lượng mua | `int` | Số nguyên dương $\ge 1$ và không vượt quá tồn kho ($\le Stock$) |
 | **`stock`** | Tồn kho hệ thống | `int` | Số lượng tồn kho hiện tại trong CSDL ($\ge 0$) |
 | **`cartStatus`** | Trạng thái giỏ hàng | `Enum` | `EMPTY` (Rỗng) hoặc `HAS_ITEMS` (Có sản phẩm) |
@@ -20,7 +20,7 @@
 
 | STT | Biến / Điều kiện | Lớp hợp lệ (Valid) | Tag | Lớp không hợp lệ (Invalid) | Tag |
 | :-: | :--- | :--- | :---: | :--- | :---: |
-| **1** | **Mã sản phẩm (`productCode`)** | Mã tồn tại trong CSDL và còn bán | **V1** | • Mã không tồn tại trong CSDL<br>• Để trống hoặc chỉ chứa khoảng trắng | **X1**<br>**X2** |
+| **1** | **Mã sản phẩm (`code`)** | Mã tồn tại trong CSDL và còn bán | **V1** | • Mã không tồn tại trong CSDL<br>• Để trống hoặc chỉ chứa khoảng trắng<br>• Độ dài vượt quá 50 ký tự ($L > 50$) | **X1**<br>**X2**<br>**X2b** |
 | **2** | **Số lượng mua (`quantity`)** | Số nguyên dương $1 \le Q \le \text{Stock}$ | **V2** | • Số lượng bằng $0$ ($Q = 0$)<br>• Số lượng âm ($Q < 0$)<br>• Vượt quá số lượng tồn kho ($Q > \text{Stock}$)<br>• Chứa ký tự phi số / số thập phân | **X3**<br>**X4**<br>**X5**<br>**X6** |
 | **3** | **Tình trạng dòng hàng** | • Thêm sản phẩm chưa có trong giỏ<br>• Cập nhật số lượng sản phẩm đã có sẵn | **V3**<br>**V4** | Cập nhật / Xóa sản phẩm không nằm trong giỏ | **X7** |
 | **4** | **Quyền truy cập (`currentUserRole`)** | Khách hàng đã xác thực session | **V5** | Khách vãng lai chưa đăng nhập (`Guest`) | **X8** |
@@ -29,12 +29,13 @@
 
 ## 3. Bảng Phân Tích Giá Trị Biên (Robustness BVA - $6n + 1$)
 
-### 3.1 Bảng 7 mốc giá trị biên Robustness BVA cho biến `quantity`
-*(Ghi chú bộ giá trị danh định: $nom = 5$, Tồn kho hệ thống $Stock = 10$).*
+### 3.1 Bảng 7 mốc giá trị biên Robustness BVA cho 2 biến định lượng
+*(Ghi chú bộ giá trị danh định: `quantity` $nom = 5$, Tồn kho hệ thống $Stock = 10$; Độ dài `code` $nom = 10\text{ ký tự}$).*
 
 | Biến Định Lượng | Ngoại biên dưới ($min^-$) | Cận dưới ($min$) | Kề dưới ($min^+$) | Danh định ($nom$) | Kề trên ($max^-$) | Cận trên ($max$) | Ngoại biên trên ($max^+$) | Quy tắc & Giới hạn |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Số lượng `quantity`** | `0` *(Lỗi)* | **`1`** | **`2`** | **`5`** | **`9`** | **`10`** | `11` *(Lỗi)* | Miền $[1, 10]$. $Q \le 0$ báo lỗi; $Q > 10$ chặn vượt kho |
+| **1. Số lượng `quantity`** | `0` *(Lỗi)* | **`1`** | **`2`** | **`5`** | **`9`** | **`10`** | `11` *(Lỗi)* | Miền $[1, 10]$. $Q \le 0$ báo lỗi; $Q > 10$ chặn vượt kho |
+| **2. Độ dài `code`** | `0` *(rỗng)* | **`1`** | **`2`** | **`10`** | **`49`** | **`50`** | `51` *(Lỗi)* | Miền $[1, 50]$. Rỗng hoặc $> 50$ báo lỗi |
 
 ---
 
