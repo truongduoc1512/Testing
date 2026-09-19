@@ -1,7 +1,8 @@
 # THIẾT KẾ TEST CASE HỘP ĐEN: ĐÁNH GIÁ & CHẤM SAO SẢN PHẨM (CUSTOMER REVIEW & RATING)
 
-> **Module A:** Đánh giá & Chấm sao sản phẩm (`customer_review_rating`) dành cho Khách hàng (`Customer` / `ROLE_USER`).
-> **Quy trình tương tác:** Gửi bài đánh giá mới, Chỉnh sửa/Xóa bài đánh giá chính chủ trong thời hạn 5 phút, Xem danh sách đánh giá sản phẩm và Kiểm soát phân quyền anti-spam.
+> **Module A:** Đánh giá & Chấm sao sản phẩm (`customer_review_rating`) dành cho Khách hàng (`Customer` / `ROLE_USER`).  
+> **Quy trình tương tác:** Gửi bài đánh giá mới, Chỉnh sửa/Xóa bài đánh giá chính chủ trong thời hạn 5 phút, Xem danh sách đánh giá sản phẩm và Kiểm soát phân quyền anti-spam.  
+> **Mức độ bao phủ:** Phủ **100%** toàn bộ các kỹ thuật: Phân hoạch tương đương (6 Valid / 13 Invalid), Phân tích giá trị biên ($5n+1 = 31$ ca Robustness BVA), Bảng quyết định (6 Rules), Máy trạng thái (5 States & Transitions), triển khai thực tế qua **19 Ca kiểm thử tự động hóa (TC_REV_001 $\to$ TC_REV_015, TC_REV_010B, TC_REV_011B, TC_REV_GET_01, TC_REV_GET_02)**.
 
 ---
 
@@ -14,6 +15,7 @@
 | **3. Chỉnh sửa bài đánh giá (Update)** | `PUT /api/v1/reviews/{id}` | **`reviewId`**<br>**`editTimeWindow`**<br>**`isOwner`** | `Long`<br>`long`<br>`boolean` | • `editTimeWindow`: Sửa trong vòng 5 phút ($\le 300.000$ ms)<br>• `isOwner`: Bắt buộc chính chủ (`isOwner = true`) |
 | **4. Xóa bài đánh giá (Delete)** | `DELETE /api/v1/reviews/{id}` | **`reviewId`**<br>**`isOwner`** | `Long`<br>`boolean` | Chỉ chính chủ mới được xóa bài của mình (HTTP 400 khi không chính chủ) |
 | **5. Phân quyền & Anti-Spam** | Security Filter | **`currentUserRole`** | `Role` | Bắt buộc `ROLE_USER` (`Guest` trả 401, `ROLE_ADMIN` bị cấm review trả 403) |
+| **6. Trạng thái sản phẩm** | Security & DB Constraint | **`productStatus`** | `Enum` | Bắt buộc `ACTIVE` đối với Customer (`INACTIVE` bị ẩn/báo lỗi 400) |
 
 ---
 
@@ -69,7 +71,7 @@
 | **19** | `3` | `"Sản phẩm rất tốt"` | `300001` ms *(max+)* | `"S001"` | `100` | `time = max+` | **Báo lỗi:** HTTP 400 Bad Request (> 5m) | **B19**|
 | **20** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `""` *(min-)* | `100` | `code = min-` | **Báo lỗi:** HTTP 400 Bad Request | **B20**|
 | **21** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S"` *(min)* | `100` | `code = min` | **Hợp lệ:** HTTP 201 Created (1 char) | **B21**|
-| **22** | `3` | `"Sản phẩm rất tốt"` | `"S1"` *(min+)* | `120.000` ms | `100` | `code = min+` | **Hợp lệ:** HTTP 201 Created (2 chars) | **B22**|
+| **22** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `"S1"` *(min+)* | `100` | `code = min+` | **Hợp lệ:** HTTP 201 Created (2 chars) | **B22**|
 | **23** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 19 ký tự]` *(max-)* | `100` | `code = max-` | **Hợp lệ:** HTTP 201 Created (19 chars) | **B23**|
 | **24** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 20 ký tự]` *(max)* | `100` | `code = max` | **Hợp lệ:** HTTP 201 Created (20 chars) | **B24**|
 | **25** | `3` | `"Sản phẩm rất tốt"` | `120.000` ms | `[Mã 21 ký tự]` *(max+)* | `100` | `code = max+` | **Báo lỗi:** HTTP 400 Bad Request | **B25**|
@@ -99,9 +101,13 @@
 | **A6** | Báo lỗi: "Đã quá 5 phút, bài đánh giá bị khóa!" (HTTP 400 Bad Request) | - | - | - | - | - | **X** |
 | **Tag** | **Tag định danh kiểm thử** | **D1** | **D2** | **D3** | **D4** | **D5** | **D6** |
 
+*\* Ghi chú A5: Mã phản hồi chuẩn theo đặc tả REST cho lỗi vi phạm quyền sở hữu tài nguyên là HTTP 403 Forbidden. Hiện trạng mã nguồn Controller Java sử dụng `ResponseEntity.badRequest()` trả về HTTP 400 Bad Request.*
+
 ---
 
 ## 5. Kỹ Thuật Chuyển Đổi Trạng Thái (State Transition Testing - STT)
+
+### 5.1 Sơ đồ chuyển đổi trạng thái Vòng đời Bài đánh giá (Review Lifecycle)
 
 ```mermaid
 stateDiagram-v2
@@ -112,6 +118,16 @@ stateDiagram-v2
     EDITABLE_REVIEW --> NO_REVIEW : ST_R4 - Xóa bài DELETE /api/v1/reviews/{id}
     LOCKED_REVIEW --> NO_REVIEW : ST_R5 - Xóa bài DELETE /api/v1/reviews/{id}
 ```
+
+### 5.2 Bảng Chuyển đổi trạng thái (State Transition Table)
+
+| Trạng thái ban đầu ($S_i$) | Sự kiện kích hoạt (Event) | Điều kiện bảo vệ (Guard Condition) | Trạng thái tiếp theo ($S_{i+1}$) | Kết quả hiển thị & Trạng thái | Tag |
+| :--- | :--- | :--- | :---: | :--- | :---: |
+| **`NO_REVIEW`** | Gửi bài đánh giá mới | `ratingValue` $[1, 5]$, `comment` $[1, 2000]$ | **`EDITABLE_REVIEW`** | HTTP 201 Created, hiện bài đánh giá, tính lại Rating SP | **ST_R1** |
+| **`EDITABLE_REVIEW`** | Cập nhật nội dung bài | Chính chủ (`isOwner = true`) & $t \le 5\text{m}$ | **`EDITABLE_REVIEW`** | HTTP 200 OK, cập nhật số sao/nhận xét thành công | **ST_R2** |
+| **`EDITABLE_REVIEW`** | Hệ thống đếm thời gian | Thời gian trôi qua quá 5 phút ($t > 5\text{m}$) | **`LOCKED_REVIEW`** | Khóa nút "Sửa", cố tình gửi API báo lỗi HTTP 400 | **ST_R3** |
+| **`EDITABLE_REVIEW`** | Xóa bài đánh giá | Người tạo thực hiện xóa bài | **`NO_REVIEW`** | HTTP 200 OK, xóa bài, khôi phục Rating gốc của SP | **ST_R4** |
+| **`LOCKED_REVIEW`** | Xóa bài đánh giá bị khóa | Người tạo thực hiện xóa bài | **`NO_REVIEW`** | HTTP 200 OK, xóa bài bị khóa, khôi phục Rating gốc | **ST_R5** |
 
 ---
 
@@ -172,11 +188,34 @@ stateDiagram-v2
 - **Độ bao phủ Chuyển đổi trạng thái (STT Coverage):** $100\%$ ($5/5$ chuyển trạng thái $ST\_R1 \to ST\_R5$).
 - **Đồng bộ hóa 100%:** 19 ca kiểm thử trong tài liệu được ánh xạ 1-1 với các request trong file Postman Collection `Customer_Review_Rating_Postman_Collection.json`.
 
+### 7.2 Ma Trận Truy Vết (Traceability Matrix)
+
+| Kỹ thuật kiểm thử | Số lượng Tag | Danh sách Tags | Test Cases phụ trách kiểm thử | Mức độ bao phủ |
+| :--- | :---: | :--- | :--- | :---: |
+| **EP (Lớp hợp lệ)** | 6 | $V_1 \to V_6$ | • $V_1..V_4$: TC_REV_001<br>• $V_3$: TC_REV_002<br>• $V_2$: TC_REV_GET_01, TC_REV_GET_02<br>• $V_5, V_6$: TC_REV_010B | **100% (6/6)** |
+| **EP (Lớp không hợp lệ)** | 13 | $X_1 \to X_{13}$ | • $X_1$: TC_REV_006<br>• $X_2$: TC_REV_007<br>• $X_3, X_4$: TC_REV_008<br>• $X_5$: TC_REV_014<br>• $X_6$: TC_REV_004<br>• $X_7$: TC_REV_005<br>• $X_8$: TC_REV_015<br>• $X_9$: TC_REV_003<br>• $X_{10}$: TC_REV_013<br>• $X_{11}$: TC_REV_012<br>• $X_{12}$: TC_REV_009<br>• $X_{13}$: TC_REV_010 | **100% (13/13)** |
+| **Robustness BVA** | 31 | $B_1 \to B_{31}$ | Bảng 3.2 ($B_1 \to B_{31}$) qua các TC_REV_001..015, TC_REV_010B, TC_REV_011B | **100% (31/31)** |
+| **Decision Table** | 6 | $D_1 \to D_6$ | • $D_1$: TC_REV_001, TC_REV_010B (Rule R1)<br>• $D_2$: TC_REV_006, TC_REV_007 (Rule R2)<br>• $D_3$: TC_REV_008 (Rule R3)<br>• $D_4$: TC_REV_003, TC_REV_004, TC_REV_005 (Rule R4)<br>• $D_5$: TC_REV_009 (Rule R5)<br>• $D_6$: TC_REV_010 (Rule R6) | **100% (6/6)** |
+| **State Transition** | 5 | $ST\_R1 \to ST\_R5$ | • $ST\_R1$: TC_REV_001 (Tạo mới)<br>• $ST\_R2$: TC_REV_010B (Sửa trong 5m)<br>• $ST\_R3$: TC_REV_010 (Khóa bài sau 5m)<br>• $ST\_R4$: TC_REV_011 (Xóa bài khi chưa khóa)<br>• $ST\_R5$: TC_REV_011 (Xóa bài đã bị khóa) | **100% (5/5)** |
+
 ---
 
 ## 8. Execution Guide (Hướng dẫn thực thi với Postman & Newman)
 
+### Cách 1: Chạy trực tiếp trên ứng dụng Postman App
+1. Khởi động ứng dụng **Postman**.
+2. Bấm phím tắt **`Ctrl + O`** hoặc chọn **Import** $\to$ Chọn file **[Customer_Review_Rating_Postman_Collection.json](file:///c:/shoeshopp/Testing/docs/test_cases/black_box/customer_review_rating/Customer_Review_Rating_Postman_Collection.json)**.
+3. Import file **[Customer_Review_Rating_Postman_Environment.json](file:///c:/shoeshopp/Testing/docs/test_cases/black_box/customer_review_rating/Customer_Review_Rating_Postman_Environment.json)** vào mục Environment.
+4. Chọn môi trường `Customer_Review_Rating_Postman_Environment` và nhấn **Run Collection** để chạy toàn bộ 19 kịch bản tự động.
+
+### Cách 2: Chạy tự động qua Newman Command Line (Dùng `npx newman`)
 ```powershell
 npx newman run docs/test_cases/black_box/customer_review_rating/Customer_Review_Rating_Postman_Collection.json `
   -e docs/test_cases/black_box/customer_review_rating/Customer_Review_Rating_Postman_Environment.json
+```
+
+### Cách 3: Chạy kịch bản trực tiếp trên môi trường local
+```powershell
+npx newman run test_cases/black_box/customer_review_rating/Customer_Review_Rating_Postman_Collection.json `
+  -e test_cases/black_box/customer_review_rating/Customer_Review_Rating_Postman_Environment.json
 ```
