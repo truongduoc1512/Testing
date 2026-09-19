@@ -188,3 +188,26 @@ stateDiagram-v2
 | **Phân tích giá trị biên (BVA)** | **31 Tags** | Robustness BVA: `B1` $\to$ `B31` (31 tags) | **100% (31/31)** |
 | **Bảng quyết định (Decision Table)**| **7 Rules** | `D1, D2, D3, D4, D5, D6, D7` | **100% (7/7)** |
 | **Chuyển đổi trạng thái (State Transition)**| **7 Steps** | `ST1, ST2, ST3, ST4, ST5, ST6, ST7` | **100% (7/7)** |
+
+---
+
+## 8. Hướng Dẫn Thực Thi Với Postman & Newman (Execution Guide)
+
+### 8.1 Chạy trực tiếp trên ứng dụng Postman (Desktop App)
+1. Khởi động ứng dụng **Postman**.
+2. Chọn **Import** $\to$ Chọn 2 tệp kịch bản kiểm thử:
+   - Collection: [`Checkout_Order_Placement_Postman_Collection.json`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/checkout_order_placement/Checkout_Order_Placement_Postman_Collection.json)
+   - Environment: [`Checkout_Order_Placement_Postman_Environment.json`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/checkout_order_placement/Checkout_Order_Placement_Postman_Environment.json)
+3. Chọn môi trường `Shoeshop Checkout Order Placement Env`.
+4. Nhấn vào Collection $\to$ Chọn **Run Collection** để thực thi tự động toàn bộ 21 test cases (`TC_CHK_01` $\to$ `TC_CHK_21`).
+
+### 8.2 Chạy tự động qua dòng lệnh (CLI) bằng Newman
+Thực thi lệnh sau tại thư mục gốc dự án:
+```powershell
+npx --yes newman run docs/test_cases/black_box/checkout_order_placement/Checkout_Order_Placement_Postman_Collection.json `
+  -e docs/test_cases/black_box/checkout_order_placement/Checkout_Order_Placement_Postman_Environment.json `
+  -r 'cli,htmlextra' `
+  --reporter-htmlextra-export target/newman-checkout-order-report.html `
+  --insecure
+```
+
