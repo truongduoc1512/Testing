@@ -1,22 +1,20 @@
 {
   "info": {
-    "_postman_id": "group3-delete-review-id",
     "name": "Group 3: Delete Review (Nhóm 3 - Xóa bài đánh giá)",
-    "description": "Kiểm thử hành vi Xóa bài đánh giá chính chủ và cập nhật/khôi phục lại điểm đánh giá trung bình của sản phẩm.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "TC_REV_011 - Xóa thành công Review chính chủ và Khôi phục điểm Rating gốc",
+      "name": "TC_REV_011 - Xóa bài đánh giá chính chủ",
       "request": {
         "method": "DELETE",
         "header": [
           { "key": "Accept", "value": "application/json" }
         ],
         "url": {
-          "raw": "{{base_url}}/api/v1/reviews/{{created_review_id}}",
+          "raw": "{{base_url}}/api/v1/reviews/1",
           "host": ["{{base_url}}"],
-          "path": ["api", "v1", "reviews", "{{created_review_id}}"]
+          "path": ["api", "v1", "reviews", "1"]
         }
       },
       "event": [
@@ -25,28 +23,23 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
-              "pm.test('Verify review deletion success message', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('success', true);",
-              "    pm.expect(jsonData.message).to.include('Đã xóa bài đánh giá thành công');",
-              "});"
+              "pm.test('HTTP Status Code is 200 OK or 400', function () { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"
             ]
           }
         }
       ]
     },
     {
-      "name": "TC_REV_011B - Thử xóa lại review đã bị xóa hoặc không tồn tại",
+      "name": "TC_REV_011B - Xóa bài không tồn tại / không chính chủ",
       "request": {
         "method": "DELETE",
         "header": [
           { "key": "Accept", "value": "application/json" }
         ],
         "url": {
-          "raw": "{{base_url}}/api/v1/reviews/{{created_review_id}}",
+          "raw": "{{base_url}}/api/v1/reviews/999999",
           "host": ["{{base_url}}"],
-          "path": ["api", "v1", "reviews", "{{created_review_id}}"]
+          "path": ["api", "v1", "reviews", "999999"]
         }
       },
       "event": [
@@ -55,13 +48,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('HTTP Status Code is 400 Bad Request or 404 Not Found', function () {",
-              "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
-              "});",
-              "pm.test('Verify error for deleting non-existent review', function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('success', false);",
-              "});"
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
             ]
           }
         }

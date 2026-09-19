@@ -37,21 +37,34 @@
 ## 3. Bảng Phân Tích Giá Trị Biên (Robustness BVA - $5n + 1$)
 
 > [!NOTE]
-> **GHI CHÚ KỸ THUẬT BVA:**
-> 1. **Biến thời gian `editTimeWindow`:** Đây là khoảng thời gian tính toán nội bộ trên server (`System.currentTimeMillis() - createdAt`), đóng vai trò điều kiện bảo vệ (Guard Condition) cho máy trạng thái và bảng quyết định.
-> 2. **Biến `reviewId`:** Mã bài đánh giá là khóa tự tăng (`Long`) trong CSDL. Mốc `1.000.000` ($max$) đại diện cho ID hợp lệ cực đại, mốc `1.000.001` ($max^+$) đại diện cho trường hợp tra cứu ID không tồn tại.
+> **GHI CHÚ KỸ THUẬT BVA CHUẨN ISTQB:**
+> Phân tích giá trị biên (Robustness BVA - 7 mốc $[min^-, min, min^+, nom, max^-, max, max^+]$) được tách bạch chi tiết cho từng API endpoint để đảm bảo tính chính xác và không chồng chéo giữa các biến độc lập.
 
-### 3.1 Bảng 7 mốc giá trị biên Robustness BVA cho 5 biến định lượng
+### 3.1 Bảng 7 mốc giá trị biên Robustness BVA theo từng API Endpoint
 
-*(Ghi chú bộ giá trị danh định chuẩn: `ratingValue` $nom = 3\text{ sao}$, `comment` $nom = 100\text{ ký tự}$, `editTimeWindow` $nom = 120.000\text{ ms}$ ($2\text{ phút}$), `productCode` $nom = 4\text{ ký tự}$ (`"S001"`), `reviewId` $nom = 100$).*
+#### a. API 1: Tạo mới bài đánh giá (`POST /api/v1/reviews`)
+*(Danh định: `ratingValue` $nom = 3$, `comment` $nom = 100\text{ ký tự}$, `productCode` $nom = 4\text{ ký tự}$ (`"S001"`))*
 
 | Biến Định Lượng | Ngoại biên dưới ($min^-$) | Cận dưới ($min$) | Kề dưới ($min^+$) | Danh định ($nom$) | Kề trên ($max^-$) | Cận trên ($max$) | Ngoại biên trên ($max^+$) | Quy tắc & Giới hạn |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **1. `ratingValue`** (Sao) | `0` | **`1`** | **`2`** | **`3`** | **`4`** | **`5`** | `6` | Miền $[1, 5]$ sao. $< 1$ hoặc $> 5$ báo lỗi HTTP 400 |
-| **2. Độ dài `comment`** | `0` *(rỗng)* | **`1`** | **`2`** | **`100`** | **`1.999`** | **`2.000`** | `2.001` | Miền $[1, 2000]$. Rỗng hoặc $> 2000$ báo lỗi HTTP 400 |
-| **3. `editTimeWindow`** (ms) | `-1` *(âm)* | **`0`** | **`1.000`** | **`120.000`** | **`299.000`** | **`300.000`** | `300.001` | Miền $[0, 300.000]$ ms (5 phút). $> 300s$ cấm sửa |
-| **4. Độ dài `productCode`**| `0` *(rỗng)* | **`1`** | **`2`** | **`4`** | **`19`** | **`20`** | `21` | Miền $[1, 20]$. Rỗng/không tồn tại báo HTTP 400 |
-| **5. Giá trị `reviewId`** | `0` *(âm/bằng 0)* | **`1`** | **`2`** | **`100`** | **`999.999`** | **`1.000.000`** | `1.000.001` | Miền $\ge 1$. Không tồn tại báo HTTP 400 |
+| **`ratingValue`** (Sao) | `0` | **`1`** | **`2`** | **`3`** | **`4`** | **`5`** | `6` | Miền $[1, 5]$ sao. $< 1$ hoặc $> 5$ báo lỗi HTTP 400 |
+| **Độ dài `comment`** | `0` *(rỗng)* | **`1`** | **`2`** | **`100`** | **`1.999`** | **`2.000`** | `2.001` | Miền $[1, 2000]$. Rỗng hoặc $> 2000$ báo lỗi HTTP 400 |
+| **Độ dài `productCode`**| `0` *(rỗng)* | **`1`** | **`2`** | **`4`** | **`19`** | **`20`** | `21` | Miền $[1, 20]$. Rỗng/không tồn tại báo HTTP 400 |
+
+#### b. API 2: Chỉnh sửa bài đánh giá (`PUT /api/v1/reviews/{reviewId}`)
+*(Danh định: `ratingValue` $nom = 3$, `comment` $nom = 100\text{ ký tự}$, `editTimeWindow` $nom = 120.000\text{ ms}$ ($2\text{ phút}$))*
+
+| Biến Định Lượng | Ngoại biên dưới ($min^-$) | Cận dưới ($min$) | Kề dưới ($min^+$) | Danh định ($nom$) | Kề trên ($max^-$) | Cận trên ($max$) | Ngoại biên trên ($max^+$) | Quy tắc & Giới hạn |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **`ratingValue`** (Sao) | `0` | **`1`** | **`2`** | **`3`** | **`4`** | **`5`** | `6` | Miền $[1, 5]$ sao. $< 1$ hoặc $> 5$ báo lỗi HTTP 400 |
+| **Độ dài `comment`** | `0` *(rỗng)* | **`1`** | **`2`** | **`100`** | **`1.999`** | **`2.000`** | `2.001` | Miền $[1, 2000]$. Rỗng hoặc $> 2000$ báo lỗi HTTP 400 |
+| **`editTimeWindow`** (ms) | `-1` *(âm)* | **`0`** | **`1.000`** | **`120.000`** | **`299.000`** | **`300.000`** | `300.001` | Miền $[0, 300.000]$ ms (5 phút). $> 300s$ cấm sửa |
+
+#### c. API 3: Xóa bài đánh giá (`DELETE /api/v1/reviews/{reviewId}`)
+
+| Biến Định Lượng | Ngoại biên dưới ($min^-$) | Cận dưới ($min$) | Kề dưới ($min^+$) | Danh định ($nom$) | Kề trên ($max^-$) | Cận trên ($max$) | Ngoại biên trên ($max^+$) | Quy tắc & Giới hạn |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Giá trị `reviewId`** | `0` *(âm/bằng 0)* | **`1`** | **`2`** | **`100`** | **`999.999`** | **`1.000.000`** | `1.000.001` | Miền $\ge 1$. Không tồn tại báo HTTP 400 |
 
 ---
 
@@ -171,7 +184,7 @@ stateDiagram-v2
 
 ---
 
-## 6. Thiết Kế Bảng Test Cases Chi Tiết Triển Khai (Tối Ưu & Đầy Đủ Bao Phủ)
+## 6. Thiết Kế Bảng Test Cases Chi Tiết Triển Khai (Tối Ưu & Đầy Đủ Bao Phủ 25 Test Cases)
 
 | STT | Mã Test Case | Tên ca kiểm thử | Dữ liệu kiểm thử (Test Input Data) | Kết quả mong đợi (Expected Output) | Tag được bao phủ |
 | :-: | :--- | :--- | :--- | :--- | :---: |
@@ -207,12 +220,12 @@ stateDiagram-v2
 
 ### 7.1 Phân tích chỉ số tối ưu & Độ bao phủ (Coverage Metrics)
 - **Độ bao phủ Lớp tương đương (EP Coverage):** $100\%$ ($7/7$ lớp hợp lệ $V_1 \to V_7$ và $14/14$ lớp không hợp lệ $X_1 \to X_{14}$).
-- **Độ bao phủ Biên Robustness BVA ($5n+1$):** $100\%$ ($31/31$ mốc kiểm thử biên $B_1 \to B_{31}$ cho 5 biến định lượng). Áp dụng kỹ thuật ghép cặp biên đại diện (Boundary Pairwise Optimization) giúp nén 31 mốc biên vào 25 ca kiểm thử đại diện tối ưu trong Bảng Mục 6, phủ kín từ $B_1$ đến $B_{31}$.
+- **Độ bao phủ Biên Robustness BVA ($5n+1$):** $100\%$ ($31/31$ mốc kiểm thử biên $B_1 \to B_{31}$ cho 5 biến định lượng).
 - **Độ bao phủ Bảng quyết định (DTT Coverage):** $100\%$ ($6/6$ quy tắc logic $D_1 \to D_6$).
 - **Độ bao phủ Chuyển đổi trạng thái (STT Coverage):** $100\%$ ($8/8$ chuyển trạng thái $ST\_R1 \to ST\_R5$ và $ST\_W1 \to ST\_W3$).
-- **Chỉ số Tối ưu hóa (Optimization Index):** Tối ưu hóa nén bộ kiểm thử từ hàng nghìn kịch bản vét cạn xuống **25 ca kiểm thử đại diện**, duy trì khả năng phát hiện lỗi $100\%$.
+- **Chỉ số Tối ưu hóa (Optimization Index):** Tối ưu hóa nén bộ kiểm thử từ hàng nghìn kịch bản vét cạn xuống **25 ca kiểm thử đại diện**, đồng bộ 1:1 với Postman Collection JSON.
 
-### 7.2 Ma Trận Ma Vết (Traceability Matrix)
+### 7.2 Ma Trận Truy Vết (Traceability Matrix)
 
 | Kỹ thuật kiểm thử | Số lượng Tag | Danh sách Tags | Test Cases phụ trách kiểm thử |
 | :--- | :---: | :--- | :--- |

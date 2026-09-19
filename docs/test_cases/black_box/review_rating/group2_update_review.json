@@ -1,14 +1,8 @@
 {
   "info": {
-    "_postman_id": "group2-update-review-id",
-    "name": "Group 2: Update Review",
-    "description": "JSON Collection riêng cho Nhóm 2: Chỉnh sửa bài đánh giá",
+    "name": "Group 2: Update Review (Nhóm 2 - Chỉnh sửa bài đánh giá)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    { "key": "base_url", "value": "http://localhost", "type": "string" },
-    { "key": "review_id", "value": "1", "type": "string" }
-  ],
   "item": [
     {
       "name": "TC_REV_009 - Chặn sửa Review của người khác",
@@ -20,7 +14,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"ratingValue\": 4,\n  \"comment\": \"Thử sửa bài người khác\"\n}"
+          "raw": "{\n  \"ratingValue\": 4,\n  \"comment\": \"Hack review người khác\"\n}"
         },
         "url": {
           "raw": "{{base_url}}/api/v1/reviews/9999",
@@ -41,7 +35,7 @@
       ]
     },
     {
-      "name": "TC_REV_010B - Sửa thành công bài đánh giá trong 5 phút",
+      "name": "TC_REV_010 - Chặn sửa bài quá 5 phút",
       "request": {
         "method": "PUT",
         "header": [
@@ -50,12 +44,42 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"ratingValue\": 4,\n  \"comment\": \"Cập nhật đánh giá thành 4 sao\"\n}"
+          "raw": "{\n  \"ratingValue\": 4,\n  \"comment\": \"Cập nhật quá 5 phút\"\n}"
         },
         "url": {
-          "raw": "{{base_url}}/api/v1/reviews/{{review_id}}",
+          "raw": "{{base_url}}/api/v1/reviews/100",
           "host": ["{{base_url}}"],
-          "path": ["api", "v1", "reviews", "{{review_id}}"]
+          "path": ["api", "v1", "reviews", "100"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_010B - Sửa thành công bài đánh giá chính chủ trong 5 phút",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ratingValue\": 4,\n  \"comment\": \"Cập nhật bài viết hợp lệ\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "1"]
         }
       },
       "event": [
