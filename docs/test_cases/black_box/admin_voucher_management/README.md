@@ -42,8 +42,6 @@
 
 ### 3.1 Bảng 7 mốc giá trị biên Robustness BVA cho 6 biến định lượng
 
-*(Ghi chú bộ giá trị danh định chuẩn: `code` $nom = 10\text{ ký tự}$ (`"TESTVOU20"`), `discountType` $nom = \text{"PERCENT"}$, `discountValue` $nom = 20\%$, `maxDiscount` $nom = 50\text{ K ₫}$, `minOrderValue` $nom = 200\text{ K ₫}$, `usageLimit` $nom = 100\text{ lượt}$, `perUserLimit` $nom = 1\text{ lượt}$).*
-
 | Biến Định Lượng | Ngoại biên dưới ($min^-$) | Cận dưới ($min$) | Kề dưới ($min^+$) | Danh định ($nom$) | Kề trên ($max^-$) | Cận trên ($max$) | Ngoại biên trên ($max^+$) | Quy tắc & Giới hạn |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **1. Độ dài `code`** | `0` *(rỗng)* | **`1`** | **`2`** | **`10`** | **`49`** | **`50`** | `51` | Miền $[1, 50]$. Rỗng hoặc $> 50$ báo lỗi |
