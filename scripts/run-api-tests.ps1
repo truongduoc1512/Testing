@@ -166,7 +166,7 @@ if ($List) {
 $TargetModules = @()
 if ($Module -and $Module -ne "all") {
     $filterPattern = $Module.ToLower()
-    $TargetModules = $ModuleList | Where-Object { $_.Name.ToLower() -like "*$filterPattern*" }
+    $TargetModules = @($ModuleList | Where-Object { $_.Name.ToLower() -like "*$filterPattern*" })
 
     if ($TargetModules.Count -eq 0) {
         Write-Host "ERROR: No module matches filter: '$Module'" -ForegroundColor Red
@@ -187,6 +187,19 @@ if ($BaseUrl) {
 Write-Host "HTML Reports Directory   : $ReportBaseDir"
 Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Cyan
 
+# Pre-flight environment check
+if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
+    Write-Host "[ERROR] 'npx' command not found! Node.js is required to execute Newman CLI." -ForegroundColor Red
+    Write-Host "Please install Node.js (https://nodejs.org) or ensure it is in your PATH." -ForegroundColor Yellow
+    exit 1
+}
+
+$mysqlCheck = docker ps --filter "name=shoeshop-mysql" --filter "status=running" -q 2>$null
+if (-not $mysqlCheck) {
+    Write-Host "[WARNING] Container 'shoeshop-mysql' is not currently running." -ForegroundColor Yellow
+    Write-Host "Please start the environment first: docker compose up -d" -ForegroundColor Yellow
+}
+
 # -----------------------------------------------------------------------------
 # Execution Loop
 # -----------------------------------------------------------------------------
@@ -201,7 +214,15 @@ foreach ($mod in $TargetModules) {
 
     # Reset baseline test accounts in MySQL to guarantee isolation and prevent cross-module side effects
     try {
-        docker exec -i shoeshop-mysql mysql -uroot -ptruonghoaiduoc5 shoe_shopdb -e "UPDATE Accounts SET USER_ROLE='ADMIN', ACTIVE=1, ACCOUNT_NON_LOCKED=1, FAILED_ATTEMPTS=0 WHERE USER_NAME IN ('manager1', 'admin2'); UPDATE Accounts SET USER_ROLE='USER', ACTIVE=1, ACCOUNT_NON_LOCKED=1, FAILED_ATTEMPTS=0 WHERE USER_NAME='employee1'; UPDATE Accounts SET USER_ROLE='ROLE_USER' WHERE USER_NAME='testadmin';" 2>$null
+        $resetSql = @'
+INSERT INTO Accounts (USER_NAME, ACTIVE, ENCRYTED_PASSWORD, USER_ROLE, FULL_NAME, EMAIL, PHONE_NUMBER, ACCOUNT_NON_LOCKED, FAILED_ATTEMPTS, PROVIDER)
+VALUES ('admin2', b'1', '$2a$10$PrI5Gk9L.tSZiW9FXhTS8O8Mz9E97k2FZbFvGFFaSsiTUIl.TCrFu', 'ADMIN', 'Admin Two', 'admin2@shoeshop.com', '0987654321', TRUE, 0, 'LOCAL')
+ON DUPLICATE KEY UPDATE USER_ROLE='ADMIN', ACTIVE=1, ACCOUNT_NON_LOCKED=1, FAILED_ATTEMPTS=0;
+UPDATE Accounts SET USER_ROLE='ADMIN', ACTIVE=1, ACCOUNT_NON_LOCKED=1, FAILED_ATTEMPTS=0 WHERE USER_NAME='manager1';
+UPDATE Accounts SET USER_ROLE='USER', ACTIVE=1, ACCOUNT_NON_LOCKED=1, FAILED_ATTEMPTS=0 WHERE USER_NAME='employee1';
+UPDATE Accounts SET USER_ROLE='ROLE_USER' WHERE USER_NAME='testadmin';
+'@
+        docker exec -i shoeshop-mysql mysql -uroot -ptruonghoaiduoc5 shoe_shopdb -e "$resetSql" 2>$null
     } catch {
         # ignore if container is unreachable
     }
