@@ -52,3 +52,11 @@ tools/
 *.log
 
 ~$*
+
+# Local test helper suites (untracked)
+scripts/test_address_book_full_visual_suite.py
+scripts/test_address_standard_bva.py
+scripts/test_checkout_full_visual_suite.py
+scripts/test_checkout_standard_bva.py
+scripts/test_voucher_full_visual_suite.py
+scripts/test_voucher_standard_bva.py
