@@ -10,10 +10,10 @@
 
 ## 🎯 1. MỤC TIÊU SPRINT (SPRINT OBJECTIVES)
 - [x] **Mục tiêu 1:** Mở rộng và chuẩn hóa toàn diện tài liệu kiểm thử hộp đen (Black-box Test Specifications) cho toàn bộ 14 phân hệ chức năng theo chuẩn IEEE 829 & ISTQB, bao phủ 4 kỹ thuật cốt lõi: Phân hoạch tương đương (EP), Phân tích giá trị biên (BVA), Bảng quyết định (Decision Table) và Chuyển đổi trạng thái (State Transition).
-- [x] **Mục tiêu 2:** Thiết kế và xây dựng đầy đủ 14 bộ Postman Collections & Environments tương ứng với 14 phân hệ, số hóa 297 kịch bản kiểm thử API tự động với đầy đủ Assertions kiểm tra mã phản hồi HTTP, cấu trúc JSON Body, Redirect URL và Flash Message.
+- [x] **Mục tiêu 2:** Thiết kế và xây dựng đầy đủ 14 bộ Postman Collections & Environments tương ứng với 14 phân hệ, số hóa 327 kịch bản kiểm thử API tự động với đầy đủ Assertions kiểm tra mã phản hồi HTTP, cấu trúc JSON Body, Redirect URL và Flash Message.
 - [x] **Mục tiêu 3:** Xây dựng Runner tự động hóa kiểm thử API tập trung [`scripts/run-api-tests.ps1`](file:///d:/LapTrinhAI/Testing/scripts/run-api-tests.ps1) bằng Newman CLI, hỗ trợ chạy đơn lẻ theo phân hệ (`-Module`), chạy toàn bộ, cơ chế tự phục hồi dữ liệu phân quyền CSDL giữa các module và xuất báo cáo trực quan.
 - [x] **Mục tiêu 4:** Xử lý triệt để các bài toán khó trong kiểm thử API tự động: Hiện tượng rò rỉ Session/Cookie trên Newman CLI qua địa chỉ `127.0.0.1` (`guest_base_url`), đồng bộ ID đối tượng động giữa các bước kiểm thử, và cô lập trạng thái tài khoản quản trị viên.
-- [x] **Mục tiêu 5:** Đạt tỷ lệ kiểm thử thành công tuyệt đối **100% PASS (14/14 Modules, 377/377 Assertions)** trên nền tảng Docker Containerized, tổng hợp Dashboard báo cáo HTML tích hợp tại [`target/blackbox-reports/index.html`](file:///d:/LapTrinhAI/Testing/target/blackbox-reports/index.html).
+- [x] **Mục tiêu 5:** Đạt tỷ lệ kiểm thử thành công tuyệt đối **100% PASS (14/14 Modules, 417/417 Assertions)** trên nền tảng Docker Containerized, tổng hợp Dashboard báo cáo HTML tích hợp tại [`target/blackbox-reports/index.html`](file:///d:/LapTrinhAI/Testing/target/blackbox-reports/index.html).
 
 ---
 
@@ -98,11 +98,11 @@
 ### 3. Trần Thị Ngọc Thịnh — Thực hiện `TEST-42`
 - **Sản phẩm bàn giao:**
   * **Thiết kế & Tối ưu hóa các phân hệ Tra cứu, Đánh giá và Yêu thích:**
-    1. [`product_search_pagination`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/product_search_pagination/): 16 TCs, 32 assertions kiểm tra phân trang sản phẩm với các giá trị biên của `page` và `size`, tìm kiếm từ khóa tiếng Việt có dấu, ký tự đặc biệt, lọc theo danh mục và sắp xếp giá.
-    2. Tách cấu trúc phân hệ đánh giá thành 2 module độc lập:
-       - [`customer_review_rating`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/customer_review_rating/): 12 TCs, kiểm thử gửi đánh giá 1–5 sao, chặn bình luận rỗng, sửa đánh giá chính chủ trong vòng 5 phút và xóa đánh giá.
-       - [`customer_wishlist`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/customer_wishlist/): 7 TCs, 13 assertions kiểm thử Toggle yêu thích 1 chạm, thêm/xóa sản phẩm khỏi wishlist và chặn khách vãng lai.
-       - [`review_rating`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/review_rating/): 13 TCs, 20 assertions bộ kiểm thử tổng hợp API đánh giá.
+    1. [`product_search_pagination`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/product_search_pagination/): 26 TCs, 49 assertions kiểm tra phân trang sản phẩm với các giá trị biên của `page` và `size`, tìm kiếm từ khóa tiếng Việt có dấu, ký tự đặc biệt, lọc theo danh mục và sắp xếp giá.
+    2. Tách và chuẩn hóa cấu trúc các phân hệ đánh giá và yêu thích:
+       - [`customer_review_rating`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/customer_review_rating/): 19 TCs, 22 assertions kiểm thử gửi đánh giá 1–5 sao, chặn bình luận rỗng, sửa đánh giá chính chủ trong vòng 5 phút và xóa đánh giá.
+       - [`customer_wishlist`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/customer_wishlist/): 8 TCs, 15 assertions kiểm thử Toggle yêu thích 1 chạm, thêm/xóa sản phẩm khỏi wishlist và chặn khách vãng lai.
+       - [`review_rating`](file:///d:/LapTrinhAI/Testing/docs/test_cases/black_box/review_rating/): 25 TCs, 33 assertions bộ kiểm thử tổng hợp API đánh giá và đồng bộ dữ liệu.
 
 ### 4. Trần Lĩnh — Thực hiện `TEST-43`
 - **Sản phẩm bàn giao:**
@@ -121,11 +121,11 @@ Bảng tổng hợp toàn bộ các câu lệnh thực thi kiểm thử tự đ�
 
 | STT | Phân loại | Mục đích kiểm thử | Lệnh thực thi (PowerShell / CLI) | Môi trường / Điều kiện tiên quyết | Kết quả ghi nhận |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Chạy Toàn bộ** | Thực thi tự động toàn bộ 14 Phân hệ Black-box và xuất Dashboard | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1` | Docker containers đang chạy | 14/14 Modules PASS (377/377 assertions, 86.6s) |
+| 1 | **Chạy Toàn bộ** | Thực thi tự động toàn bộ 14 Phân hệ Black-box và xuất Dashboard | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1` | Docker containers đang chạy | 14/14 Modules PASS (417/417 assertions, 82.0s) |
 | 2 | **Chạy Tự động Bật Báo cáo** | Thực thi toàn bộ và tự động mở file `index.html` trên trình duyệt | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -OpenReport` | Môi trường Docker hoạt động | Tự động hiển thị HTML Dashboard trực quan |
 | 3 | **Chạy Phân hệ Đơn lẻ** | Chạy kiểm thử riêng phân hệ Đặt hàng & Thanh toán (Checkout) | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -Module checkout` | Docker hoạt động | 30/30 TCs PASS, sinh `checkout_order_placement-report.html` |
 | 4 | **Chạy Phân hệ Đơn lẻ** | Chạy kiểm thử riêng phân hệ Quản lý Người dùng Admin | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -Module admin_user` | Docker hoạt động | 28/28 TCs PASS, sinh `admin_user_management-report.html` |
-| 5 | **Chạy Phân hệ Đơn lẻ** | Chạy kiểm thử riêng phân hệ Wishlist (Danh sách yêu thích) | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -Module wishlist` | Docker hoạt động | 7/7 TCs PASS, sinh `customer_wishlist-report.html` |
+| 5 | **Chạy Phân hệ Đơn lẻ** | Chạy kiểm thử riêng phân hệ Wishlist (Danh sách yêu thích) | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -Module wishlist` | Docker hoạt động | 8/8 TCs PASS, sinh `customer_wishlist-report.html` |
 | 6 | **Liệt kê Danh mục** | Liệt kê danh sách tất cả 14 module có trong `docs/test_cases/black_box` | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -List` | PowerShell | Hiển thị danh mục 14 module kèm đường dẫn |
 | 7 | **Chế độ Kế thừa** | Chạy bộ Postman Monolithic cũ (Legacy Master Collection 46 API) | `powershell -ExecutionPolicy Bypass -File .\scripts\run-api-tests.ps1 -Legacy` | Docker hoạt động | 46/46 APIs PASS, sinh `legacy-api-report.html` |
 | 8 | **Kiểm tra Docker** | Kiểm tra trạng thái sức khỏe 6 containers trong hệ sinh thái | `docker compose ps` | Docker Desktop | 6/6 containers Up & Healthy |
@@ -146,6 +146,6 @@ Bảng tổng hợp toàn bộ các câu lệnh thực thi kiểm thử tự đ�
 ---
 
 ## 🏆 7. TỔNG KẾT BÀN GIAO DỰ ÁN & RELEASE MILESTONE
-- **Hệ thống Kiểm thử Hộp đen (Black-box Test Suite) đạt độ hoàn thiện cao nhất:** Hoàn thiện 14 phân hệ chuyên biệt với 297 Test Cases, bao phủ toàn bộ các kỹ thuật kiểm thử phần mềm quốc tế (EP, BVA, Decision Table, State Transition).
-- **Tự động hóa 100% trên nền tảng CI/CD & Newman CLI:** Bộ test runner thực thi siêu tốc trong 86.6 giây, đạt tỷ lệ chính xác tuyệt đối **100% PASS (377/377 Assertions)** và tự động tạo Dashboard quản trị báo cáo tổng hợp.
+- **Hệ thống Kiểm thử Hộp đen (Black-box Test Suite) đạt độ hoàn thiện cao nhất:** Hoàn thiện 14 phân hệ chuyên biệt với 327 Test Cases, bao phủ toàn bộ các kỹ thuật kiểm thử phần mềm quốc tế (EP, BVA, Decision Table, State Transition).
+- **Tự động hóa 100% trên nền tảng CI/CD & Newman CLI:** Bộ test runner thực thi siêu tốc trong 82.0 giây, đạt tỷ lệ chính xác tuyệt đối **100% PASS (417/417 Assertions)** và tự động tạo Dashboard quản trị báo cáo tổng hợp.
 - **Sẵn sàng đóng gói phát hành Release Tag `v6.0.0`:** Toàn bộ mã nguồn kiểm thử, tài liệu đặc tả, bộ sưu tập Postman và kịch bản thực thi đã được kiểm chứng độc lập trên môi trường Docker sạch, sẵn sàng phục vụ công tác nghiệm thu và chuyển giao.
