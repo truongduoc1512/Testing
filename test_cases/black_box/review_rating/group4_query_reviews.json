@@ -1,0 +1,34 @@
+{
+  "info": {
+    "name": "Group 4: Query Reviews (Nhóm 4 - Tra cứu danh sách đánh giá)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC_REV_GET_01 - Tra cứu danh sách đánh giá của sản phẩm theo mã Code",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/product/{{valid_product_code}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "product", "{{valid_product_code}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Returns review array', function () { var j = pm.response.json(); pm.expect(j).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

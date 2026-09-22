@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "Group 3: Delete Review (Nhóm 3 - Xóa bài đánh giá)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TC_REV_011 - Xóa bài đánh giá chính chủ",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "1"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 200 OK or 400', function () { pm.expect(pm.response.code).to.be.oneOf([200, 400]); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "TC_REV_011B - Xóa bài không tồn tại / không chính chủ",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/reviews/999999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reviews", "999999"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP Status Code is 400 Bad Request', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

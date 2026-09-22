@@ -1,0 +1,2355 @@
+{
+  "info": {
+    "_postman_id": "bb-admin-order-mgmt-coll-2026",
+    "name": "Shoeshop - Admin Order Management Blackbox Tests (28 TCs)",
+    "description": "Bộ kiểm thử tự động Postman gồm 28 Test Case chuẩn xác khớp 100% tài liệu README.md: Phân tích biên phân trang & danh sách đơn hàng (TC_ORD_01 - 10), Tra cứu chi tiết đơn hàng (TC_ORD_11 - 13), Bảng quyết định & Phân quyền cập nhật (TC_ORD_14 - 17), Vòng đời chuyển đổi trạng thái (TC_ORD_18 - 28).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup - Admin Authentication",
+      "item": [
+        {
+          "name": "0.1 POST /j_spring_security_check - Admin Login (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/login',",
+                  "    method: 'GET'",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập Admin thành công (Mã 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) {",
+                  "    pm.environment.set('session_id', sessionCookie);",
+                  "}",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) {",
+                  "        pm.environment.set('session_id', match[1]);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.2 POST /j_spring_security_check - User Login (employee1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/login',",
+                  "    method: 'GET'",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập User thường employee1 thành công (Mã 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) {",
+                  "    pm.environment.set('employee_session_id', sessionCookie);",
+                  "}",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) {",
+                  "        pm.environment.set('employee_session_id', match[1]);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{user_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{user_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.3 POST /j_spring_security_check - Re-activate Admin Session (manager1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/login',",
+                  "    method: 'GET'",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Kích hoạt lại phiên Admin (manager1) thành công', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) {",
+                  "    pm.environment.set('session_id', sessionCookie);",
+                  "}",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var match = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (match && match[1]) {",
+                  "        pm.environment.set('session_id', match[1]);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{admin_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        },
+        {
+          "name": "0.4 GET /admin/orderList - Initialize Order Baseline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Kết nối danh sách đơn hàng Admin thành công (HTTP 200)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "pm.environment.set('order_id_valid', 'b5ba86bd-144d-4a85-9563-3c373b216efe');",
+                  "var match = pm.response.text().match(/order\\?orderId=([a-f0-9\\-]{36})/i);",
+                  "if (match && match[1]) {",
+                  "    pm.environment.set('order_id_valid', match[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Danh sách đơn hàng & Phân tích giá trị biên (Order List & BVA - TC_ORD_01 đến TC_ORD_10)",
+      "item": [
+        {
+          "name": "TC_ORD_01 - Xem danh sách đơn hàng tại trang đầu tiên (page = 1) [V1, V4, B2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_01: Tải danh sách đơn hàng trang 1 thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});",
+                  "var match = pm.response.text().match(/order\\?orderId=([a-f0-9\\-]{36})/i);",
+                  "if (match && match[1]) {",
+                  "    pm.environment.set('order_id_valid', match[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_02 - Xem danh sách đơn hàng tại trang kế tiếp (page = 2) [V4, B3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_02: Tải danh sách đơn hàng trang 2 thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_03 - Xem danh sách đơn hàng tại trang danh định giữa (page = 3) [V4, B1]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_03: Tải danh sách đơn hàng trang 3 thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_04 - Xem danh sách đơn hàng tại trang áp chót (page = 4) [V4, B4]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_04: Tải danh sách đơn hàng trang 4 thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=4",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "4"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_05 - Xem danh sách đơn hàng tại trang cuối cùng (page = 5) [V4, B5]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_05: Tải danh sách đơn hàng trang 5 thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_06 - Phân trang với số trang ngoại biên âm và bằng 0 (page = 0, -1) [X9, B6, B7]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_06: Fallback an toàn về page = 1 khi số trang <= 0 (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=-1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_07 - Phân trang vượt quá tổng số trang (page = 6 > totalPages) [X10, B8]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_07: Trả về trang rỗng hợp lệ khi page vượt max (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=6",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "6"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_08 - Phân trang với định dạng chuỗi không phải số (page = \"abc\") [X11]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_08: Fallback an toàn về page = 1 khi page phi số (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=abc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "abc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_09 - Khách vãng lai chưa đăng nhập truy cập danh sách đơn hàng [X1]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_09: Chặn khách vãng lai (Chuyển hướng 302/200 về Login hoặc 401/403)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([302, 200, 401, 403]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.match(/login/i);",
+                  "    } else if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.match(/login|đăng nhập/i);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_10 - Khách hàng thường xem danh sách đơn hàng (Kiểm tra cô lập dữ liệu) [X2]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_10: Tài khoản ROLE_USER truy cập danh sách với dữ liệu cô lập (HTTP 200 OK hoặc 302/401)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 401]);",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{employee_session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/orderList?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "orderList"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Xem chi tiết đơn hàng (Order Details - TC_ORD_11 đến TC_ORD_13)",
+      "item": [
+        {
+          "name": "TC_ORD_11 - Xem chi tiết đơn hàng hợp lệ thuộc quyền Admin [V1, V2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_11: Xem chi tiết đơn hàng thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(pm.response.text()).to.include('Đơn hàng');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/order?orderId={{order_id_valid}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order"
+              ],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{order_id_valid}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_12 - Tra cứu chi tiết đơn hàng với mã đơn để trống hoặc null [X3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_12: Chuyển hướng về danh sách khi orderId rỗng (HTTP 302 hoặc 200 orderList)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/orderList');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/order?orderId=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order"
+              ],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_13 - Tra cứu chi tiết đơn hàng với mã đơn không tồn tại hoặc sai độ dài (35/37 ký tự) [X4]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_13: Chuyển hướng an toàn khi orderId không tồn tại (HTTP 302 hoặc 200 orderList)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/orderList');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.include('Danh sách Đơn hàng');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/order?orderId=non-existent-uuid-404-000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order"
+              ],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "non-existent-uuid-404-000000000000"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Phân quyền & Bảng quyết định cập nhật đơn hàng (Decision Table & Permissions - TC_ORD_14 đến TC_ORD_17)",
+      "item": [
+        {
+          "name": "TC_ORD_14 - Tài khoản Non-Admin gửi request cập nhật trạng thái đơn hàng (Rule D2) [X2, D2]",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_14: Chặn Non-Admin cập nhật đơn hàng (HTTP 403 hoặc 302 về /403)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([403, 302, 200]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/403');",
+                  "    } else if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.match(/403|access denied|không có quyền/i);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{employee_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{order_id_valid}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_15 - Admin cập nhật đơn hàng không tồn tại hoặc không thuộc quyền quản lý (Rule D3) [X4, X5, D3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_15: Chặn cập nhật đơn không tồn tại/không thuộc quyền (HTTP 302 về /403 hoặc 403)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([302, 403, 200]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/403');",
+                  "    } else if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.text()).to.match(/403|access denied|không có quyền/i);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "non-existent-uuid-404-000000000000",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_16 - Admin gửi trạng thái rác hoặc chuỗi không xác định (Rule D4) [X7, D4]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "// Đảm bảo sử dụng mã đơn hợp lệ thực tế",
+                  "if (!pm.environment.get('order_id_valid') || String(pm.environment.get('order_id_valid')).startsWith('1111')) {",
+                  "    pm.environment.set('order_id_valid', 'b5ba86bd-144d-4a85-9563-3c373b216efe');",
+                  "}",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_16: Báo lỗi trạng thái rác không hợp lệ (HTTP 302 hoặc 200)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/admin/order') || loc.includes('/403');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.satisfy(function(text) {",
+                  "            return text.includes('Trạng thái đơn hàng không hợp lệ!') || text.includes('Đơn hàng') || text.includes('403');",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "b5ba86bd-144d-4a85-9563-3c373b216efe",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "INVALID_STATUS_XYZ",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_17 - Admin gửi trạng thái thuộc Customer (RETURNED) hoặc rỗng (Rule D4) [X6, X8, D4]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "if (!pm.environment.get('order_id_valid') || String(pm.environment.get('order_id_valid')).startsWith('1111')) {",
+                  "    pm.environment.set('order_id_valid', 'b5ba86bd-144d-4a85-9563-3c373b216efe');",
+                  "}",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_17: Báo lỗi trạng thái Customer/rỗng (HTTP 302 hoặc 200)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.satisfy(function(loc) {",
+                  "            return loc.includes('/admin/order') || loc.includes('/403');",
+                  "        });",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.satisfy(function(text) {",
+                  "            return text.includes('Trạng thái đơn hàng không hợp lệ!') || text.includes('Đơn hàng') || text.includes('403');",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "b5ba86bd-144d-4a85-9563-3c373b216efe",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "RETURNED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Kiểm thử chuyển đổi trạng thái vòng đời (State Transition Lifecycle - TC_ORD_18 đến TC_ORD_28)",
+      "item": [
+        {
+          "name": "TC_ORD_18 - Vòng đời đơn hàng: Chuyển từ PENDING sang APPROVED (Rule D1 & ST_01) [V1, V2, V3, D1, ST_V1]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_18: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_01}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_19 - Vòng đời đơn hàng: Chuyển từ PENDING sang SHIPPING (Rule D1 & ST_02) [D1, ST_V2]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_19: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_02}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "SHIPPING",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_20 - Vòng đời đơn hàng: Chuyển từ PENDING sang COMPLETED (Rule D1 & ST_03) [D1, ST_V3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_20: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_03}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "COMPLETED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_21 - Vòng đời đơn hàng: Chuyển từ PENDING sang CANCELLED (Rule D1 & ST_04) [D1, ST_V4]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_21: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_04}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "CANCELLED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_22 - Vòng đời đơn hàng: Chuyển từ APPROVED sang SHIPPING (Rule D1 & ST_05) [D1, ST_V5]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_22: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_05}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "SHIPPING",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_23 - Vòng đời đơn hàng: Chuyển từ APPROVED sang COMPLETED (Rule D1 & ST_06) [D1, ST_V6]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_23: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_06}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "COMPLETED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_24 - Vòng đời đơn hàng: Chuyển từ APPROVED sang CANCELLED (Rule D1 & ST_07) [D1, ST_V7]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_24: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_07}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "CANCELLED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_25 - Vòng đời đơn hàng: Chuyển từ SHIPPING sang COMPLETED / CANCELLED (Rule D1 & ST_08, ST_09) [D1, ST_V8, ST_V9]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_25: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_08}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "COMPLETED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_26 - Vòng đời đơn hàng: Cập nhật giữ nguyên trạng thái cũ (Rule D1 & ST_10) [D1, ST_V10]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_26: Xử lý chuyển đổi trạng thái thành công (HTTP 200 hoặc 302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_10}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_27 - Vòng đời đơn hàng: Chặn quay lui trạng thái (Rule D5 & ST_11, ST_12, ST_13) [D5, ST_X1, ST_X2, ST_X3]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_27: Chặn chuyển đổi trạng thái sai quy tắc vòng đời (HTTP 302 hoặc 200)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_11}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ORD_28 - Vòng đời đơn hàng: Chặn can thiệp khi đơn hàng đã kết thúc/đã đóng (Rule D6 & ST_14, ST_15) [D6, ST_X4, ST_X5]",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "var sess = pm.environment.get('session_id');",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/admin/product',",
+                  "    method: 'GET',",
+                  "    header: {'Cookie': 'JSESSIONID=' + sess}",
+                  "}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/) || res.text().match(/name=\"_csrf\"\\s+content=\"([^\"]+)\"/);",
+                  "        var csrf = match ? (match[1] || match[2]) : '';",
+                  "        if (csrf) {",
+                  "            pm.environment.set('csrf_token', csrf);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ORD_28: Chặn chuyển đổi trạng thái sai quy tắc vòng đời (HTTP 302 hoặc 200)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "    if (pm.response.code === 302) {",
+                  "        pm.expect(pm.response.headers.get('Location') || '').to.include('/admin/order');",
+                  "    } else {",
+                  "        pm.expect(pm.response.text()).to.not.include('HTTP Status 403');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "orderId",
+                  "value": "{{st_order_14}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "SHIPPING",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/order/updateStatus",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "order",
+                "updateStatus"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

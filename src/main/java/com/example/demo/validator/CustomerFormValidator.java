@@ -16,7 +16,11 @@ public class CustomerFormValidator implements Validator {
    private static final int MAX_NAME_LENGTH = 255;
    private static final int MAX_ADDRESS_LENGTH = 255;
    private static final int MAX_EMAIL_LENGTH = 128;
-   private static final int MAX_PHONE_LENGTH = 128;
+   private static final int MAX_PHONE_LENGTH = 20;
+
+   private static final java.util.regex.Pattern NAME_PATTERN = java.util.regex.Pattern.compile("^[\\p{L}0-9\\s\\-'.]+$");
+   private static final java.util.regex.Pattern PHONE_PATTERN = java.util.regex.Pattern.compile("^[0-9+()\\-\\s.]{1,20}$");
+   private static final java.util.regex.Pattern ADDRESS_PATTERN = java.util.regex.Pattern.compile("^[^<>{}~^$%*\\\\]+$");
 
    private final EmailValidator emailValidator = EmailValidator.getInstance();
 
@@ -29,29 +33,46 @@ public class CustomerFormValidator implements Validator {
    @Override
    public void validate(Object target, Errors errors) {
       CustomerForm custInfo = (CustomerForm) target;
-
       normalize(custInfo);
 
-      // Check the fields of CustomerForm.
+      // Node 1: Kiểm tra rỗng 4 trường bắt buộc
       ValidationUtils.rejectIfEmptyOrWhitespace(errors, "name", "NotEmpty.customerForm.name");
       ValidationUtils.rejectIfEmptyOrWhitespace(errors, "email", "NotEmpty.customerForm.email");
       ValidationUtils.rejectIfEmptyOrWhitespace(errors, "address", "NotEmpty.customerForm.address");
       ValidationUtils.rejectIfEmptyOrWhitespace(errors, "phone", "NotEmpty.customerForm.phone");
 
+      // Node 2 (Predicate): Kiểm tra độ dài Email > 128
       if (!isBlank(custInfo.getEmail()) && custInfo.getEmail().length() > MAX_EMAIL_LENGTH) {
-         errors.rejectValue("email", "Length.customerForm.email", "Email tối đa 128 ký tự");
+         errors.rejectValue("email", "Length.customerForm.email", "Email tối đa 128 ký tự"); // Node 3
+      // Node 4 (Predicate): Kiểm tra định dạng Regex Email
       } else if (!isBlank(custInfo.getEmail()) && !emailValidator.isValid(custInfo.getEmail())) {
-         errors.rejectValue("email", "Pattern.customerForm.email");
+         errors.rejectValue("email", "Pattern.customerForm.email"); // Node 5
       }
-      if (custInfo.getName() != null && custInfo.getName().length() > MAX_NAME_LENGTH) {
-         errors.rejectValue("name", "Length.customerForm.name", "Tên người nhận tối đa 255 ký tự");
+      // Node 6 (Predicate): Kiểm tra độ dài và định dạng Tên người nhận
+      if (custInfo.getName() != null) {
+         if (custInfo.getName().length() > MAX_NAME_LENGTH) {
+            errors.rejectValue("name", "Length.customerForm.name", "Tên người nhận tối đa 255 ký tự"); // Node 7
+         } else if (!isBlank(custInfo.getName()) && !NAME_PATTERN.matcher(custInfo.getName()).matches()) {
+            errors.rejectValue("name", "Pattern.customerForm.name", "Tên người nhận không được chứa ký tự đặc biệt (@#%^&*...)");
+         }
       }
-      if (custInfo.getAddress() != null && custInfo.getAddress().length() > MAX_ADDRESS_LENGTH) {
-         errors.rejectValue("address", "Length.customerForm.address", "Địa chỉ tối đa 255 ký tự");
+      // Node 8 (Predicate): Kiểm tra độ dài và định dạng Địa chỉ
+      if (custInfo.getAddress() != null) {
+         if (custInfo.getAddress().length() > MAX_ADDRESS_LENGTH) {
+            errors.rejectValue("address", "Length.customerForm.address", "Địa chỉ tối đa 255 ký tự"); // Node 9
+         } else if (!isBlank(custInfo.getAddress()) && !ADDRESS_PATTERN.matcher(custInfo.getAddress()).matches()) {
+            errors.rejectValue("address", "Pattern.customerForm.address", "Địa chỉ chứa ký tự không hợp lệ");
+         }
       }
-      if (custInfo.getPhone() != null && custInfo.getPhone().length() > MAX_PHONE_LENGTH) {
-         errors.rejectValue("phone", "Length.customerForm.phone", "Số điện thoại quá dài");
+      // Node 10 (Predicate): Kiểm tra độ dài và định dạng Số điện thoại
+      if (custInfo.getPhone() != null) {
+         if (custInfo.getPhone().length() > MAX_PHONE_LENGTH) {
+            errors.rejectValue("phone", "Length.customerForm.phone", "Số điện thoại quá dài"); // Node 11
+         } else if (!isBlank(custInfo.getPhone()) && !PHONE_PATTERN.matcher(custInfo.getPhone()).matches()) {
+            errors.rejectValue("phone", "Pattern.customerForm.phone", "Số điện thoại không đúng định dạng");
+         }
       }
+      // Node 12: Kết thúc hàm
    }
 
    private void normalize(CustomerForm customerForm) {

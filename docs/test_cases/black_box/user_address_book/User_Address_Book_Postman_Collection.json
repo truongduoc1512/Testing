@@ -1,0 +1,1304 @@
+{
+  "info": {
+    "_postman_id": "bb-user-address-book-coll-2026",
+    "name": "Shoeshop - User Address Book Blackbox Tests (EP, BVA, Decision Table & State Transition)",
+    "description": "Bộ kiểm thử tự động Postman cho chức năng Sổ Địa Chỉ Giao Hàng (User Address Book) dựa trên 20 Test Case chi tiết từ 4 kỹ thuật Hộp đen theo đúng đặc tả tài liệu README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Setup - Authentication",
+      "item": [
+        {
+          "name": "0.1 POST /j_spring_security_check - Customer Login (employee1)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var baseUrl = pm.variables.get('base_url') || 'http://localhost';",
+                  "pm.sendRequest({url: baseUrl + '/admin/login', method: 'GET'}, function (err, res) {",
+                  "    if (!err && res.text()) {",
+                  "        var m = res.text().match(/name=\"_csrf\"\\s+(?:value|content)=\"([^\"]+)\"/) || res.text().match(/content=\"([^\"]+)\"\\s+name=\"_csrf\"/);",
+                  "        if (m) pm.environment.set('csrf_token', m[1]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SETUP] Đăng nhập Khách hàng employee1 thành công (HTTP 200/302)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "var sessionCookie = pm.cookies.get('JSESSIONID');",
+                  "if (sessionCookie) pm.environment.set('user_session_id', sessionCookie);",
+                  "var setCookie = pm.response.headers.get('Set-Cookie');",
+                  "if (setCookie) {",
+                  "    var m = String(setCookie).match(/JSESSIONID=([^;]+)/);",
+                  "    if (m && m[1]) pm.environment.set('user_session_id', m[1]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "userName",
+                  "value": "{{user_username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{user_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf_token}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/j_spring_security_check",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "j_spring_security_check"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Thao tác Địa chỉ Hợp lệ (Happy Paths - TC_ADR_01 đến TC_ADR_06)",
+      "item": [
+        {
+          "name": "TC_ADR_01 - Thêm địa chỉ đầu tiên thành công với dữ liệu danh định [V1..V7, B1, D5, D6, ST1]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_01: Lưu thành công (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    pm.expect(res.address).to.be.an('object');",
+                  "    if (res.address && res.address.id) {",
+                  "        pm.environment.set('created_address_id', res.address.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0912345678\",\n  \"province\": \"Thành phố Hồ Chí Minh\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Phường Bến Nghé\",\n  \"streetAddress\": \"Số 123/45 Lê Lợi, P. Bến Nghé, Q1\",\n  \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_02 - Thêm địa chỉ thứ 2 làm địa chỉ phụ [V1, V5, V7, B27, D5, D6, ST2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_02: Lưu địa chỉ phụ thành công (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "    if (res.address && res.address.id) {",
+                  "        pm.environment.set('second_address_id', res.address.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0987654321\",\n  \"province\": \"Hà Nội\",\n  \"district\": \"Quận Ba Đình\",\n  \"ward\": \"Phường Cống Vị\",\n  \"streetAddress\": \"Số 456 Kim Mã, Ba Đình\",\n  \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_03 - Thêm địa chỉ hợp lệ tại các cận dưới min [V2..V5, B3, B9, B15, B21, D5, D6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_03: Lưu thành công tại cận dưới (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"A\",\n  \"phone\": \"1\",\n  \"province\": \"A\",\n  \"district\": \"A\",\n  \"ward\": \"A\",\n  \"streetAddress\": \"1\",\n  \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_04 - Thêm địa chỉ hợp lệ tại các cận trên max [V2..V5, B6, B12, B18, B24, D5, D6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_04: Lưu thành công tại cận trên (HTTP 201 Created)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(201);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\",\n  \"phone\": \"00000000000000000000\",\n  \"province\": \"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\",\n  \"district\": \"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\",\n  \"ward\": \"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW\",\n  \"streetAddress\": \"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\",\n  \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_05 - Đổi địa chỉ phụ thành địa chỉ mặc định mới [V1, V6, D7, ST3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_05: Đổi cờ mặc định thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses/{{second_address_id}}/set-default",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses",
+                "{{second_address_id}}",
+                "set-default"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_06 - Cập nhật thông tin chi tiết địa chỉ [V1, V5, V6, ST4]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_06: Cập nhật thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses/{{created_address_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses",
+                "{{created_address_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương Cập Nhật\",\n  \"phone\": \"0912345678\",\n  \"province\": \"Thành phố Hồ Chí Minh\",\n  \"district\": \"Quận Bình Thạnh\",\n  \"ward\": \"Phường 22\",\n  \"streetAddress\": \"Tòa nhà Landmark 81, 720A Điện Biên Phủ\",\n  \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_22 - Lưu trữ toàn vẹn địa chỉ có dấu tiếng Việt và số nhà có xuyệt gạch ngang [V1, V2, V5]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"receiverName\": \"Nguyễn Hoàng Phương\",\n    \"phone\": \"0912345678\",\n    \"province\": \"Thành phố Hồ Chí Minh\",\n    \"district\": \"Quận 1\",\n    \"ward\": \"Phường Bến Nghé\",\n    \"streetAddress\": \"Số 123/45/6 Lê Lợi - Tòa nhà Landmark\",\n    \"isDefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_ADR_22: Lưu thành công địa chỉ tiếng Việt đầy đủ (HTTP 201 Created)\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    if (jsonData.address) {",
+                  "        pm.expect(jsonData.address.streetAddress).to.include(\"123/45/6\");",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Quản lý Vòng đời & Chuyển đổi trạng thái (Lifecycle & STT - TC_ADR_07, TC_ADR_20)",
+      "item": [
+        {
+          "name": "TC_ADR_07 - Xóa địa chỉ mặc định cũ và tự động thăng cấp địa chỉ phụ [V1, V6, D8, ST6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_07: Xóa địa chỉ thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses/{{second_address_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses",
+                "{{second_address_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_20 - Lấy danh sách sổ địa chỉ của người dùng [V1, V6]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_20: Lấy danh sách địa chỉ thành công (HTTP 200 OK)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_23 - Chuyển đổi trạng thái xóa địa chỉ đưa sổ về rỗng S0_Empty [V1, V6, ST7]",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses/{{created_address_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses",
+                "{{created_address_id}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_ADR_23: Xóa địa chỉ thành công (HTTP 200 OK)\", function () {",
+                  "    pm.expect([200, 204]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Phân quyền & Bảo mật (Access Control & Security - TC_ADR_08, TC_ADR_19)",
+      "item": [
+        {
+          "name": "TC_ADR_08 - Chặn khách vãng lai thao tác Sổ địa chỉ [X1, D1]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_08: Chặn khách vãng lai (HTTP 401 Unauthorized)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{guest_base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{guest_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Khách Vãng Lai\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_19 - Chặn User sửa/xóa địa chỉ không thuộc sở hữu [X14, D4]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_19: Chặn truy cập địa chỉ trái phép (HTTP 403 Forbidden)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses",
+                "999999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_21 - Chặn User sửa địa chỉ của người khác trên endpoint PUT [X14, D4]",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"receiverName\": \"Hacker Attack\",\n    \"phone\": \"0912345678\",\n    \"province\": \"Hà Nội\",\n    \"district\": \"Hoàn Kiếm\",\n    \"ward\": \"Hàng Đào\",\n    \"streetAddress\": \"123 Phố Cổ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses",
+                "999999"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_ADR_21: Chặn IDOR PUT trái phép (HTTP 403 hoặc 404)\", function () {",
+                  "    pm.expect([403, 404]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Kiểm thử Biên tiêu cực & Bắt lỗi Dữ liệu (Validation & Negative BVA - TC_ADR_09 đến TC_ADR_18)",
+      "item": [
+        {
+          "name": "TC_ADR_09 - Báo lỗi khi để trống tên người nhận min- [X2, B2, D2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_09: Báo lỗi tên người nhận để trống (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('Vui lòng điền đầy đủ');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_10 - Báo lỗi khi tên người nhận dài 101 ký tự max+ [X3, B7, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_10: Báo lỗi tên vượt quá độ dài (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('vượt quá độ dài');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_11 - Từ chối tên người nhận chứa ký tự đặc biệt cấm [X4, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_11: Báo lỗi tên chứa ký tự đặc biệt (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('không hợp lệ');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Phuong#VIP@123\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_12 - Báo lỗi khi số điện thoại để trống min- [X5, B8, D2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_12: Báo lỗi số điện thoại để trống (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_13 - Báo lỗi khi số điện thoại dài 21 ký tự max+ [X6, B13, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_13: Báo lỗi SĐT vượt quá độ dài (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"000000000000000000000\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_14 - Từ chối số điện thoại chứa chữ cái hoặc ký tự cấm [X7, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_14: Báo lỗi SĐT không đúng định dạng (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0912abc789@#\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Lê Lợi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_15 - Báo lỗi khi thiếu 1 trong 3 cấp hành chính [X8, D2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_15: Báo lỗi thiếu cấp hành chính (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0912345678\",\n  \"province\": \"Hà Nội\",\n  \"district\": \"\",\n  \"ward\": \"Dịch Vọng\",\n  \"streetAddress\": \"123 Cầu Giấy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_16 - Báo lỗi khi địa chỉ đường phố để trống min- [X11, B14, D2]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_16: Báo lỗi địa chỉ đường phố để trống (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_17 - Báo lỗi khi địa chỉ đường phố dài 256 ký tự max+ [X12, B19, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_17: Báo lỗi địa chỉ đường phố vượt 255 ký tự (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "TC_ADR_18 - Từ chối địa chỉ đường phố chứa mã độc XSS Script [X13, D3]",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('TC_ADR_18: Báo lỗi ký tự đặc biệt nguy hiểm (HTTP 400 Bad Request)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(400);",
+                  "    var res = pm.response.json();",
+                  "    pm.expect(res.message).to.include('không hợp lệ');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "JSESSIONID={{user_session_id}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverName\": \"Nguyễn Hoàng Phương\",\n  \"phone\": \"0912345678\",\n  \"province\": \"TP HCM\",\n  \"district\": \"Quận 1\",\n  \"ward\": \"Bến Nghé\",\n  \"streetAddress\": \"123 Đường <script>alert(1)</script>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

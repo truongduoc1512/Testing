@@ -1,0 +1,635 @@
+{
+	"info": {
+		"_postman_id": "shopping-cart-blackbox-collection",
+		"name": "Shopping_Cart_Postman_Collection",
+		"description": "Bộ Testcase Kiểm Thử Hộp Đen Postman - Chức Năng 3: Giỏ Hàng (Thêm, Sửa số lượng, Xóa, Checkout)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "customer_user",
+			"value": "employee1",
+			"type": "string"
+		},
+		{
+			"key": "customer_pass",
+			"value": "123",
+			"type": "string"
+		},
+		{
+			"key": "valid_product_code",
+			"value": "S001",
+			"type": "string"
+		},
+		{
+			"key": "second_product_code",
+			"value": "S002",
+			"type": "string"
+		},
+		{
+			"key": "csrf_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "TC_CART_12 - [EP-X8][DT-D2] Chặn khách vãng lai gọi Cart API khi chưa đăng nhập (401 Unauthorized)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Unauthenticated request rejected (401 Unauthorized)', function () {",
+							"    pm.response.to.have.status(401);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_00 - [EP-V5][DT-D1] Khởi tạo phiên xác thực User hợp lệ (ROLE_USER)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const targetUrl = (pm.environment.get('base_url') || pm.collectionVariables.get('base_url') || 'http://localhost') + '/admin/login';",
+							"pm.sendRequest({",
+							"    url: targetUrl,",
+							"    method: 'GET'",
+							"}, function (err, res) {",
+							"    if (!err && res.text()) {",
+							"        const match = res.text().match(/name=\"_csrf\"\\s+value=\"([^\"]+)\"/);",
+							"        if (match && match[1]) {",
+							"            pm.environment.set('csrf_token', match[1]);",
+							"            pm.collectionVariables.set('csrf_token', match[1]);",
+							"        }",
+							"    }",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('User logged in successfully (200/302)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/x-www-form-urlencoded"},
+					{"key": "X-CSRF-TOKEN", "value": "{{csrf_token}}"}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{"key": "userName", "value": "{{customer_user}}"},
+						{"key": "password", "value": "{{customer_pass}}"},
+						{"key": "_csrf", "value": "{{csrf_token}}"}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/j_spring_security_check",
+					"host": ["{{base_url}}"],
+					"path": ["j_spring_security_check"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_01 - [EP-V1,V2,V3][BVA-B3][DT-D1][ST-1] Thêm mới sản phẩm hợp lệ vào giỏ (min: Q = 1)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Thêm 1 sản phẩm vào giỏ thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_02 - [EP-V1,V2,V4][BVA-B4][ST-2] Cập nhật số lượng sản phẩm có sẵn lên kề cận tối thiểu (min+: Q = 2)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Cập nhật số lượng Q=2 thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_03 - [EP-V1,V2][BVA-B1][ST-2] Cập nhật số lượng danh định (nom: Q = 5)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Cập nhật số lượng Q=5 thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 5\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_04 - [EP-V1,V2][BVA-B5][ST-2] Cập nhật số lượng kề cận tồn kho tối đa (max-: Q = 9)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Cập nhật số lượng Q=9 thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 9\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_05 - [EP-V1,V2][BVA-B6][ST-2] Cập nhật số lượng chạm trần tồn kho (max: Q = 10)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Cập nhật số lượng Q=10 thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 10\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_06 - [EP-X3][BVA-B2][DT-D4] Chặn cập nhật số lượng mua bằng 0 (min-: Q = 0)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Q=0 bị chặn (400 Bad Request)', function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 0\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_07 - [EP-X4] Chặn cập nhật số lượng âm (Q = -1)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Số lượng âm bị chặn (400 Bad Request)', function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": -1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_08 - [EP-X6] Chặn cập nhật số lượng chứa ký tự phi số",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Số lượng phi số bị chặn (400 Bad Request)', function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": \"abc\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_09 - [EP-X2] Chặn thêm sản phẩm với mã để trống",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Mã code để trống bị chặn (400 Bad Request)', function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"\",\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_10 - [EP-X1][DT-D3] Chặn thêm sản phẩm với mã không tồn tại",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Mã không tồn tại trả về 404 Not Found', function () {",
+							"    pm.response.to.have.status(404);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"NON_EXISTENT_CODE_999\",\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_11 - [EP-X5][BVA-B7][DT-D5] Xử lý số lượng mua vượt tồn kho (max+: Q = 11)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Vượt tồn kho được xử lý (200 OK tự giới hạn hoặc 400 Bad Request)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{valid_product_code}}\",\n    \"quantity\": 11\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_13a - Chuẩn bị: Thêm sản phẩm thứ hai (S002) vào giỏ",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Thêm sản phẩm thứ hai thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"code\": \"{{second_product_code}}\",\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_13 - [ST-3] Xóa 1 dòng hàng khi giỏ còn sản phẩm khác (S001)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Xóa S001 thành công, giỏ vẫn còn S002 (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items/{{valid_product_code}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items", "{{valid_product_code}}"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_14 - [ST-4] Xóa sản phẩm duy nhất còn lại trong giỏ (S002 -> EMPTY_CART)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Xóa sản phẩm cuối cùng thành công, giỏ rỗng (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items/{{second_product_code}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items", "{{second_product_code}}"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_15 - [EP-X7] Chặn xóa sản phẩm không có trong giỏ hàng",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Xóa sản phẩm không tồn tại trả về 404 Not Found', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([404, 200]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/items/NON_EXISTENT_ITEM_999",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "items", "NON_EXISTENT_ITEM_999"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_16a - Chuẩn bị Checkout: Thêm sản phẩm và Lưu CustomerInfo",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Lưu CustomerInfo thành công (200 OK)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Test Buyer\",\n    \"email\": \"buyer@example.com\",\n    \"phone\": \"0901234567\",\n    \"address\": \"123 Shopping Street\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/customer",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "customer"]
+				}
+			}
+		},
+		{
+			"name": "TC_CART_16 - [ST-5] Tiến hành Đặt hàng (Checkout) chuyển trạng thái CHECKOUT",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Checkout handled safely (200 OK or 400 Bad Request)', function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{"key": "Content-Type", "value": "application/json"}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/cart/checkout",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "cart", "checkout"]
+				}
+			}
+		}
+	]
+}

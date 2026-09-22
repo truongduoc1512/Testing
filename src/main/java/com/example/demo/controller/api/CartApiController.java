@@ -37,6 +37,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class CartApiController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CartApiController.class);
+    private static final java.util.regex.Pattern PHONE_PATTERN = java.util.regex.Pattern.compile("^[0-9+()\\-\\s.]{1,20}$");
 
     @Autowired
     private ProductDAO productDAO;
@@ -191,7 +192,8 @@ public class CartApiController {
                 && !isBlank(form.getEmail()) && form.getEmail().trim().length() <= 128
                 && org.apache.commons.validator.routines.EmailValidator.getInstance()
                         .isValid(form.getEmail().trim())
-                && !isBlank(form.getPhone()) && form.getPhone().trim().length() <= 128;
+                && !isBlank(form.getPhone()) && form.getPhone().trim().length() <= 20
+                && PHONE_PATTERN.matcher(form.getPhone().trim()).matches();
     }
 
     private boolean isBlank(String value) {

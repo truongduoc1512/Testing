@@ -42,10 +42,22 @@ VALUES
     'testadmin',
     b'1',
     '$2a$10$PrI5Gk9L.tSZiW9FXhTS8O8Mz9E97k2FZbFvGFFaSsiTUIl.TCrFu',
-    'ROLE_ADMIN',
+    'ROLE_USER',
     'Test Admin',
     'testadmin@gmail.com',
     '0900000002',
+    TRUE,
+    0,
+    'LOCAL'
+),
+(
+    'admin2',
+    b'1',
+    '$2a$10$PrI5Gk9L.tSZiW9FXhTS8O8Mz9E97k2FZbFvGFFaSsiTUIl.TCrFu',
+    'ROLE_ADMIN',
+    'Admin Two',
+    'admin2@shoeshop.com',
+    '0987654321',
     TRUE,
     0,
     'LOCAL'

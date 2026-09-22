@@ -9,7 +9,7 @@ import java.time.Duration;
 public class ProductDetailPage {
     private WebDriver driver;
     private WebDriverWait wait;
-    private By addToCartBtn = By.cssSelector("form button, input[type='submit'], .btn-add-to-cart, .btn-primary");
+    private By addToCartBtn = By.cssSelector(".btn-buy-now, form button, input[type='submit'], .btn-add-to-cart, .btn-primary");
 
     public ProductDetailPage(WebDriver driver) {
         this.driver = driver;

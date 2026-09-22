@@ -1,0 +1,171 @@
+{
+  "info": {
+    "_postman_id": "group2-pagination-and-sorting-id",
+    "name": "Group 2: Pagination & Sorting",
+    "description": "JSON Collection riêng cho Nhóm 2: Phân trang & Sắp xếp",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "TC_PAG_01 - Phân trang trang 1 mặc định",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "1" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('currentPage is 1', function () { var j = pm.response.json(); pm.expect(j.currentPage).to.eql(1); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_02 - Phân trang chuyển sang trang 2",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=2",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "2" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('currentPage is 2', function () { var j = pm.response.json(); pm.expect(j.currentPage).to.eql(2); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_03 - Phân trang với số trang âm",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=-1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "-1" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Auto normalized to page 1', function () { var j = pm.response.json(); pm.expect(j.currentPage).to.eql(1); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_04 - Số trang vượt quá tổng số trang",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=99999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "99999" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });",
+            "pm.test('Empty list returned', function () { var j = pm.response.json(); pm.expect(j.list).to.be.empty; });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_05 - Phân trang kết hợp Sắp xếp theo giá",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?sort=priceAsc&page=1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "sort", "value": "priceAsc" }, { "key": "page", "value": "1" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_06 - Worst-Case BVA cực đại (page=999999)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=999999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "999999" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 200 OK', function () { pm.response.to.have.status(200); });"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "TC_PAG_07 - Phân trang với ký tự phi số (page=abc)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/v1/products?page=abc",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "products"],
+          "query": [{ "key": "page", "value": "abc" }]
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('HTTP Status Code is 400 Bad Request (Spring Type Mismatch)', function () { pm.response.to.have.status(400); });"
+          ]
+        }
+      }]
+    }
+  ]
+}

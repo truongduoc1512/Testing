@@ -317,7 +317,15 @@ class UserAddressApiControllerTest {
                                 textOfLength('s', 256), null)),
                 Arguments.of("note above maximum length",
                         addressForm("Buyer", "0900", "Province", "District", "Ward", "Street",
-                                textOfLength('x', 256))));
+                                textOfLength('x', 256))),
+                Arguments.of("receiver name with disallowed special chars",
+                        addressForm("Admin#VIP@", "0900", "Province", "District", "Ward", "Street", null)),
+                Arguments.of("phone with disallowed special chars",
+                        addressForm("Buyer", "0900#@!abc", "Province", "District", "Ward", "Street", null)),
+                Arguments.of("province with disallowed special chars",
+                        addressForm("Buyer", "0900", "Province@123", "District", "Ward", "Street", null)),
+                Arguments.of("street address with script injection",
+                        addressForm("Buyer", "0900", "Province", "District", "Ward", "123 Street <script>", null)));
     }
 
     private static Authentication authenticated(String username) {
